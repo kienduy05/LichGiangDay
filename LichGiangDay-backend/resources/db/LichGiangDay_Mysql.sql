@@ -99,7 +99,7 @@ CREATE TABLE Users (
     PasswordHash   VARCHAR(255)    NOT NULL,
     FullName       VARCHAR(100)   NULL,
     Email          VARCHAR(150)   NULL,
-    Role           VARCHAR(30)     NOT NULL DEFAULT 'ADMIN',
+    Role           VARCHAR(30)     NOT NULL,
     IsActive       TINYINT(1)             NOT NULL DEFAULT 1,
     CreatedAt      DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UpdatedAt      DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -117,7 +117,7 @@ CREATE TABLE Users (
 
 CREATE TABLE ApiKeys (
     ApiKeyId       INT AUTO_INCREMENT NOT NULL,
-    Key          VARCHAR(255)   NOT NULL,
+    `Key`          VARCHAR(255)   NOT NULL,
     Status         TINYINT(1)             NOT NULL DEFAULT 1,
     Permissions    LONGTEXT   NULL,
     CreatedAt      DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -127,7 +127,7 @@ CREATE TABLE ApiKeys (
         PRIMARY KEY (ApiKeyId),
 
     CONSTRAINT UQ_ApiKeys_Key
-        UNIQUE (Key)
+        UNIQUE (`Key`)
 );
 
 CREATE TABLE KeyTokens (
