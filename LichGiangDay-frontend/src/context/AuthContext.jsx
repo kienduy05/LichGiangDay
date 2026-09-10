@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { apiLogin, apiLogout, apiGetMe, apiUpdateProfile, apiChangePassword } from '../utils/api';
+import { apiLogin, apiLogout, apiGetMe, apiUpdateProfile, apiChangePassword, apiGetRolePermissions } from '../utils/api';
 
 const AuthContext = createContext();
 
@@ -8,7 +8,23 @@ export const AuthProvider = ({ children }) => {
     const savedUser = localStorage.getItem('user');
     return savedUser ? JSON.parse(savedUser) : null;
   });
+  const [userPermissions, setUserPermissions] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Fetch permissions for the logged-in user's role
+  const loadUserPermissions = async (roleId) => {
+    if (!roleId || roleId === 'ADMIN') {
+      setUserPermissions([]); // ADMIN has bypass full permissions
+      return;
+    }
+    try {
+      const perms = await apiGetRolePermissions(roleId);
+      setUserPermissions(perms || []);
+    } catch (err) {
+      console.warn('Failed to load user permissions for role:', roleId, err);
+      setUserPermissions([]);
+    }
+  };
 
   useEffect(() => {
     const verifyUser = async () => {
@@ -17,7 +33,18 @@ export const AuthProvider = ({ children }) => {
         try {
           const res = await apiGetMe();
           if (res.metadata) {
-            // Keep user valid
+            const currentUser = res.metadata;
+            const normalizedRole = currentUser.role || currentUser.Role;
+            const normalizedUser = {
+              ...currentUser,
+              role: normalizedRole
+            };
+            setUser(normalizedUser);
+            localStorage.setItem('user', JSON.stringify(normalizedUser));
+
+            if (normalizedRole) {
+              await loadUserPermissions(normalizedRole);
+            }
           }
         } catch (err) {
           console.warn('Session expired, logging out:', err.message);
@@ -33,14 +60,22 @@ export const AuthProvider = ({ children }) => {
   const login = async (username, password) => {
     const res = await apiLogin(username, password);
     const { user: userData, tokens } = res.metadata;
+    const normalizedRole = userData.role || userData.Role;
+    const normalizedUser = {
+      ...userData,
+      role: normalizedRole
+    };
 
     localStorage.setItem('accessToken', tokens.accessToken);
     localStorage.setItem('refreshToken', tokens.refreshToken);
-    localStorage.setItem('userId', userData.userId);
-    localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('userId', normalizedUser.userId || normalizedUser.UserId);
+    localStorage.setItem('user', JSON.stringify(normalizedUser));
 
-    setUser(userData);
-    return userData;
+    setUser(normalizedUser);
+    if (normalizedRole) {
+      await loadUserPermissions(normalizedRole);
+    }
+    return normalizedUser;
   };
 
   const logout = async () => {
@@ -50,6 +85,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('userId');
     localStorage.removeItem('user');
     setUser(null);
+    setUserPermissions([]);
   };
 
   const updateProfile = async ({ fullName, email }) => {
@@ -65,8 +101,32 @@ export const AuthProvider = ({ children }) => {
     return res;
   };
 
+  /**
+   * Kiểm tra người dùng có quyền thực hiện hành động trên tài nguyên không
+   * @param {string} resourceId - Mã tài nguyên (VD: 'Roles', 'Users', 'RolePermissions', 'ToaNha', 'BoMon'...)
+   * @param {string} action - 'CanRead' | 'CanCreate' | 'CanUpdate' | 'CanDelete'
+   */
+  const hasPermission = (resourceId, action) => {
+    if (!user) return false;
+    const currentRole = user.role || user.Role;
+    if (currentRole === 'ADMIN') return true; // ADMIN có 100% quyền
+
+    const permRow = userPermissions.find(p => p.ResourceId === resourceId);
+    if (!permRow) return false;
+    return permRow[action] === 1;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, updateProfile, changePassword, loading }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      userPermissions, 
+      hasPermission, 
+      login, 
+      logout, 
+      updateProfile, 
+      changePassword, 
+      loading 
+    }}>
       {children}
     </AuthContext.Provider>
   );
