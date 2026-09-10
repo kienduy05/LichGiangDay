@@ -1,6 +1,6 @@
 # HƯỚNG DẪN CẤU TRÚC DỰ ÁN & QUY CHUẨN LẬP TRÌNH (LICHGIANGDAY)
 
-Tài liệu này quy định chi tiết về **Cấu trúc thư mục**, **Luồng xử lý (Architecture Flow)** và **Quy chuẩn viết API bảo vệ bằng Middleware** dành cho tất cả các thành viên khi tham gia phát triển dự án `LichGiangDay`.
+Tài liệu này quy định chi tiết về **Cấu trúc thư mục**, **Luồng xử lý (Architecture Flow)**, **Quy chuẩn bảo vệ API 3 tầng (x-api-key + JWT + RBAC checkPermission)** và **Quy trình hướng dẫn thành viên trong team khi clone dự án về để phát triển API mới**.
 
 ---
 
@@ -16,17 +16,26 @@ LichGiangDay/
 │   │   ├── CreateDB.js            # Script khởi tạo bảng tự động
 │   │   └── seedData.js            # Script thêm dữ liệu mẫu (ADMIN, Roles, ApiKey)
 │   ├── src/                       # MÃ NGUỒN CHÍNH CỦA BACKEND
-│   │   ├── auth/                  # Middleware Bảo Mật & Xác Thực
+│   │   ├── auth/                  # Middleware Bảo Mật & Phân Quyền
 │   │   │   ├── checkAuth.js       # Middleware kiểm tra Header x-api-key
-│   │   │   └── authUtils.js       # JWT helper & Middleware authentication (x-client-id, Bearer token)
+│   │   │   ├── authUtils.js       # JWT helper & Middleware authentication (x-client-id, Bearer token)
+│   │   │   └── checkPermission.js # Middleware kiểm tra quyền thao tác RBAC (checkPermission)
 │   │   ├── controllers/           # Tầng Controller (Xử lý HTTP Request/Response)
-│   │   │   └── access.controller.js
+│   │   │   ├── access.controller.js
+│   │   │   ├── role.controller.js
+│   │   │   ├── user.controller.js
+│   │   │   └── permission.controller.js
 │   │   ├── services/              # Tầng Service (Xử lý Logic Nghiệp vụ & Truy vấn CSDL)
 │   │   │   ├── access.service.js
 │   │   │   ├── keyToken.service.js
-│   │   │   └── user.service.js
+│   │   │   ├── user.service.js
+│   │   │   ├── role.service.js
+│   │   │   └── permission.service.js
 │   │   └── routes/                # Tầng Định Tuyến (Routing)
-│   │       ├── access/index.js    # Routes cho nhóm Auth (/login, /logout, /me...)
+│   │       ├── access/index.js    # Routes nhóm Auth (/login, /logout, /me...)
+│   │       ├── role/index.js      # Routes nhóm Quyền (/v1/api/roles)
+│   │       ├── user/index.js      # Routes Người dùng (/v1/api/users)
+│   │       ├── permission/index.js# Routes Phân quyền (/v1/api/permissions)
 │   │       └── index.js           # Master Router hợp nhất tất cả các module
 │   ├── .env.example               # Mẫu file cấu hình môi trường
 │   ├── index.js                   # Entry point khởi chạy Server Express
@@ -35,7 +44,7 @@ LichGiangDay/
 ├── LichGiangDay-frontend/         # SOURCE CODE FRONTEND (ReactJS / Vite)
 │   ├── src/
 │   │   ├── assets/                # Hình ảnh, icon tĩnh
-│   │   ├── context/               # Quản lý State toàn cục (AuthContext.jsx)
+│   │   ├── context/               # Quản lý State & Permission (AuthContext.jsx)
 │   │   ├── pages/                 # Các trang giao diện (Home, AdminLogin, AdminDashboard)
 │   │   ├── utils/                 # Hàm tiện ích & Gọi API (api.js)
 │   │   ├── App.jsx                # Định tuyến Route React-Router-DOM
@@ -55,10 +64,11 @@ Backend được xây dựng theo mô hình 3 tầng phân rã trách nhiệm r�
 
 ```text
 HTTP Request ──> Master Router (routes/index.js)
-                        │ (Bắt buộc kiểm tra Header: x-api-key)
+                        │ (Tầng 1: Kiểm tra Header x-api-key)
                         ▼
                 Module Router (routes/<module>/index.js)
-                        │ (Bắt buộc kiểm tra JWT: authentication)
+                        │ (Tầng 2: Kiểm tra JWT Token: authentication)
+                        │ (Tầng 3: Kiểm tra Phân quyền RBAC: checkPermission)
                         ▼
                 Controller Layer (controllers/<module>.controller.js)
                         │ (Validate request body/params & Gọi Service)
@@ -69,34 +79,67 @@ HTTP Request ──> Master Router (routes/index.js)
                   MySQL Database (Aiven Cloud)
 ```
 
-### Trách nhiệm từng tầng:
-1. **Tầng Router (`src/routes/`)**: Khai báo các đường dẫn API (Endpoints), phương thức (`GET`, `POST`, `PUT`, `DELETE`) và gán các **Middleware bảo vệ**.
-2. **Tầng Controller (`src/controllers/`)**: Tiếp nhận `req`, `res`, kiểm tra tính đầy đủ của dữ liệu gửi lên (`req.body`, `req.params`, `req.query`), gọi hàm tương ứng ở tầng Service và trả kết quả JSON chuẩn hóa về cho Client.
-3. **Tầng Service (`src/services/`)**: Nơi tập trung 100% logic nghiệp vụ chuyên sâu, thực hiện các câu lệnh SQL (`db.query`) thao tác trực tiếp với cơ sở dữ liệu.
-
 ---
 
-## 🛡️ 3. Quy Chuẩn Bảo Mật & Hệ Thống Headers
+## 🛡️ 3. Quy Chuẩn Bảo Mật & Phân Quyền 3 Tầng Phía Backend
 
-Tất cả các API trong hệ thống được bảo vệ bởi **2 tầng xác thực**:
+Tất cả các API trong hệ thống được bảo vệ bởi **3 tầng kiểm soát bảo mật**:
 
 ### Tầng 1: Kiểm Tra Khóa Ứng Dụng (`x-api-key`)
 - **Header bắt buộc**: `x-api-key: lichgiangday_secret_apikey_2026`
-- **Xử lý**: Middleware `apiKey` trong `src/auth/checkAuth.js` tự động đối chiếu `x-api-key` với bảng `ApiKeys` trong CSDL. Tất cả request không có hoặc sai Key sẽ bị từ chối với mã lỗi `403 Forbidden`.
+- **Xử lý**: Middleware `apiKey` trong `src/auth/checkAuth.js` tự động đối chiếu `x-api-key` với bảng `ApiKeys` trong CSDL. Request không có hoặc sai Key sẽ bị từ chối `403 Forbidden`.
 
-### Tầng 2: Xác Thực Người Dùng Với JWT & KeyTokens (`authentication`)
+### Tầng 2: Xác Thực Người Dùng JWT (`authentication`)
 - **Headers bắt buộc khi gọi API bảo vệ**:
   - `x-api-key`: `lichgiangday_secret_apikey_2026`
   - `x-client-id`: Mã `UserId` của người dùng (Ví dụ: `USR000000000001`).
   - `authorization`: Dạng `Bearer <accessToken>`.
-- **Cơ chế hoạt động**:
-  1. Middleware `authentication` trong `src/auth/authUtils.js` sẽ lấy `x-client-id` để tìm `PublicKey` trong bảng `KeyTokens` (trên MySQL).
-  2. Dùng `PublicKey` giải mã chữ ký JWT trong `authorization` header.
-  3. Nếu thành công, gán thông tin `req.user` (`userId`, `username`, `role`) và gọi `next()`.
+- **Cơ chế**: Middleware `authentication` trong `src/auth/authUtils.js` giải mã chữ ký JWT, kiểm tra `KeyToken` hợp lệ, gán đối tượng `req.user` (`userId`, `username`, `role`) và gọi `next()`.
+
+### Tầng 3: Kiểm Tra Quyền Thao Tác Chi Tiết RBAC (`checkPermission`)
+- **Cú pháp khai báo**: `checkPermission(resourceId, action)`
+  - `resourceId`: Mã tài nguyên phải **khớp 100%** với mã trong bảng `Resources` CSDL (Ví dụ: `'Roles'`, `'Users'`, `'RolePermissions'`, `'ToaNha'`, `'PhongHoc'`, `'Khoa'`, `'BoMon'`, `'GiangVien'`, `'MonHoc'`, `'LopHocPhan'`...).
+  - `action`: Hành động kiểm tra tương ứng với HTTP Method:
+    - `CanRead`: Dành cho route `GET` (Xem danh sách / xem chi tiết).
+    - `CanCreate`: Dành cho route `POST` (Tạo mới).
+    - `CanUpdate`: Dành cho route `PUT` / `PATCH` (Cập nhật / Đổi trạng thái / Reset mật khẩu).
+    - `CanDelete`: Dành cho route `DELETE` (Xóa).
+- **Cơ chế xử lý trong Middleware (`src/auth/checkPermission.js`)**:
+  1. **Nhóm `ADMIN` (Super Admin)**: Tự động vượt qua 100% kiểm tra phân quyền (Bypass authorization).
+  2. **Ngoại lệ tự tải quyền chính mình**: Người dùng thuộc bất kỳ nhóm quyền nào luôn được phép tải ma trận quyền của CHÍNH NHÓM MÌNH (`GET /v1/api/permissions/role/:roleId` khi `req.params.roleId === req.user.role`) để render giao diện Frontend.
+  3. **Truy vấn CSDL**: Tìm dòng phân quyền theo `RoleId` (`req.user.role`) và `ResourceId` trong bảng `RolePermissions`.
+  4. **Đối chiếu cờ quyền**:
+     - Nếu cờ quyền tương ứng (`CanRead` / `CanCreate` / `CanUpdate` / `CanDelete`) `= 1`: Cho phép thực hiện API (`next()`).
+     - Nếu cờ quyền `= 0` hoặc chưa được cấu hình dòng quyền: Từ chối với `403 Forbidden` kèm thông báo: *"Từ chối truy cập: Nhóm quyền 'X' không có quyền 'Y' trên tài nguyên 'Z'"*.
 
 ---
 
-## 💻 4. Hướng Dẫn Chi Tiết Viết Một Module API Mới (Ví Dụ: Quản Lý Tòa Nhà - `ToaNha`)
+## 📋 4. Danh Sách Mã Tài Nguyên (`ResourceId`) Chuẩn Trong Hệ Thống
+
+Khi bọc middleware `checkPermission('ResourceId', 'Action')`, bạn **PHẢI** sử dụng chính xác các giá trị `ResourceId` dưới đây:
+
+| Nhóm Tính Năng | `ResourceId` tiêu chuẩn | Mô tả tài nguyên |
+| :--- | :--- | :--- |
+| **Quản trị hệ thống** | `Roles` | Quản lý Nhóm người dùng (Thêm/Sửa/Xóa role) |
+| | `Users` | Quản lý Tài khoản người dùng |
+| | `RolePermissions` | Phân quyền nhóm (Cấu hình ma trận Read/Create/Update/Delete) |
+| **Danh mục Đào tạo** | `ToaNha` | Danh mục Tòa nhà |
+| | `PhongHoc` | Danh mục Phòng học |
+| | `Khoa` | Danh mục Khoa |
+| | `BoMon` | Danh mục Bộ môn |
+| | `GiangVien` | Danh mục Giảng viên |
+| | `Nganh` | Danh mục Ngành đào tạo |
+| | `MonHoc` | Danh mục Môn học |
+| | `LopHocPhan` | Danh mục Lớp học phần |
+| **Cấu hình & Lịch** | `NamHoc` | Cấu hình Năm học |
+| | `HocKy` | Cấu hình Học kỳ |
+| | `CaHoc` | Cấu hình Ca học / Tiết học |
+| | `DotHoc` | Cấu hình Đợt học |
+| | `LichGiangDay` | Quản lý & Xếp Lịch giảng dạy |
+
+---
+
+## 💻 5. Hướng Dẫn Chi Tiết Viết Một Module API Mới Mẫu (Ví Dụ: Quản Lý Tòa Nhà - `ToaNha`)
 
 Giả sử bạn cần làm tính năng **Quản lý Tòa nhà (ToaNha)**, hãy tuân thủ đúng 4 bước dưới đây:
 
@@ -119,6 +162,21 @@ class ToaNhaService {
     );
     return { maToaNha, tenToaNha, coSo, diaChi };
   };
+
+  // Cập nhật tòa nhà
+  static update = async (maToaNha, { tenToaNha, coSo, diaChi }) => {
+    await db.query(
+      'UPDATE ToaNha SET TenToaNha = ?, CoSo = ?, DiaChi = ? WHERE MaToaNha = ?',
+      [tenToaNha, coSo, diaChi, maToaNha]
+    );
+    return { maToaNha, tenToaNha, coSo, diaChi };
+  };
+
+  // Xóa tòa nhà
+  static delete = async (maToaNha) => {
+    await db.query('DELETE FROM ToaNha WHERE MaToaNha = ?', [maToaNha]);
+    return { success: true, maToaNha };
+  };
 }
 
 module.exports = ToaNhaService;
@@ -139,7 +197,7 @@ class ToaNhaController {
         metadata: list
       });
     } catch (error) {
-      return res.status(500).json({ status: 'error', message: error.message });
+      return res.status(500).json({ status: 'error', code: 500, message: error.message });
     }
   };
 
@@ -149,6 +207,7 @@ class ToaNhaController {
       if (!maToaNha || !tenToaNha) {
         return res.status(400).json({
           status: 'error',
+          code: 400,
           message: 'Mã tòa nhà và Tên tòa nhà không được để trống'
         });
       }
@@ -161,7 +220,38 @@ class ToaNhaController {
         metadata: result
       });
     } catch (error) {
-      return res.status(500).json({ status: 'error', message: error.message });
+      return res.status(400).json({ status: 'error', code: 400, message: error.message });
+    }
+  };
+
+  update = async (req, res, next) => {
+    try {
+      const { maToaNha } = req.params;
+      const { tenToaNha, coSo, diaChi } = req.body;
+      const result = await ToaNhaService.update(maToaNha, { tenToaNha, coSo, diaChi });
+      return res.status(200).json({
+        status: 'success',
+        code: 200,
+        message: 'Cập nhật tòa nhà thành công',
+        metadata: result
+      });
+    } catch (error) {
+      return res.status(400).json({ status: 'error', code: 400, message: error.message });
+    }
+  };
+
+  deleteToaNha = async (req, res, next) => {
+    try {
+      const { maToaNha } = req.params;
+      const result = await ToaNhaService.delete(maToaNha);
+      return res.status(200).json({
+        status: 'success',
+        code: 200,
+        message: 'Xóa tòa nhà thành công',
+        metadata: result
+      });
+    } catch (error) {
+      return res.status(400).json({ status: 'error', code: 400, message: error.message });
     }
   };
 }
@@ -169,18 +259,22 @@ class ToaNhaController {
 module.exports = new ToaNhaController();
 ```
 
-### Bước 3: Định Nghĩa Router Module (`src/routes/toanha/index.js`)
+### Bước 3: Định Nghĩa Router Module Với Middleware Phân Quyền (`src/routes/toanha/index.js`)
 ```javascript
 const express = require('express');
 const toanhaController = require('../../controllers/toanha.controller');
 const { authentication } = require('../../auth/authUtils');
+const { checkPermission } = require('../../auth/checkPermission');
 const router = express.Router();
 
-// Áp dụng middleware xác thực JWT cho tất cả các API thuộc module Tòa Nhà
+// Tầng 2: Áp dụng middleware xác thực JWT cho tất cả các API thuộc module Tòa Nhà
 router.use(authentication);
 
-router.get('/', toanhaController.getAll);
-router.post('/', toanhaController.create);
+// Tầng 3: Gán checkPermission(resourceId, action) cho từng Endpoint
+router.get('/', checkPermission('ToaNha', 'CanRead'), toanhaController.getAll);
+router.post('/', checkPermission('ToaNha', 'CanCreate'), toanhaController.create);
+router.put('/:maToaNha', checkPermission('ToaNha', 'CanUpdate'), toanhaController.update);
+router.delete('/:maToaNha', checkPermission('ToaNha', 'CanDelete'), toanhaController.deleteToaNha);
 
 module.exports = router;
 ```
@@ -191,11 +285,14 @@ const express = require('express');
 const { apiKey } = require('../auth/checkAuth');
 const router = express.Router();
 
-// Tất cả API đều cần kiểm tra x-api-key
+// Tất cả API đều cần kiểm tra x-api-key (Tầng 1)
 router.use(apiKey);
 
 // Đăng ký các module API
 router.use('/v1/api/auth', require('./access'));
+router.use('/v1/api/roles', require('./role'));
+router.use('/v1/api/users', require('./user'));
+router.use('/v1/api/permissions', require('./permission'));
 router.use('/v1/api/toanha', require('./toanha')); // <--- Đăng ký module mới tại đây!
 
 module.exports = router;
@@ -203,34 +300,87 @@ module.exports = router;
 
 ---
 
-## 🎨 5. Quy Chuẩn Gọi API Ở Frontend (ReactJS)
+## 🎨 6. Quy Chuẩn Gọi API & Sử Dụng Phân Quyền Ở Frontend (ReactJS)
 
-Ở phía Frontend (`LichGiangDay-frontend`), **tuyệt đối không** viết tay từng Header khi gọi `fetch` hay `axios`. Hãy dùng hàm tiện ích `getAuthHeaders()` trong file `src/utils/api.js`:
+### Gọi API
+Dùng hàm `getAuthHeaders()` trong file `src/utils/api.js` (tự động gắn `x-api-key`, `x-client-id` và `Bearer token`).
+
+### Ẩn/Hiện Menu & Nút Bấm Động Theo Phân Quyền
+Dùng hook `useAuth()` để lấy hàm `hasPermission(resourceId, action)`:
 
 ```javascript
-import { getAuthHeaders } from '../utils/api';
+import { useAuth } from '../context/AuthContext';
 
-// Ví dụ hàm gọi API lấy danh sách Tòa Nhà từ Frontend:
-export const apiGetDanhSachToaNha = async () => {
-  const response = await fetch('http://localhost:5000/v1/api/toanha', {
-    method: 'GET',
-    headers: getAuthHeaders() // Tự động chèn x-api-key, x-client-id và Bearer accessToken
-  });
+function SidebarNav() {
+  const { hasPermission } = useAuth();
 
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.message || 'Lỗi khi lấy dữ liệu');
-  }
+  return (
+    <nav>
+      {/* Ẩn mục Tòa Nhà nếu không có quyền CanRead */}
+      {hasPermission('ToaNha', 'CanRead') && (
+        <a href="/admin/toanha">Quản lý Tòa Nhà</a>
+      )}
 
-  return data.metadata;
-};
+      {/* Ẩn nút Thêm nếu không có quyền CanCreate */}
+      {hasPermission('ToaNha', 'CanCreate') && (
+        <button>+ Thêm Tòa Nhà Mới</button>
+      )}
+    </nav>
+  );
+}
 ```
 
 ---
 
-## 📌 6. Tóm Tắt Định Dạng Trả Về Chuẩn (Standard API Response)
+## 🚀 7. Quy Trình Dành Cho Thành Viên Team Khi Clone Dự Án Về Lần Đầu
 
-Mọi API trong dự án cần trả về định dạng JSON đồng nhất:
+Khi thành viên mới trong team clone source code về máy local, thực hiện theo các bước sau để chạy và phát triển đúng quy chuẩn:
+
+1. **Cài Đặt Dependencies**:
+   ```bash
+   # Trong thư mục LichGiangDay-backend
+   cd LichGiangDay-backend
+   npm install
+
+   # Trong thư mục LichGiangDay-frontend
+   cd ../LichGiangDay-frontend
+   npm install
+   ```
+
+2. **Cấu Hình Môi Trường (.env)**:
+   Tạo file `.env` trong thư mục `LichGiangDay-backend` dựa theo `.env.example`:
+   ```env
+   PORT=5000
+   NODE_ENV=development
+   DB_HOST=your_mysql_host
+   DB_PORT=3306
+   DB_USER=your_mysql_user
+   DB_PASSWORD=your_mysql_password
+   DB_NAME=LichGiangDay
+   ```
+
+3. **Khởi Tạo CSDL & Dữ Liệu Ban Đầu**:
+   Chạy script khởi tạo bảng và seed dữ liệu mẫu (ADMIN, ApiKey, Roles tiêu chuẩn):
+   ```bash
+   node src/resources/db/CreateDB.js
+   node src/resources/db/seedData.js
+   ```
+
+4. **Quy Tắc Bắt Buộc Khi Thêm Feature/API Mới**:
+   - 🔴 **LUÔN LUÔN** bọc `router.use(authentication)` ở đầu router module.
+   - 🔴 **LUÔN LUÔN** bọc `checkPermission(ResourceId, Action)` cho từng route (`GET` -> `CanRead`, `POST` -> `CanCreate`, `PUT` -> `CanUpdate`, `DELETE` -> `CanDelete`).
+   - 🔴 **KHÔNG BAO GIỜ** bỏ qua middleware `checkPermission` ngoại trừ các route công khai như Login/Register.
+   - 🔴 Kiểm tra mã `ResourceId` xem đã có trong bảng `Resources` chưa. Nếu chưa có, thêm dòng ghi chú vào SQL migration script.
+
+5. **Cách Kiểm Thuử API Trên Postman / Thunder Client**:
+   Khi test API backend, bắt buộc phải truyền **3 Header**:
+   - `x-api-key`: `lichgiangday_secret_apikey_2026`
+   - `x-client-id`: `USR000000000001` (Mã user vừa login)
+   - `authorization`: `Bearer <token_đăng_nhập>`
+
+---
+
+## 📌 8. Tóm Tắt Định Dạng Trả Về Chuẩn (Standard API Response)
 
 - **Thành công (200 OK / 201 Created)**:
   ```json
@@ -238,15 +388,15 @@ Mọi API trong dự án cần trả về định dạng JSON đồng nhất:
     "status": "success",
     "code": 200,
     "message": "Thông điệp thành công",
-    "metadata": { ... } // Dữ liệu kết quả
+    "metadata": { ... }
   }
   ```
 
-- **Thất bại (400 / 401 / 403 / 500)**:
+- **Thất bại (400 Bad Request / 401 Unauthorized / 403 Forbidden / 500 Error)**:
   ```json
   {
     "status": "error",
-    "code": 400,
-    "message": "Chi tiết câu thông báo lỗi"
+    "code": 403,
+    "message": "Từ chối truy cập: Nhóm quyền 'BOMON' không có quyền 'CanRead' trên tài nguyên 'Roles'."
   }
   ```

@@ -92,3 +92,206 @@ export const apiChangePassword = async ({ oldPassword, newPassword }) => {
 
   return data;
 };
+
+// ==========================================
+// ROLES (NHÓM NGƯỜI DÙNG) API SERVICES
+// ==========================================
+
+export const apiGetRoles = async () => {
+  const response = await fetch(`${API_BASE_URL}/roles`, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Lấy danh sách nhóm người dùng thất bại.');
+  }
+
+  return data.metadata;
+};
+
+export const apiCreateRole = async ({ roleId, roleName, description }) => {
+  const response = await fetch(`${API_BASE_URL}/roles`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ roleId, roleName, description })
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Tạo nhóm người dùng thất bại.');
+  }
+
+  return data.metadata;
+};
+
+export const apiUpdateRole = async (roleId, { roleName, description }) => {
+  const response = await fetch(`${API_BASE_URL}/roles/${roleId}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ roleName, description })
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Cập nhật nhóm người dùng thất bại.');
+  }
+
+  return data.metadata;
+};
+
+export const apiDeleteRole = async (roleId) => {
+  const response = await fetch(`${API_BASE_URL}/roles/${roleId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Xóa nhóm người dùng thất bại.');
+  }
+
+  return data.metadata;
+};
+
+// ==========================================
+// USERS (NGƯỜI DÙNG) API SERVICES
+// ==========================================
+
+export const apiGetUsers = async () => {
+  const response = await fetch(`${API_BASE_URL}/users`, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Lấy danh sách người dùng thất bại.');
+  }
+
+  return data.metadata;
+};
+
+export const apiCreateUser = async ({ username, password, fullName, email, role }) => {
+  const response = await fetch(`${API_BASE_URL}/users`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ username, password, fullName, email, role })
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Tạo người dùng mới thất bại.');
+  }
+
+  return data.metadata;
+};
+
+export const apiUpdateUser = async (userId, { fullName, email, role, isActive }) => {
+  const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ fullName, email, role, isActive })
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Cập nhật tài khoản thất bại.');
+  }
+
+  return data.metadata;
+};
+
+export const apiResetUserPassword = async (userId, newPassword) => {
+  const response = await fetch(`${API_BASE_URL}/users/${userId}/reset-password`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ newPassword })
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Đặt lại mật khẩu thất bại.');
+  }
+
+  return data.metadata;
+};
+
+export const apiToggleUserStatus = async (userId) => {
+  const response = await fetch(`${API_BASE_URL}/users/${userId}/toggle-status`, {
+    method: 'PUT',
+    headers: getAuthHeaders()
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Thay đổi trạng thái thất bại.');
+  }
+
+  return data.metadata;
+};
+
+export const apiDeleteUser = async (userId) => {
+  const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Xóa tài khoản thất bại.');
+  }
+
+  return data.metadata;
+};
+
+// ==========================================
+// PERMISSIONS (PHÂN QUYỀN CHỨC NĂNG) API SERVICES
+// ==========================================
+
+export const apiGetResources = async () => {
+  const response = await fetch(`${API_BASE_URL}/permissions/resources`, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Lấy danh sách tài nguyên thất bại.');
+  }
+
+  return data.metadata;
+};
+
+export const apiGetRolePermissions = async (roleId) => {
+  const response = await fetch(`${API_BASE_URL}/permissions/role/${roleId}`, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Lấy ma trận phân quyền thất bại.');
+  }
+
+  return data.metadata;
+};
+
+export const apiUpdateRolePermissions = async (roleId, permissions) => {
+  const response = await fetch(`${API_BASE_URL}/permissions/role/${roleId}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ permissions })
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Lưu ma trận phân quyền thất bại.');
+  }
+
+  return data.metadata;
+};
+
+
+
