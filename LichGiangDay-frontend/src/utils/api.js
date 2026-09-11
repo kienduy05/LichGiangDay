@@ -293,5 +293,145 @@ export const apiUpdateRolePermissions = async (roleId, permissions) => {
   return data.metadata;
 };
 
+// ==========================================
+// TOANHA (TÒA NHÀ) API SERVICES
+// ==========================================
+
+export const apiGetToaNhaList = async () => {
+  const response = await fetch(`${API_BASE_URL}/toanha`, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Lấy danh sách tòa nhà thất bại.');
+  }
+
+  return data.metadata;
+};
+
+export const apiCreateToaNha = async ({ maToaNha, tenToaNha, coSo, diaChi }) => {
+  const response = await fetch(`${API_BASE_URL}/toanha`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ maToaNha, tenToaNha, coSo, diaChi })
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Tạo tòa nhà thất bại.');
+  }
+
+  return data.metadata;
+};
+
+export const apiUpdateToaNha = async (maToaNha, { tenToaNha, coSo, diaChi }) => {
+  const response = await fetch(`${API_BASE_URL}/toanha/${maToaNha}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ tenToaNha, coSo, diaChi })
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Cập nhật tòa nhà thất bại.');
+  }
+
+  return data.metadata;
+};
+
+export const apiDeleteToaNha = async (maToaNha) => {
+  const response = await fetch(`${API_BASE_URL}/toanha/${maToaNha}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Xóa tòa nhà thất bại.');
+  }
+
+  return data.metadata;
+};
+
+// ==========================================
+// PHONGHOC (PHÒNG HỌC) API SERVICES
+// ==========================================
+
+export const apiGetPhongHocList = async () => {
+  const response = await fetch(`${API_BASE_URL}/phonghoc`, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Lấy danh sách phòng học thất bại.');
+  }
+
+  return data.metadata;
+};
+
+export const apiCreatePhongHoc = async ({ maPhong, tenPhong, maToaNha, sucChua, loaiPhong, trangThai }) => {
+  const response = await fetch(`${API_BASE_URL}/phonghoc`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ maPhong, tenPhong, maToaNha, sucChua, loaiPhong, trangThai })
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Tạo phòng học thất bại.');
+  }
+
+  return data.metadata;
+};
+
+export const apiUpdatePhongHoc = async (maPhong, { tenPhong, maToaNha, sucChua, loaiPhong, trangThai }) => {
+  const response = await fetch(`${API_BASE_URL}/phonghoc/${maPhong}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ tenPhong, maToaNha, sucChua, loaiPhong, trangThai })
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Cập nhật phòng học thất bại.');
+  }
+
+  return data.metadata;
+};
+
+export const apiTogglePhongHocStatus = async (maPhong) => {
+  const response = await fetch(`${API_BASE_URL}/phonghoc/${maPhong}/toggle-status`, {
+    method: 'PUT',
+    headers: getAuthHeaders()
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Cập nhật trạng thái thất bại.');
+  }
+
+  return data.metadata;
+};
+
+export const apiDeletePhongHoc = async (maPhong) => {
+  const response = await fetch(`${API_BASE_URL}/phonghoc/${maPhong}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Xóa phòng học thất bại.');
+  }
+
+  return data.metadata;
+};
+
+
+
 
 

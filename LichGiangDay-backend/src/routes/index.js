@@ -17,4 +17,10 @@ router.use('/v1/api/users', require('./user'));
 // Permissions management routes
 router.use('/v1/api/permissions', require('./permission'));
 
+// Building management routes
+router.use('/v1/api/toanha', require('./toanha'));
+
+// Room management routes
+router.use('/v1/api/phonghoc', require('./phonghoc'));
+
 module.exports = router;

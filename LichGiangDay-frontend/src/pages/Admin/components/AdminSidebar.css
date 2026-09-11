@@ -1,0 +1,99 @@
+/* Sidebar Component Specific CSS */
+.admin-sidebar {
+  width: 260px;
+  background: var(--admin-sidebar-bg, #ffffff);
+  border-right: 1px solid var(--admin-border, #e2e8f0);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 50;
+}
+
+.admin-sidebar-header {
+  height: 72px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--admin-border, #e2e8f0);
+}
+
+.admin-sidebar-logo {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.admin-brand-name {
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: var(--admin-text-main, #0f172a);
+}
+
+.admin-sidebar-nav {
+  flex: 1;
+  padding: 20px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+}
+
+.admin-sidebar-nav::-webkit-scrollbar {
+  width: 5px;
+}
+
+.admin-sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.admin-sidebar-nav::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 4px;
+}
+
+.admin-sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+}
+
+.admin-nav-section {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--admin-text-sub, #94a3b8);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 16px 12px 6px;
+}
+
+.admin-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  color: var(--admin-text-muted, #64748b);
+  font-size: 0.92rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.admin-nav-item:hover {
+  background: #f1f5f9;
+  color: var(--admin-text-main, #0f172a);
+}
+
+.admin-nav-item.active {
+  background: var(--admin-primary-light, #eff6ff);
+  color: var(--admin-primary, #2563eb);
+  font-weight: 600;
+}

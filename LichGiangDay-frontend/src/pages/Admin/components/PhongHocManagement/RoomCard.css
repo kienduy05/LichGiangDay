@@ -1,0 +1,190 @@
+/* Room Card Box Component CSS */
+.room-card-box {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-left-width: 5px;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  transition: all 0.22s ease;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+}
+
+.room-card-box.room-status-ready {
+  border-left-color: #10b981;
+}
+
+.room-card-box.room-status-maintenance {
+  border-left-color: #f97316;
+}
+
+.room-card-box.room-status-other {
+  border-left-color: #94a3b8;
+}
+
+.room-card-box:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+  border-color: #cbd5e1;
+}
+
+.room-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.room-card-title-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.room-card-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--admin-text-main, #0f172a);
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100px;
+}
+
+.room-card-code {
+  font-size: 0.72rem;
+  font-family: monospace;
+  color: var(--admin-text-sub, #64748b);
+}
+
+.room-status-dot-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.room-status-dot-badge.room-status-ready {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.room-status-dot-badge.room-status-maintenance {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.room-status-dot-badge.room-status-other {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.dot-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.room-card-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 0.78rem;
+}
+
+.room-info-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #475569;
+  font-weight: 600;
+}
+
+.info-icon {
+  color: #64748b;
+}
+
+.room-type-chip {
+  font-size: 0.7rem;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 2px 6px;
+  border-radius: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 75px;
+}
+
+/* Hover Actions Overlay */
+.room-card-overlay-actions {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  border-radius: 9px;
+}
+
+.room-card-box:hover .room-card-overlay-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.quick-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.quick-action-btn:hover {
+  transform: scale(1.05);
+}
+
+.quick-action-btn.btn-edit {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+.quick-action-btn.btn-toggle {
+  background: #f97316;
+  color: #ffffff;
+}
+
+.quick-action-btn.btn-toggle.to-ready {
+  background: #10b981;
+}
+
+.quick-action-btn.btn-delete {
+  background: #ef4444;
+  color: #ffffff;
+  padding: 6px;
+}
