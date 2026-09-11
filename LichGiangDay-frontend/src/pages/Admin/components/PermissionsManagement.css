@@ -1,0 +1,153 @@
+/* ==========================================
+   PERMISSIONS MANAGEMENT MATRIX STYLES
+   ========================================== */
+.perm-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.perm-role-select-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 1px solid var(--admin-border, #cbd5e1);
+  padding: 8px 16px;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  transition: all 0.2s ease;
+}
+
+.perm-role-select-box:hover {
+  border-color: #94a3b8;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+}
+
+.perm-select-icon {
+  color: var(--admin-primary, #2563eb);
+  flex-shrink: 0;
+}
+
+.perm-select-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--admin-text-muted, #64748b);
+}
+
+.perm-role-dropdown {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--admin-primary, #2563eb);
+  cursor: pointer;
+  padding-right: 18px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right center;
+  background-size: 14px 14px;
+}
+
+.perm-resource-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.resource-name-title {
+  color: var(--admin-text-main, #0f172a);
+  font-size: 0.92rem;
+}
+
+.resource-id-tag {
+  font-size: 0.78rem;
+}
+
+.resource-id-tag code {
+  background: #f1f5f9;
+  color: #1e40af;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.perm-col-header-clickable {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.perm-col-header-clickable:hover {
+  background: #e2e8f0;
+  color: var(--admin-primary, #2563eb);
+}
+
+/* Custom Checkbox Design */
+.custom-checkbox-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  width: 22px;
+  height: 22px;
+  user-select: none;
+}
+
+.custom-checkbox-wrapper input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.checkbox-custom-box {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  border: 2px solid #cbd5e1;
+  background: #ffffff;
+  transition: all 0.15s ease;
+  position: relative;
+  display: inline-block;
+}
+
+.custom-checkbox-wrapper:hover .checkbox-custom-box {
+  border-color: var(--admin-primary, #2563eb);
+}
+
+.custom-checkbox-wrapper input:checked+.checkbox-custom-box {
+  background: #2563eb;
+  border-color: #2563eb;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+}
+
+.custom-checkbox-wrapper input:checked+.checkbox-custom-box::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  width: 4px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Row All Checkbox Accent */
+.custom-checkbox-wrapper.row-all input:checked+.checkbox-custom-box {
+  background: #7c3aed;
+  border-color: #7c3aed;
+  box-shadow: 0 2px 6px rgba(124, 58, 237, 0.3);
+}

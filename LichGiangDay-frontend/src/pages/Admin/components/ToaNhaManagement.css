@@ -1,0 +1,6 @@
+/* ToaNha Management Specific CSS */
+.toanha-management-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}

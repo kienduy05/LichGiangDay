@@ -1,0 +1,64 @@
+/* Roles Management Specific CSS */
+.roles-management-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.role-code-badge {
+  display: inline-block;
+  font-family: monospace;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #1e40af;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.role-name-cell {
+  font-weight: 600;
+  color: var(--admin-text-main, #0f172a);
+}
+
+.role-desc-cell {
+  color: var(--admin-text-muted, #64748b);
+  max-width: 280px;
+}
+
+.user-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #475569;
+  background: #f1f5f9;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.badge-system {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #1d4ed8;
+  background: #dbeafe;
+  padding: 3px 9px;
+  border-radius: 20px;
+}
+
+.badge-custom {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6d28d9;
+  background: #ede9fe;
+  padding: 3px 9px;
+  border-radius: 20px;
+}
