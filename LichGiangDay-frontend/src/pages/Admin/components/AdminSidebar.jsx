@@ -1,8 +1,9 @@
 import React from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import {
-  LayoutDashboard, Building, GraduationCap, Users, Calendar,
-  Clock, BookOpen, ShieldCheck, KeyRound, Layers
+  LayoutDashboard, Building, Layers, School, Network, UserCheck,
+  BookOpen, Users, BookMarked, CalendarDays, Clock,
+  Calendar, ShieldCheck, KeyRound
 } from 'lucide-react';
 import './AdminSidebar.css';
 
@@ -28,7 +29,8 @@ export default function AdminSidebar({ activeTab, setActiveTab }) {
           <span>Dashboard</span>
         </div>
 
-        <div className="admin-nav-section">Danh Mục Đào Tạo</div>
+        {/* DỮ LIỆU NỀN */}
+        <div className="admin-nav-section">Dữ liệu nền</div>
         {hasPermission('ToaNha', 'CanRead') && (
           <div
             className={`admin-nav-item ${activeTab === 'toanha' ? 'active' : ''}`}
@@ -47,17 +49,61 @@ export default function AdminSidebar({ activeTab, setActiveTab }) {
             <span>Quản lý Phòng học</span>
           </div>
         )}
-        <div className="admin-nav-item">
-          <GraduationCap size={18} />
-          <span>Khoa & Bộ Môn</span>
+        <div
+          className={`admin-nav-item ${activeTab === 'khoa' ? 'active' : ''}`}
+          onClick={() => setActiveTab('khoa')}
+        >
+          <School size={18} />
+          <span>Quản lý Khoa</span>
         </div>
-        <div className="admin-nav-item">
-          <Users size={18} />
-          <span>Giảng Viên</span>
+        <div
+          className={`admin-nav-item ${activeTab === 'bomon' ? 'active' : ''}`}
+          onClick={() => setActiveTab('bomon')}
+        >
+          <Network size={18} />
+          <span>Quản lý Bộ môn</span>
         </div>
-        <div className="admin-nav-item">
+        <div
+          className={`admin-nav-item ${activeTab === 'giangvien' ? 'active' : ''}`}
+          onClick={() => setActiveTab('giangvien')}
+        >
+          <UserCheck size={18} />
+          <span>Quản lý Giảng viên</span>
+        </div>
+        <div
+          className={`admin-nav-item ${activeTab === 'monhoc' ? 'active' : ''}`}
+          onClick={() => setActiveTab('monhoc')}
+        >
           <BookOpen size={18} />
-          <span>Môn Học & Lớp HP</span>
+          <span>Quản lý Môn học</span>
+        </div>
+        <div
+          className={`admin-nav-item ${activeTab === 'lopsinhvien' ? 'active' : ''}`}
+          onClick={() => setActiveTab('lopsinhvien')}
+        >
+          <Users size={18} />
+          <span>Quản lý Lớp sinh viên</span>
+        </div>
+        <div
+          className={`admin-nav-item ${activeTab === 'lophocphan' ? 'active' : ''}`}
+          onClick={() => setActiveTab('lophocphan')}
+        >
+          <BookMarked size={18} />
+          <span>Quản lý Lớp học phần</span>
+        </div>
+        <div
+          className={`admin-nav-item ${activeTab === 'hocky' ? 'active' : ''}`}
+          onClick={() => setActiveTab('hocky')}
+        >
+          <CalendarDays size={18} />
+          <span>Học kỳ & Năm học</span>
+        </div>
+        <div
+          className={`admin-nav-item ${activeTab === 'tiethoc' ? 'active' : ''}`}
+          onClick={() => setActiveTab('tiethoc')}
+        >
+          <Clock size={18} />
+          <span>Tiết học & Ca học</span>
         </div>
 
         <div className="admin-nav-section">Lịch & Thời Khóa Biểu</div>
