@@ -190,10 +190,10 @@ ALTER TABLE BoMon
 
 
 CREATE TABLE PhongHoc (
-    MaPhong        VARCHAR(10)     NOT NULL,
-    TenPhong       VARCHAR(20)     NOT NULL,
+    MaPhong        VARCHAR(30)     NOT NULL,
+    TenPhong       VARCHAR(50)     NOT NULL,
     MaToaNha       VARCHAR(10)     NOT NULL,
-    SucChua        INT             NOT NULL,
+    SucChua        INT             NULL,
     LoaiPhong      VARCHAR(30)     NULL,
     TrangThai      VARCHAR(20)     NOT NULL DEFAULT 'Ready',
 
@@ -220,6 +220,7 @@ CREATE TABLE TietHoc (
 CREATE TABLE HocKy (
     MaHocKy        VARCHAR(10)     NOT NULL,
     TenHocKy       VARCHAR(50)    NOT NULL,
+    Dot            TINYINT         NULL,
     NamHoc         VARCHAR(9)      NULL,
     NgayBatDau     DATE            NOT NULL,
     NgayKetThuc    DATE            NOT NULL,
@@ -245,6 +246,22 @@ CREATE TABLE MonHoc (
 );
 
 
+-- Khoa sinh vien (nien khoa K62..K65)
+CREATE TABLE KhoaSinhVien (
+    MaKhoaSinhVien VARCHAR(10)  NOT NULL,
+    TenKhoaSinhVien VARCHAR(50) NOT NULL,
+
+    CONSTRAINT PK_KhoaSinhVien
+        PRIMARY KEY (MaKhoaSinhVien)
+);
+
+INSERT INTO KhoaSinhVien (MaKhoaSinhVien, TenKhoaSinhVien) VALUES
+    ('K62', 'Khoa 62'),
+    ('K63', 'Khoa 63'),
+    ('K64', 'Khoa 64'),
+    ('K65', 'Khoa 65');
+
+
 -- ============================================================
 -- 2. LOP SINH VIEN
 -- ============================================================
@@ -268,17 +285,19 @@ CREATE TABLE LopSinhVien (
 -- ============================================================
 
 CREATE TABLE LopHocPhan (
-    MaLopHocPhan       VARCHAR(30)     NOT NULL,
+    MaLopHocPhan       VARCHAR(100)    NOT NULL,
+    TenLopHocPhan      VARCHAR(255)    NULL,
     MaMonHoc           VARCHAR(10)     NOT NULL,
     MaHocKy            VARCHAR(10)     NOT NULL,
     LoaiHoc            VARCHAR(5)      NOT NULL,
-    SoLuongDangKyMoi   INT             NOT NULL DEFAULT 0,
-    SoLuongHocLai      INT             NOT NULL DEFAULT 0,
+    SiSoDuKien         INT             NULL,
+    SiSoDangKy         INT             NULL,
     MaGiangVien        VARCHAR(10)     NULL,
     NgayBatDau         DATE            NOT NULL,
     NgayKetThuc        DATE            NOT NULL,
     SoTuan             INT             NOT NULL,
     MaBoMon            VARCHAR(10)     NOT NULL,
+    KhoaHoc            VARCHAR(10)     NULL,
     TrangThaiPhanCong  VARCHAR(20)     NOT NULL DEFAULT 'Unassigned',
 
     CONSTRAINT PK_LopHocPhan
@@ -298,13 +317,17 @@ CREATE TABLE LopHocPhan (
 
     CONSTRAINT FK_LopHocPhan_BoMon
         FOREIGN KEY (MaBoMon)
-        REFERENCES BoMon (MaBoMon)
+        REFERENCES BoMon (MaBoMon),
+
+    CONSTRAINT FK_LopHocPhan_KhoaSinhVien
+        FOREIGN KEY (KhoaHoc)
+        REFERENCES KhoaSinhVien (MaKhoaSinhVien)
 );
 
 
 -- Mot lop hoc phan co the hoc chung voi nhieu lop sinh vien
 CREATE TABLE LopHocPhan_LopSinhVien (
-    MaLopHocPhan       VARCHAR(30)     NOT NULL,
+    MaLopHocPhan       VARCHAR(100)    NOT NULL,
     MaLopSinhVien      VARCHAR(20)     NOT NULL,
 
     CONSTRAINT PK_LopHocPhan_LopSinhVien
@@ -326,11 +349,13 @@ CREATE TABLE LopHocPhan_LopSinhVien (
 
 CREATE TABLE ThoiKhoaBieu (
     MaThoiKhoaBieu     VARCHAR(20)     NOT NULL,
-    MaLopHocPhan       VARCHAR(30)     NOT NULL,
+    MaLopHocPhan       VARCHAR(100)    NOT NULL,
     ThuTrongTuan       TINYINT         NOT NULL,
     MaTietBatDau       TINYINT         NOT NULL,
     MaTietKetThuc      TINYINT         NOT NULL,
-    MaPhong            VARCHAR(10)     NOT NULL,
+    MaPhong            VARCHAR(30)     NOT NULL,
+    NgayBatDau         DATE            NOT NULL,
+    NgayKetThuc        DATE            NOT NULL,
     TrangThai          VARCHAR(20)     NOT NULL DEFAULT 'Scheduled',
     ThoiGianSuaDoi       DATETIME       NULL,  -- PĐT sửa lần cuối lúc nào
     ThoiGianBoMonXacNhan DATETIME       NULL,  -- bộ môn bấm "Đã xem" lúc nào
@@ -359,11 +384,11 @@ CREATE TABLE ThoiKhoaBieu (
 CREATE TABLE BuoiHoc (
     MaBuoiHoc          VARCHAR(20)     NOT NULL,
     MaThoiKhoaBieu     VARCHAR(20)     NULL,
-    MaLopHocPhan       VARCHAR(30)     NOT NULL,
+    MaLopHocPhan       VARCHAR(100)    NOT NULL,
     NgayHoc            DATE            NOT NULL,
     MaTietBatDau       TINYINT         NOT NULL,
     MaTietKetThuc      TINYINT         NOT NULL,
-    MaPhong            VARCHAR(10)     NOT NULL,
+    MaPhong            VARCHAR(30)     NOT NULL,
     MaGiangVien        VARCHAR(10)     NOT NULL,
     LoaiBuoiHoc        VARCHAR(20)     NOT NULL DEFAULT 'Regular',
     TrangThai          VARCHAR(30)     NOT NULL DEFAULT 'Normal',
@@ -468,12 +493,12 @@ CREATE TABLE DangKyDayBu (
     MaDangKyDayBu       VARCHAR(20)     NOT NULL,
     MaYeuCauNghi        VARCHAR(20)     NOT NULL,
     MaGiangVien         VARCHAR(10)     NOT NULL,
-    MaLopHocPhan        VARCHAR(30)     NOT NULL,
+    MaLopHocPhan        VARCHAR(100)    NOT NULL,
     ThoiGianDangKy      DATETIME       NOT NULL,
     NgayDeXuat          DATE            NOT NULL,
     MaTietBatDau        TINYINT         NOT NULL,
     MaTietKetThuc       TINYINT         NOT NULL,
-    MaPhong             VARCHAR(10)     NOT NULL,
+    MaPhong             VARCHAR(30)     NOT NULL,
     TrangThai           VARCHAR(30)     NOT NULL DEFAULT 'Processing',
     LyDoTuChoi          VARCHAR(255)   NULL,
     ThoiGianXacNhan     DATETIME       NULL,
@@ -560,7 +585,7 @@ CREATE TABLE ChiTietNhap (
     TenLopGhepGoc          VARCHAR(255)   NULL,
     KhoaHoc                VARCHAR(10)     NULL,
     TrangThaiXuLy          VARCHAR(20)     NOT NULL DEFAULT 'Unprocessed',
-    MaLopHocPhanDaTao      VARCHAR(30)     NULL,
+    MaLopHocPhanDaTao      VARCHAR(100)    NULL,
     GhiChuLoi              VARCHAR(500)   NULL,
 
     CONSTRAINT PK_ChiTietNhap
@@ -622,4 +647,12 @@ ALTER TABLE GiangVien
     ADD CONSTRAINT CK_GiangVien_DinhMuc CHECK (DinhMucGioChuan IS NULL OR DinhMucGioChuan > 0);
 
 ALTER TABLE BuoiHoc
-    ADD COLUMN ThoiGianXacNhanCaDay DATETIME NULL;  -- GV bam "Xac nhan" trong khung gio ca
+    ADD COLUMN ThoiGianXacNhanCaDay DATETIME NULL;
+
+-- INDEX HO TRO KIEM TRA TRUNG (US-05)
+CREATE INDEX IX_ThoiKhoaBieu_Phong_Thu ON ThoiKhoaBieu (MaPhong, ThuTrongTuan, NgayBatDau, NgayKetThuc);
+CREATE INDEX IX_ThoiKhoaBieu_Lop ON ThoiKhoaBieu (MaLopHocPhan);
+CREATE INDEX IX_BuoiHoc_Ngay_Phong ON BuoiHoc (NgayHoc, MaPhong);
+CREATE INDEX IX_BuoiHoc_Ngay_GiangVien ON BuoiHoc (NgayHoc, MaGiangVien);
+CREATE INDEX IX_LopHocPhan_HocKy_BoMon ON LopHocPhan (MaHocKy, MaBoMon);
+CREATE INDEX IX_LopHocPhan_KhoaHoc ON LopHocPhan (KhoaHoc);
