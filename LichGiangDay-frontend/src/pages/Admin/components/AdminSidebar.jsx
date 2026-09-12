@@ -3,7 +3,7 @@ import { useAuth } from '../../../context/AuthContext';
 import {
   LayoutDashboard, Building, Layers, School, Network, UserCheck,
   BookOpen, Users, BookMarked, CalendarDays, Clock,
-  Calendar, ShieldCheck, KeyRound
+  Calendar, ShieldCheck, KeyRound, GraduationCap
 } from 'lucide-react';
 import './AdminSidebar.css';
 
@@ -83,6 +83,13 @@ export default function AdminSidebar({ activeTab, setActiveTab }) {
         >
           <Users size={18} />
           <span>Quản lý Lớp sinh viên</span>
+        </div>
+        <div
+          className={`admin-nav-item ${activeTab === 'khoasinhvien' ? 'active' : ''}`}
+          onClick={() => setActiveTab('khoasinhvien')}
+        >
+          <GraduationCap size={18} />
+          <span>Quản lý Khóa sinh viên</span>
         </div>
         <div
           className={`admin-nav-item ${activeTab === 'lophocphan' ? 'active' : ''}`}
