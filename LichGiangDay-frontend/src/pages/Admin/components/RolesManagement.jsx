@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { 
   Plus, Search, RefreshCw, X, AlertCircle, Loader2, 
-  Edit2, Trash2, ShieldAlert, CheckCircle2, ShieldCheck 
+  Edit2, Trash2, ShieldAlert, CheckCircle2, ShieldCheck,
+  Users, UserX, Crown, School, Network, GraduationCap, Shield, KeyRound
 } from 'lucide-react';
 import { 
   apiGetRoles, apiCreateRole, apiUpdateRole, apiDeleteRole 
@@ -16,6 +17,7 @@ export default function RolesManagement() {
   const [rolesLoading, setRolesLoading] = useState(false);
   const [rolesError, setRolesError] = useState('');
   const [roleSearchQuery, setRoleSearchQuery] = useState('');
+  const [roleFilterTab, setRoleFilterTab] = useState('ALL'); // 'ALL' | 'SYSTEM' | 'CUSTOM'
 
   // Modal Create/Edit Role
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
@@ -131,11 +133,46 @@ export default function RolesManagement() {
     }
   };
 
-  const filteredRoles = roles.filter(role => 
-    role.RoleId?.toLowerCase().includes(roleSearchQuery.toLowerCase()) ||
-    role.RoleName?.toLowerCase().includes(roleSearchQuery.toLowerCase()) ||
-    role.Description?.toLowerCase().includes(roleSearchQuery.toLowerCase())
-  );
+  // Helper checking if a role is a system role (IsSystem === 1 in DB)
+  const isSystemRole = (role) => {
+    return role.IsSystem === 1 || Number(role.IsSystem) === 1;
+  };
+
+  // Filter roles by tab & search query
+  const filteredRoles = roles.filter(role => {
+    const matchesSearch = 
+      role.RoleId?.toLowerCase().includes(roleSearchQuery.toLowerCase()) ||
+      role.RoleName?.toLowerCase().includes(roleSearchQuery.toLowerCase()) ||
+      role.Description?.toLowerCase().includes(roleSearchQuery.toLowerCase());
+    
+    if (!matchesSearch) return false;
+
+    if (roleFilterTab === 'SYSTEM') return isSystemRole(role);
+    if (roleFilterTab === 'CUSTOM') return !isSystemRole(role);
+    return true;
+  });
+
+  // Calculate summary stats
+  const totalRolesCount = roles.length;
+  const systemRolesCount = roles.filter(r => isSystemRole(r)).length;
+  const customRolesCount = totalRolesCount - systemRolesCount;
+  const totalAssignedUsers = roles.reduce((sum, r) => sum + (r.UserCount || 0), 0);
+
+  // Helper for role avatar & icon
+  const getRoleIconAndClass = (roleId) => {
+    switch (roleId?.toUpperCase()) {
+      case 'ADMIN':
+        return { icon: <Crown size={20} />, className: 'admin', badgeClass: 'admin' };
+      case 'KHOA':
+        return { icon: <School size={20} />, className: 'khoa', badgeClass: 'khoa' };
+      case 'BOMON':
+        return { icon: <Network size={20} />, className: 'bomon', badgeClass: 'bomon' };
+      case 'GIANGVIEN':
+        return { icon: <GraduationCap size={20} />, className: 'giangvien', badgeClass: 'giangvien' };
+      default:
+        return { icon: <ShieldCheck size={20} />, className: 'default', badgeClass: 'default' };
+    }
+  };
 
   return (
     <div className="roles-management-container">
@@ -153,28 +190,94 @@ export default function RolesManagement() {
         )}
       </div>
 
-      {/* Data Table Card */}
+      {/* KPI Stat Cards Summary */}
+      <div className="roles-stats-grid">
+        <div className="roles-stat-card">
+          <div className="roles-stat-icon blue">
+            <Shield size={24} />
+          </div>
+          <div className="roles-stat-info">
+            <div className="roles-stat-value">{totalRolesCount}</div>
+            <div className="roles-stat-label">Tổng số nhóm quyền</div>
+          </div>
+        </div>
+
+        <div className="roles-stat-card">
+          <div className="roles-stat-icon purple">
+            <Crown size={24} />
+          </div>
+          <div className="roles-stat-info">
+            <div className="roles-stat-value">{systemRolesCount}</div>
+            <div className="roles-stat-label">Nhóm quyền Hệ thống</div>
+          </div>
+        </div>
+
+        <div className="roles-stat-card">
+          <div className="roles-stat-icon emerald">
+            <Users size={24} />
+          </div>
+          <div className="roles-stat-info">
+            <div className="roles-stat-value">{totalAssignedUsers}</div>
+            <div className="roles-stat-label">Người dùng được phân quyền</div>
+          </div>
+        </div>
+
+        <div className="roles-stat-card">
+          <div className="roles-stat-icon amber">
+            <KeyRound size={24} />
+          </div>
+          <div className="roles-stat-info">
+            <div className="roles-stat-value">{customRolesCount}</div>
+            <div className="roles-stat-label">Nhóm quyền Tùy chỉnh</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Data Table Card */}
       <div className="table-container-card">
-        {/* Search Toolbar */}
-        <div className="table-filter-bar">
-          <div className="table-search-box">
-            <Search size={18} className="search-box-icon" />
-            <input 
-              type="text" 
-              placeholder="Tìm kiếm theo Mã nhóm (RoleId), Tên nhóm..." 
-              value={roleSearchQuery}
-              onChange={(e) => setRoleSearchQuery(e.target.value)}
-            />
-            {roleSearchQuery && (
-              <button className="clear-search-btn" onClick={() => setRoleSearchQuery('')} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', cursor: 'pointer' }}>
-                <X size={14} />
-              </button>
-            )}
+        {/* Search & Filter Toolbar */}
+        <div className="roles-filter-bar-enhanced">
+          <div className="role-filter-tabs">
+            <button 
+              className={`role-filter-tab ${roleFilterTab === 'ALL' ? 'active' : ''}`}
+              onClick={() => setRoleFilterTab('ALL')}
+            >
+              Tất cả ({totalRolesCount})
+            </button>
+            <button 
+              className={`role-filter-tab ${roleFilterTab === 'SYSTEM' ? 'active' : ''}`}
+              onClick={() => setRoleFilterTab('SYSTEM')}
+            >
+              Hệ thống ({systemRolesCount})
+            </button>
+            <button 
+              className={`role-filter-tab ${roleFilterTab === 'CUSTOM' ? 'active' : ''}`}
+              onClick={() => setRoleFilterTab('CUSTOM')}
+            >
+              Tùy chỉnh ({customRolesCount})
+            </button>
           </div>
 
-          <button className="btn-refresh" title="Tải lại danh sách" onClick={fetchRoles}>
-            <RefreshCw size={16} className={rolesLoading ? 'animate-spin' : ''} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: '1', justifyContent: 'flex-end', minWidth: '260px' }}>
+            <div className="table-search-box" style={{ maxWidth: '340px' }}>
+              <Search size={18} className="search-box-icon" />
+              <input 
+                type="text" 
+                placeholder="Tìm kiếm mã nhóm, tên nhóm người dùng..." 
+                value={roleSearchQuery}
+                onChange={(e) => setRoleSearchQuery(e.target.value)}
+              />
+              {roleSearchQuery && (
+                <button className="clear-search-btn" onClick={() => setRoleSearchQuery('')}>
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
+            <button className="btn-refresh" title="Tải lại danh sách" onClick={fetchRoles}>
+              <RefreshCw size={16} className={rolesLoading ? 'animate-spin' : ''} />
+            </button>
+          </div>
         </div>
 
         {/* Alert Errors */}
@@ -190,10 +293,10 @@ export default function RolesManagement() {
           <table className="custom-data-table">
             <thead>
               <tr>
-                <th style={{ width: '140px' }}>Mã Nhóm</th>
-                <th style={{ width: '220px' }}>Tên Nhóm Người Dùng</th>
+                <th style={{ width: '240px' }}>Nhóm Người Dùng</th>
+                <th style={{ width: '130px' }}>Mã Nhóm</th>
                 <th>Mô Tả Chức Năng</th>
-                <th style={{ width: '140px', textAlign: 'center' }}>Số Người Dùng</th>
+                <th style={{ width: '160px', textAlign: 'center' }}>Số Người Dùng</th>
                 <th style={{ width: '130px', textAlign: 'center' }}>Thao Tác</th>
               </tr>
             </thead>
@@ -208,63 +311,99 @@ export default function RolesManagement() {
               ) : filteredRoles.length === 0 ? (
                 <tr>
                   <td colSpan="5" className="table-empty-cell">
-                    {roleSearchQuery ? 'Không tìm thấy nhóm quyền nào khớp từ khóa.' : 'Chưa có nhóm quyền nào trong hệ thống.'}
+                    {roleSearchQuery ? 'Không tìm thấy nhóm quyền nào khớp từ khóa.' : 'Chưa có nhóm quyền nào trong danh sách.'}
                   </td>
                 </tr>
               ) : (
-                filteredRoles.map((role) => (
-                  <tr key={role.RoleId}>
-                    <td>
-                      <span className={`role-badge ${role.RoleId === 'ADMIN' ? 'admin' : 'primary'}`}>
-                        {role.RoleId}
-                      </span>
-                    </td>
-                    <td>
-                      <div style={{ fontWeight: 600, color: 'var(--admin-text-main)' }}>
-                        {role.RoleName}
-                      </div>
-                    </td>
-                    <td>
-                      <span style={{ fontSize: '0.9rem', color: '#475569' }}>
-                        {role.Description || 'Chưa có mô tả'}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <span className="user-count-tag">
-                        {role.UserCount || 0} người dùng
-                      </span>
-                    </td>
-                    <td>
-                      <div className="table-actions-group" style={{ justifyContent: 'center' }}>
-                        {hasPermission('Roles', 'CanUpdate') && (
-                          <button 
-                            className="action-btn edit" 
-                            title="Sửa thông tin nhóm quyền"
-                            onClick={() => handleOpenEditRoleModal(role)}
-                          >
-                            <Edit2 size={16} />
-                          </button>
-                        )}
+                filteredRoles.map((role) => {
+                  const roleTheme = getRoleIconAndClass(role.RoleId);
+                  const isSys = isSystemRole(role);
 
-                        {role.RoleId === 'ADMIN' ? (
-                          <span title="Nhóm ADMIN tối cao của hệ thống không thể xóa" style={{ cursor: 'not-allowed', opacity: 0.4 }}>
-                            <Trash2 size={16} color="#94a3b8" />
+                  return (
+                    <tr key={role.RoleId}>
+                      <td>
+                        <div className="role-cell-flex">
+                          <div className={`role-avatar-icon ${roleTheme.className}`}>
+                            {roleTheme.icon}
+                          </div>
+                          <div className="role-meta-info">
+                            <div className="role-title-text">{role.RoleName}</div>
+                            <div className="role-type-badge-row">
+                              {isSys ? (
+                                <span className="badge-system">
+                                  <ShieldCheck size={12} /> Hệ thống
+                                </span>
+                              ) : (
+                                <span className="badge-custom">
+                                  <Shield size={12} /> Tùy chỉnh
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td>
+                        <span className={`role-code-badge ${roleTheme.badgeClass}`}>
+                          {role.RoleId}
+                        </span>
+                      </td>
+
+                      <td>
+                        <span style={{ fontSize: '0.88rem', color: '#475569', lineHeight: '1.4' }}>
+                          {role.Description || 'Chưa có mô tả chi tiết'}
+                        </span>
+                      </td>
+
+                      <td style={{ textAlign: 'center' }}>
+                        {role.UserCount > 0 ? (
+                          <span className="user-count-pill active">
+                            <Users size={14} />
+                            <span><b>{role.UserCount}</b> người dùng</span>
                           </span>
                         ) : (
-                          hasPermission('Roles', 'CanDelete') && (
+                          <span className="user-count-pill empty">
+                            <UserX size={14} />
+                            <span>0 người dùng</span>
+                          </span>
+                        )}
+                      </td>
+
+                      <td>
+                        <div className="table-actions-group" style={{ justifyContent: 'center' }}>
+                          {hasPermission('Roles', 'CanUpdate') && (
                             <button 
-                              className="action-btn delete" 
-                              title="Xóa nhóm quyền"
-                              onClick={() => handleOpenDeleteRoleModal(role)}
+                              className="action-btn edit" 
+                              title="Sửa thông tin nhóm quyền"
+                              onClick={() => handleOpenEditRoleModal(role)}
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                          )}
+
+                          {isSys ? (
+                            <span 
+                              className="action-btn-disabled" 
+                              title="Nhóm quyền hệ thống không thể xóa"
                             >
                               <Trash2 size={16} />
-                            </button>
-                          )
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                            </span>
+                          ) : (
+                            hasPermission('Roles', 'CanDelete') && (
+                              <button 
+                                className="action-btn delete" 
+                                title="Xóa nhóm quyền"
+                                onClick={() => handleOpenDeleteRoleModal(role)}
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            )
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -280,19 +419,19 @@ export default function RolesManagement() {
                 {roleModalMode === 'create' ? 'Thêm Nhóm Người Dùng Mới' : 'Cập Nhật Nhóm Người Dùng'}
               </h3>
               <button onClick={() => setIsRoleModalOpen(false)} className="modal-close-btn">
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
             {roleFormSuccess && (
-              <div className="alert-banner success">
+              <div className="alert-banner success" style={{ marginBottom: '16px' }}>
                 <CheckCircle2 size={18} />
                 <span>{roleFormSuccess}</span>
               </div>
             )}
 
             {roleFormError && (
-              <div className="alert-banner error">
+              <div className="alert-banner error" style={{ marginBottom: '16px' }}>
                 <AlertCircle size={18} />
                 <span>{roleFormError}</span>
               </div>
