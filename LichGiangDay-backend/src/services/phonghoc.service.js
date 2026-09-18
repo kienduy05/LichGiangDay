@@ -146,13 +146,31 @@ class PhongHocService {
       throw new Error(`Không tìm thấy phòng học có mã '${maPhong}'.`);
     }
 
-    // Kiểm tra xem phòng học có đang được xếp lịch dạy hay không (bảng LichGiangDay / LopHocPhan)
+    // Kiểm tra xem phòng học có đang được xếp trong Thời khóa biểu không
     const [schedules] = await db.query(`
-      SELECT COUNT(*) AS total FROM LichGiangDay WHERE MaPhong = ?
+      SELECT COUNT(*) AS total FROM ThoiKhoaBieu WHERE MaPhong = ?
     `, [maPhong]);
 
     if (schedules[0]?.total > 0) {
-      throw new Error(`Không thể xóa phòng học '${maPhong}' vì đang có ${schedules[0].total} buổi học được xếp tại phòng này.`);
+      throw new Error(`Không thể xóa phòng học '${maPhong}' vì đang có ${schedules[0].total} lịch học (Thời khóa biểu) được xếp tại phòng này.`);
+    }
+
+    // Kiểm tra xem phòng học có đang gắn với Buổi học nào không
+    const [sessions] = await db.query(`
+      SELECT COUNT(*) AS total FROM BuoiHoc WHERE MaPhong = ?
+    `, [maPhong]);
+
+    if (sessions[0]?.total > 0) {
+      throw new Error(`Không thể xóa phòng học '${maPhong}' vì đang có ${sessions[0].total} buổi học được gán cho phòng này.`);
+    }
+
+    // Kiểm tra xem phòng học có đơn Đăng ký dạy bù nào không
+    const [makeupSessions] = await db.query(`
+      SELECT COUNT(*) AS total FROM DangKyDayBu WHERE MaPhong = ?
+    `, [maPhong]);
+
+    if (makeupSessions[0]?.total > 0) {
+      throw new Error(`Không thể xóa phòng học '${maPhong}' vì đang có ${makeupSessions[0].total} đơn đăng ký dạy bù tại phòng này.`);
     }
 
     await db.query(`
