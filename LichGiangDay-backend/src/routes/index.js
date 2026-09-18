@@ -23,4 +23,7 @@ router.use('/v1/api/toanha', require('./toanha'));
 // Room management routes
 router.use('/v1/api/phonghoc', require('./phonghoc'));
 
+// Faculty (Khoa) management routes
+router.use('/v1/api/khoa', require('./khoa'));
+
 module.exports = router;

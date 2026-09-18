@@ -13,6 +13,7 @@ import UsersManagement from './components/UsersManagement';
 import PermissionsManagement from './components/PermissionsManagement';
 import ToaNhaManagement from './components/ToaNhaManagement';
 import PhongHocManagement from './components/PhongHocManagement';
+import KhoaManagement from './components/KhoaManagement';
 
 import './AdminDashboard.css';
 
@@ -144,6 +145,7 @@ export default function AdminDashboard() {
           {activeTab === 'dashboard' && <DashboardOverview />}
           {activeTab === 'toanha' && <ToaNhaManagement />}
           {activeTab === 'phonghoc' && <PhongHocManagement />}
+          {activeTab === 'khoa' && <KhoaManagement />}
           {activeTab === 'roles' && <RolesManagement />}
           {activeTab === 'users' && <UsersManagement />}
           {activeTab === 'permissions' && <PermissionsManagement />}

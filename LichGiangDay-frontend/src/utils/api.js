@@ -431,6 +431,87 @@ export const apiDeletePhongHoc = async (maPhong) => {
   return data.metadata;
 };
 
+// ==========================================
+// KHOA (KHOA HỌC) API SERVICES
+// ==========================================
+
+export const apiGetKhoaList = async (search = '') => {
+  const url = search
+    ? `${API_BASE_URL}/khoa?search=${encodeURIComponent(search)}`
+    : `${API_BASE_URL}/khoa`;
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Lấy danh sách khoa thất bại.');
+  return data.metadata;
+};
+
+export const apiGetKhoaChiTiet = async (maKhoa) => {
+  const response = await fetch(`${API_BASE_URL}/khoa/${maKhoa}/chitiet`, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Lấy chi tiết khoa thất bại.');
+  return data.metadata;
+};
+
+export const apiGetGiangVienByKhoa = async (maKhoa) => {
+  const response = await fetch(`${API_BASE_URL}/khoa/${maKhoa}/giangvien`, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Lấy danh sách giảng viên thất bại.');
+  return data.metadata;
+};
+
+export const apiCreateKhoa = async ({ maKhoa, tenKhoa }) => {
+  const response = await fetch(`${API_BASE_URL}/khoa`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ maKhoa, tenKhoa })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Tạo khoa thất bại.');
+  return data.metadata;
+};
+
+export const apiUpdateKhoa = async (maKhoa, { tenKhoa }) => {
+  const response = await fetch(`${API_BASE_URL}/khoa/${maKhoa}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ tenKhoa })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Cập nhật khoa thất bại.');
+  return data.metadata;
+};
+
+export const apiAssignTruongKhoa = async (maKhoa, maGiangVien) => {
+  const response = await fetch(`${API_BASE_URL}/khoa/${maKhoa}/truongkhoa`, {
+    method: 'PATCH',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ maGiangVien })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Phân công trưởng khoa thất bại.');
+  return data.metadata;
+};
+
+export const apiDeleteKhoa = async (maKhoa) => {
+  const response = await fetch(`${API_BASE_URL}/khoa/${maKhoa}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Xóa khoa thất bại.');
+  return data.metadata;
+};
+
+
 
 
 

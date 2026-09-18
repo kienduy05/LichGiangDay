@@ -205,3 +205,55 @@ Bảng dữ liệu tác động trong CSDL: **`PhongHoc`** (`MaPhong`, `TenPhong
     ```
 - **Kết quả hiển thị (UI Response)**:
   - Phòng học bị xóa khỏi CSDL và biến mất khỏi bảng danh sách.
+
+---
+
+-**PHÂN HỆ: QUẢN LÝ KHOA (Khoa)**
+
+Bảng tác động chính: Khoa (MaKhoa, TenKhoa, MaTruongKhoa)
+Bảng liên quan (ràng buộc): BoMon (FK MaKhoa), GiangVien (dùng để xác thực MaTruongKhoa)
+ResourceId dùng cho checkPermission: 'Khoa'
+
+1. Tìm kiếm & Hiển thị Danh sách Khoa
+Thao tác người dùng: Vào  Quản lý Khoa, gõ từ khóa tìm theo MaKhoa hoặc TenKhoa.
+Nghiệp vụ xử lý:
+Gọi GET /v1/api/khoa?search=..., qua checkPermission('Khoa', 'CanRead').
+Backend JOIN 2 lần: JOIN BoMon để đếm số bộ môn trực thuộc từng khoa (giống cách ToaNha đếm PhongHoc), và JOIN GiangVien (qua MaTruongKhoa) để lấy HoTen giảng viên hiển thị tên Trưởng khoa thay vì chỉ hiện mã.
+Thay đổi CSDL: Không có, chỉ đọc.
+Kết quả hiển thị: Bảng danh sách gồm Mã khoa, Tên khoa, Tên Trưởng khoa (hoặc "Chưa phân công" nếu MaTruongKhoa là NULL), badge số lượng Bộ môn trực thuộc.
+2. Thêm mới Khoa
+Thao tác người dùng: Bấm "Thêm Khoa", nhập MaKhoa, TenKhoa. Không nhập Trưởng khoa ở bước này.
+Nghiệp vụ xử lý:
+Validation 1: MaKhoa, TenKhoa không được trống.
+Validation 2: Chuẩn hóa MaKhoa (viết hoa, xóa khoảng trắng thừa) giống quy tắc MaToaNha.
+Validation 3 (check trùng): kiểm tra MaKhoa đã tồn tại chưa, nếu có trả lỗi 400 "Mã khoa 'X' đã tồn tại".
+Lý do không cho nhập Trưởng khoa ngay lúc tạo: tại thời điểm khoa mới được tạo, chưa chắc đã có Bộ môn/Giảng viên nào thuộc khoa đó trong CSDL để chọn làm Trưởng khoa hợp lệ → cột MaTruongKhoa mặc định để NULL, sẽ gán sau bằng chức năng riêng (mục 4).
+Thay đổi CSDL: Thêm 1 dòng vào Khoa với MaTruongKhoa = NULL.
+Kết quả hiển thị: Đóng modal, danh sách reload, khoa mới hiện với Trưởng khoa "Chưa phân công".
+3. Cập nhật (Sửa) Thông tin Khoa
+Thao tác người dùng: Bấm "Sửa" tại dòng khoa, chỉ được sửa TenKhoa. MaKhoa cố định (là khóa ngoại trong BoMon, không được đổi để tránh gãy quan hệ, giống nguyên tắc khóa MaToaNha).
+Nghiệp vụ xử lý: Validation TenKhoa không được trống.
+Thay đổi CSDL: UPDATE Khoa SET TenKhoa = ? WHERE MaKhoa = ?.
+Kết quả hiển thị: Thông báo "Cập nhật khoa thành công", bảng làm mới.
+4. Gán / Thay đổi Trưởng Khoa (chức năng đặc thù, khác ToaNha)
+Thao tác người dùng: Bấm "Phân công Trưởng khoa" tại dòng khoa tương ứng, hệ thống hiện dropdown chọn Giảng viên.
+Nghiệp vụ xử lý:
+Dropdown chỉ nên liệt kê Giảng viên thuộc một Bộ môn nằm trong chính Khoa đó (join GiangVien → BoMon → Khoa), tránh trường hợp gán một giảng viên hoàn toàn không liên quan làm Trưởng khoa.
+Validation: MaGiangVien được chọn phải tồn tại và đang ở trạng thái Active trong bảng GiangVien.
+Cho phép gán NULL trở lại (bãi nhiệm Trưởng khoa) nếu cần, ví dụ khi giảng viên đó nghỉ việc/chuyển công tác.
+Thay đổi CSDL: UPDATE Khoa SET MaTruongKhoa = ? WHERE MaKhoa = ?.
+Kết quả hiển thị: Tên Trưởng khoa mới hiện ngay trên bảng danh sách, không cần load lại trang.
+5. Xem Chi tiết Khoa (Danh sách Bộ môn trực thuộc)
+Thao tác người dùng: Bấm vào tên/mã khoa để xem trang chi tiết.
+Nghiệp vụ xử lý: Truy vấn tất cả BoMon có MaKhoa tương ứng, kèm số lượng Giảng viên của từng Bộ môn (join tiếp GiangVien).
+Thay đổi CSDL: Không có, chỉ đọc.
+Kết quả hiển thị: Trang chi tiết hiện thông tin Khoa + bảng con liệt kê các Bộ môn trực thuộc, mỗi dòng có thể bấm để điều hướng sang phân hệ Quản lý Bộ môn.
+6. Xóa Khoa (Kiểm tra ràng buộc toàn vẹn)
+Thao tác người dùng: Bấm "Xóa" tại dòng khoa, xác nhận trên popup.
+Nghiệp vụ xử lý:
+Kiểm tra ràng buộc với BoMon: đếm số Bộ môn có MaKhoa này.
+Nếu > 0 → CHẶN XÓA, trả lỗi 400: "Không thể xóa Khoa 'X' vì đang chứa Y bộ môn. Vui lòng xóa hoặc chuyển các bộ môn sang khoa khác trước."
+Nếu = 0 → cho phép xóa tiếp.
+Lưu ý thêm về ràng buộc vòng: vì Khoa.MaTruongKhoa tham chiếu tới GiangVien, còn GiangVien.MaBoMon tham chiếu tới BoMon, nên trên thực tế chỉ cần đảm bảo hết BoMon trực thuộc là đủ điều kiện xóa an toàn — không cần kiểm tra GiangVien trực tiếp vì giảng viên luôn gắn với Bộ môn chứ không gắn thẳng với Khoa.
+Thay đổi CSDL: Nếu đủ điều kiện, DELETE FROM Khoa WHERE MaKhoa = ?.
+Kết quả hiển thị: Dòng khoa biến mất khỏi bảng danh sách.
