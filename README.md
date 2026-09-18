@@ -1,4 +1,5 @@
 # HỆ THỐNG QUẢN LÝ LỊCH GIẢNG DẠY (LICHGIANGDAY)
+Viết bởi Kien
 ## HƯỚNG DẪN CẤU TRÚC DỰ ÁN & QUY CHUẨN LẬP TRÌNH
 
 Tài liệu này quy định chi tiết về **Cấu trúc thư mục**, **Luồng xử lý (Architecture Flow)**, **Quy chuẩn bảo vệ API 3 tầng (x-api-key + JWT + RBAC checkPermission)** và **Quy trình hướng dẫn thành viên trong team khi clone dự án về để khởi chạy & phát triển API mới**.
