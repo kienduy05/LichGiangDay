@@ -1,0 +1,134 @@
+/* KhoaManagement Specific CSS — bám sát layout ToaNha/PhongHoc */
+.khoa-management-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ===== MODAL TRUONG KHOA ===== */
+.truongkhoa-modal-desc {
+  font-size: 0.88rem;
+  color: var(--admin-text-sub);
+  margin: 0 0 16px 0;
+  line-height: 1.6;
+}
+
+.truongkhoa-select-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.truongkhoa-option-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.truongkhoa-option-sub {
+  font-size: 0.78rem;
+  color: var(--admin-text-sub);
+  display: block;
+  margin-top: 2px;
+}
+
+/* Badge bộ môn — màu xanh nhẹ */
+.bomon-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: #e0f2fe;
+  color: #0369a1;
+  white-space: nowrap;
+}
+
+.bomon-badge.empty {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* Trưởng khoa cell */
+.truongkhoa-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.truongkhoa-name {
+  font-weight: 500;
+  color: var(--admin-text-main);
+  font-size: 0.9rem;
+}
+
+.truongkhoa-empty {
+  color: var(--admin-text-muted);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+/* Nút Phân công nhỏ trong bảng */
+.btn-assign {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.btn-assign:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+/* Detail view — bộ môn trực thuộc */
+.khoa-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.khoa-detail-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-bg);
+  color: var(--admin-text-sub);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.khoa-detail-back-btn:hover {
+  background: #f1f5f9;
+  color: var(--admin-text-main);
+}
+
+.khoa-detail-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--admin-text-main);
+}
+
+.khoa-detail-subtitle {
+  font-size: 0.82rem;
+  color: var(--admin-text-sub);
+  margin-top: 2px;
+}
