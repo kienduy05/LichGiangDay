@@ -257,3 +257,46 @@ Nếu = 0 → cho phép xóa tiếp.
 Lưu ý thêm về ràng buộc vòng: vì Khoa.MaTruongKhoa tham chiếu tới GiangVien, còn GiangVien.MaBoMon tham chiếu tới BoMon, nên trên thực tế chỉ cần đảm bảo hết BoMon trực thuộc là đủ điều kiện xóa an toàn — không cần kiểm tra GiangVien trực tiếp vì giảng viên luôn gắn với Bộ môn chứ không gắn thẳng với Khoa.
 Thay đổi CSDL: Nếu đủ điều kiện, DELETE FROM Khoa WHERE MaKhoa = ?.
 Kết quả hiển thị: Dòng khoa biến mất khỏi bảng danh sách.
+**PHÂN HỆ: QUẢN LÝ BỘ MÔN (BoMon)**
+1. Lọc & Hiển thị Danh sách Bộ môn theo Khoa
+Thao tác người dùng:
+Khi vào màn hình Danh mục đào tạo → Quản lý Bộ môn, dropdown "Khoa" mặc định ở trạng thái "Tất cả các Khoa" → bảng hiển thị toàn bộ Bộ môn trong hệ thống.
+Người dùng select một Khoa cụ thể → bảng lập tức lọc lại tức thời, chỉ hiện các Bộ môn thuộc Khoa đó, không cần bấm nút "Tìm kiếm" hay tải lại trang.
+Nghiệp vụ xử lý:
+Trang tải lần đầu: GET /v1/api/bomon (không kèm tham số) qua checkPermission('BoMon', 'CanRead') → trả về toàn bộ BoMon.
+Khi select Khoa: GET /v1/api/bomon?maKhoa=<mã khoa> → backend thêm điều kiện WHERE MaKhoa = ?.
+Backend JOIN Khoa để hiển thị tên Khoa, JOIN GiangVien (qua MaTruongBoMon) để hiển thị tên Trưởng bộ môn, và đếm riêng số lượng GiangVien và số lượng MonHoc thuộc từng bộ môn.
+Dữ liệu đổ vào dropdown "Khoa" lấy từ GET /v1/api/khoa, gắn thêm 1 lựa chọn tĩnh "Tất cả các Khoa" ở đầu danh sách.
+Thay đổi CSDL: Không có, chỉ đọc (SELECT).
+Kết quả hiển thị: Bảng Data Table gồm Mã bộ môn, Tên bộ môn, Khoa trực thuộc, Tên Trưởng bộ môn (hiển thị "Chưa phân công" nếu NULL, chỉ để xem — không có nút chỉnh sửa), badge số Giảng viên, badge số Môn học.
+2. Thêm mới Bộ môn
+Thao tác người dùng: Bấm "Thêm Bộ môn", nhập MaBoMon, TenBoMon, chọn Khoa trực thuộc (MaKhoa) từ dropdown. Không có ô nhập Trưởng bộ môn.
+Nghiệp vụ xử lý:
+Validation 1: MaBoMon, TenBoMon, MaKhoa không được trống.
+Validation 2: Chuẩn hóa MaBoMon (viết hoa, xóa khoảng trắng thừa).
+Validation 3 (khóa ngoại): Khoa được chọn phải tồn tại trong bảng Khoa.
+Validation 4 (check trùng): kiểm tra MaBoMon đã tồn tại chưa, nếu có trả lỗi 400 "Mã bộ môn 'X' đã tồn tại."
+Cột MaTruongBoMon luôn được gán NULL khi tạo mới — hệ thống không cung cấp cách gán ngay tại bước này.
+Thay đổi CSDL: Thêm 1 dòng vào BoMon với MaTruongBoMon = NULL.
+Kết quả hiển thị: Đóng modal, danh sách reload, bộ môn mới hiện với Trưởng bộ môn "Chưa phân công".
+3. Cập nhật (Sửa) Thông tin Bộ môn
+Thao tác người dùng: Bấm "Sửa" tại dòng bộ môn, được sửa TenBoMon và/hoặc chuyển MaKhoa (chuyển bộ môn sang khoa khác). MaBoMon cố định vì là khóa ngoại trong GiangVien, MonHoc, TepNhap. Không có ô chỉnh Trưởng bộ môn trên form này.
+Nghiệp vụ xử lý:
+Validation: TenBoMon không trống; MaKhoa mới (nếu đổi) phải tồn tại trong bảng Khoa.
+Cảnh báo nghiệp vụ khi đổi Khoa trực thuộc: nếu bộ môn đang có sẵn MaTruongBoMon (được gán từ trước, không qua UI này), hệ thống nên cảnh báo Admin rằng việc đổi Khoa có thể ảnh hưởng tới tính hợp lý của phân công hiện tại — chỉ cảnh báo, không tự động xóa dữ liệu.
+Thay đổi CSDL: UPDATE BoMon SET TenBoMon = ?, MaKhoa = ? WHERE MaBoMon = ?.
+Kết quả hiển thị: Thông báo "Cập nhật bộ môn thành công", bảng làm mới.
+4. Xem Chi tiết Bộ môn (Giảng viên & Môn học trực thuộc)
+Thao tác người dùng: Bấm vào tên/mã bộ môn để xem trang chi tiết.
+Nghiệp vụ xử lý: Truy vấn song song 2 danh sách con — tất cả GiangVien có MaBoMon này, và tất cả MonHoc có MaBoMon này (kèm SoTinChi, LoaiMonHoc).
+Thay đổi CSDL: Không có, chỉ đọc.
+Kết quả hiển thị: Trang chi tiết chia 2 tab/bảng con — "Danh sách Giảng viên" và "Danh sách Môn học" — mỗi dòng có thể bấm điều hướng sang phân hệ tương ứng.
+5. Xóa Bộ môn (Kiểm tra ràng buộc toàn vẹn — 3 bảng con)
+Thao tác người dùng: Bấm "Xóa" tại dòng bộ môn, xác nhận trên popup.
+Nghiệp vụ xử lý — kiểm tra tuần tự, dừng ngay khi gặp ràng buộc đầu tiên bị vi phạm:
+Đếm số GiangVien có MaBoMon này. Nếu > 0 → chặn xóa, lỗi 400: "Không thể xóa Bộ môn 'X' vì đang có Y giảng viên trực thuộc. Vui lòng chuyển giảng viên sang bộ môn khác trước."
+Nếu qua bước 1, đếm số MonHoc có MaBoMon này. Nếu > 0 → chặn xóa, lỗi tương tự về môn học.
+Nếu qua bước 2, đếm số TepNhap có MaBoMon này. Nếu > 0 → chặn xóa để bảo toàn lịch sử nhập liệu.
+Chỉ khi cả 3 điều kiện đều bằng 0 mới cho phép xóa.
+Thay đổi CSDL: Nếu đủ điều kiện, DELETE FROM BoMon WHERE MaBoMon = ?.
+Kết quả hiển thị: Dòng bộ môn biến mất khỏi bảng danh sách.
