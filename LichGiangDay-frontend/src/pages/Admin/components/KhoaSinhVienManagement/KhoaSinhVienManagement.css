@@ -1,0 +1,124 @@
+/* KhoaSinhVienManagement.css */
+
+.ksv-management-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ===== SEARCH BAR ===== */
+.ksv-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--admin-border);
+  flex-wrap: wrap;
+}
+
+/* ===== CARD LIST ===== */
+.ksv-card-list {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 20px;
+  gap: 12px;
+}
+
+.ksv-card-item {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  background: var(--admin-bg);
+  overflow: hidden;
+  transition: box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.ksv-card-item:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
+  border-color: #cbd5e1;
+}
+
+/* Header card */
+.ksv-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--admin-border);
+  background: var(--admin-card);
+  gap: 10px;
+}
+
+.ksv-card-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ksv-card-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--admin-text-main);
+}
+
+.ksv-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Fields dọc */
+.ksv-card-fields {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+}
+
+.ksv-card-field {
+  display: flex;
+  align-items: baseline;
+  padding: 5px 16px;
+}
+
+.ksv-card-field:not(:last-child) {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.ksv-field-label {
+  width: 72px;
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--admin-text-sub);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.ksv-field-value {
+  font-size: 0.88rem;
+  color: var(--admin-text-main);
+  font-weight: 500;
+}
+
+/* Badge số lớp HP */
+.ksv-lhp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-size: 0.73rem;
+  font-weight: 600;
+  background: #f0fdf4;
+  color: #16a34a;
+  white-space: nowrap;
+}
+
+.ksv-lhp-badge.zero {
+  background: #f1f5f9;
+  color: #94a3b8;
+  font-weight: 400;
+}

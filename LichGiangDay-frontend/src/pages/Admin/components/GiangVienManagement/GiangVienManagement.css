@@ -1,0 +1,349 @@
+/* GiangVienManagement.css */
+
+.gv-management-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ===== FILTER BAR ===== */
+.gv-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--admin-border);
+  flex-wrap: wrap;
+}
+
+.gv-filter-select {
+  min-width: 200px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-bg);
+  color: var(--admin-text-main);
+  font-size: 0.88rem;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.18s;
+}
+
+.gv-filter-select:focus {
+  border-color: var(--primary);
+}
+
+/* ===== BADGES ===== */
+.gv-bomon-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  background: #eff6ff;
+  color: #2563eb;
+  white-space: nowrap;
+}
+
+.gv-bomon-badge.empty {
+  background: #f1f5f9;
+  color: #94a3b8;
+  font-style: italic;
+  font-weight: 400;
+}
+
+.gv-account-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.gv-account-badge.linked {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.gv-account-badge.unlinked {
+  background: #f1f5f9;
+  color: #94a3b8;
+}
+
+/* ===== TOGGLE BUTTON ===== */
+.gv-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--admin-border);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.gv-toggle-btn.deactivate {
+  background: #fff7ed;
+  color: #ea580c;
+  border-color: #fed7aa;
+}
+
+.gv-toggle-btn.deactivate:hover {
+  background: #ffedd5;
+}
+
+.gv-toggle-btn.activate {
+  background: #ecfdf5;
+  color: #059669;
+  border-color: #a7f3d0;
+}
+
+.gv-toggle-btn.activate:hover {
+  background: #d1fae5;
+}
+
+/* ===== DETAIL VIEW ===== */
+.gv-detail-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.gv-detail-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-bg);
+  color: var(--admin-text-sub);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.gv-detail-back-btn:hover {
+  background: #f1f5f9;
+  color: var(--admin-text-main);
+}
+
+.gv-detail-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--admin-text-main);
+}
+
+.gv-detail-subtitle {
+  font-size: 0.82rem;
+  color: var(--admin-text-sub);
+  margin-top: 3px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ===== TAB BAR (detail) ===== */
+.gv-tab-bar {
+  display: flex;
+  gap: 4px;
+  padding: 12px 20px 0;
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.gv-tab-btn {
+  padding: 8px 18px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--admin-text-sub);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  border-radius: 6px 6px 0 0;
+}
+
+.gv-tab-btn.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  background: #eff6ff;
+}
+
+.gv-tab-btn:hover:not(.active) {
+  background: #f8fafc;
+  color: var(--admin-text-main);
+}
+
+/* ===== WARN MODAL OVERLAY ===== */
+.gv-warn-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.gv-warn-card {
+  background: var(--admin-card);
+  border-radius: 14px;
+  padding: 28px 32px;
+  max-width: 460px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+}
+
+.gv-warn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #fff7ed;
+  color: #ea580c;
+  margin: 0 auto 16px;
+}
+
+.gv-warn-title {
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--admin-text-main);
+  margin-bottom: 10px;
+}
+
+.gv-warn-desc {
+  text-align: center;
+  font-size: 0.88rem;
+  color: var(--admin-text-sub);
+  margin-bottom: 20px;
+  line-height: 1.55;
+}
+
+/* ===== CARD LIST LAYOUT ===== */
+.gv-card-list {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 20px;
+  gap: 12px;
+}
+
+.gv-card-item {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  background: var(--admin-bg);
+  overflow: hidden;
+  transition: box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.gv-card-item:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+  border-color: #cbd5e1;
+}
+
+.gv-card-item.gv-card-inactive {
+  opacity: 0.6;
+}
+
+/* ── Header: Tên + badges + nút thao tác ── */
+.gv-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--admin-border);
+  background: var(--admin-card);
+  gap: 10px;
+}
+
+.gv-card-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.gv-card-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--admin-text-main);
+}
+
+.gv-card-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Actions nằm trong header */
+.gv-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* ── Fields: label:value dọc ── */
+.gv-card-fields {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+  cursor: pointer;
+}
+
+.gv-card-fields:hover {
+  background: #f8fafc;
+}
+
+.gv-card-field {
+  display: flex;
+  align-items: baseline;
+  gap: 0;
+  padding: 5px 16px;
+}
+
+.gv-card-field:not(:last-child) {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.gv-field-label {
+  width: 72px;
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--admin-text-sub);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.gv-field-value {
+  font-size: 0.88rem;
+  color: var(--admin-text-main);
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.gv-field-value.muted {
+  color: var(--admin-text-sub);
+  font-weight: 400;
+}

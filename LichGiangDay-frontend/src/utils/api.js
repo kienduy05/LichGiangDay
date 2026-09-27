@@ -513,6 +513,328 @@ export const apiDeleteKhoa = async (maKhoa) => {
 
 
 
+// ==========================================
+// BOMON (BỘ MÔN) API SERVICES
+// ==========================================
+
+export const apiGetBoMonList = async (maKhoa = '') => {
+  const url = maKhoa
+    ? `${API_BASE_URL}/bomon?maKhoa=${encodeURIComponent(maKhoa)}`
+    : `${API_BASE_URL}/bomon`;
+  const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Lấy danh sách bộ môn thất bại.');
+  return data.metadata;
+};
+
+export const apiGetBoMonChiTiet = async (maBoMon) => {
+  const response = await fetch(`${API_BASE_URL}/bomon/${maBoMon}/chitiet`, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Lấy chi tiết bộ môn thất bại.');
+  return data.metadata;
+};
+
+export const apiCreateBoMon = async ({ maBoMon, tenBoMon, maKhoa }) => {
+  const response = await fetch(`${API_BASE_URL}/bomon`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ maBoMon, tenBoMon, maKhoa })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Tạo bộ môn thất bại.');
+  return data.metadata;
+};
+
+export const apiUpdateBoMon = async (maBoMon, { tenBoMon, maKhoa }) => {
+  const response = await fetch(`${API_BASE_URL}/bomon/${maBoMon}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ tenBoMon, maKhoa })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Cập nhật bộ môn thất bại.');
+  return data.metadata;
+};
+
+export const apiDeleteBoMon = async (maBoMon) => {
+  const response = await fetch(`${API_BASE_URL}/bomon/${maBoMon}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Xóa bộ môn thất bại.');
+  return data.metadata;
+};
 
 
 
+// ==========================================
+// GIANGVIEN (GIẢNG VIÊN) API SERVICES
+// ==========================================
+
+export const apiGetGiangVienList = async ({ maBoMon = '', trangThai = '', search = '' } = {}) => {
+  const params = new URLSearchParams();
+  if (maBoMon) params.append('maBoMon', maBoMon);
+  if (trangThai) params.append('trangThai', trangThai);
+  if (search) params.append('search', search);
+  const url = `${API_BASE_URL}/giangvien${params.toString() ? '?' + params.toString() : ''}`;
+  const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Lấy danh sách giảng viên thất bại.');
+  return data.metadata;
+};
+
+export const apiGetGiangVienChiTiet = async (maGiangVien) => {
+  const response = await fetch(`${API_BASE_URL}/giangvien/${encodeURIComponent(maGiangVien)}/chitiet`, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Lấy chi tiết giảng viên thất bại.');
+  return data.metadata;
+};
+
+export const apiCreateGiangVien = async ({ maGiangVien, hoTen, email, soDienThoai, maBoMon }) => {
+  const response = await fetch(`${API_BASE_URL}/giangvien`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ maGiangVien, hoTen, email, soDienThoai, maBoMon })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Tạo giảng viên thất bại.');
+  return data.metadata;
+};
+
+export const apiUpdateGiangVien = async (maGiangVien, { hoTen, email, soDienThoai, maBoMon }) => {
+  const response = await fetch(`${API_BASE_URL}/giangvien/${encodeURIComponent(maGiangVien)}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ hoTen, email, soDienThoai, maBoMon })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Cập nhật giảng viên thất bại.');
+  return data.metadata;
+};
+
+export const apiToggleGiangVienTrangThai = async (maGiangVien) => {
+  const response = await fetch(`${API_BASE_URL}/giangvien/${encodeURIComponent(maGiangVien)}/toggle-trangthai`, {
+    method: 'PATCH',
+    headers: getAuthHeaders()
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Đổi trạng thái giảng viên thất bại.');
+  return data.metadata;
+};
+
+export const apiDeleteGiangVien = async (maGiangVien) => {
+  const response = await fetch(`${API_BASE_URL}/giangvien/${encodeURIComponent(maGiangVien)}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Xóa giảng viên thất bại.');
+  return data.metadata;
+};
+
+
+
+// ==========================================
+// MONHOC (MÔN HỌC) API SERVICES
+// ==========================================
+
+export const apiGetMonHocList = async ({ maBoMon = '', search = '' } = {}) => {
+  const params = new URLSearchParams();
+  if (maBoMon) params.append('maBoMon', maBoMon);
+  if (search) params.append('search', search);
+  const url = `${API_BASE_URL}/monhoc${params.toString() ? '?' + params.toString() : ''}`;
+  const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Lấy danh sách môn học thất bại.');
+  return data.metadata;
+};
+
+export const apiGetMonHocChiTiet = async (maMonHoc) => {
+  const response = await fetch(`${API_BASE_URL}/monhoc/${encodeURIComponent(maMonHoc)}/chitiet`, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Lấy chi tiết môn học thất bại.');
+  return data.metadata;
+};
+
+export const apiCreateMonHoc = async ({ maMonHoc, tenMonHoc, soTinChi, maBoMon, loaiMonHoc }) => {
+  const response = await fetch(`${API_BASE_URL}/monhoc`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ maMonHoc, tenMonHoc, soTinChi, maBoMon, loaiMonHoc })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Tạo môn học thất bại.');
+  return data.metadata;
+};
+
+export const apiUpdateMonHoc = async (maMonHoc, { tenMonHoc, soTinChi, maBoMon, loaiMonHoc }) => {
+  const response = await fetch(`${API_BASE_URL}/monhoc/${encodeURIComponent(maMonHoc)}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ tenMonHoc, soTinChi, maBoMon, loaiMonHoc })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Cập nhật môn học thất bại.');
+  return data.metadata;
+};
+
+export const apiDeleteMonHoc = async (maMonHoc) => {
+  const response = await fetch(`${API_BASE_URL}/monhoc/${encodeURIComponent(maMonHoc)}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Xóa môn học thất bại.');
+  return data.metadata;
+};
+
+// ==========================================
+// LOPSINHVIEN (LỚP SINH VIÊN) API SERVICES
+// ==========================================
+
+export const apiGetLopSinhVienList = async ({ maKhoa = '', search = '' } = {}) => {
+  const params = new URLSearchParams();
+  if (maKhoa) params.append('maKhoa', maKhoa);
+  if (search) params.append('search', search);
+  const url = `${API_BASE_URL}/lopsinhvien${params.toString() ? '?' + params.toString() : ''}`;
+  const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Lấy danh sách lớp sinh viên thất bại.');
+  return data.metadata;
+};
+
+export const apiCreateLopSinhVien = async ({ maLopSinhVien, tenLopSinhVien, maKhoa }) => {
+  const response = await fetch(`${API_BASE_URL}/lopsinhvien`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ maLopSinhVien, tenLopSinhVien, maKhoa })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Tạo lớp sinh viên thất bại.');
+  return data.metadata;
+};
+
+export const apiUpdateLopSinhVien = async (maLopSinhVien, { tenLopSinhVien, maKhoa }) => {
+  const response = await fetch(`${API_BASE_URL}/lopsinhvien/${encodeURIComponent(maLopSinhVien)}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ tenLopSinhVien, maKhoa })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Cập nhật lớp sinh viên thất bại.');
+  return data.metadata;
+};
+
+export const apiDeleteLopSinhVien = async (maLopSinhVien) => {
+  const response = await fetch(`${API_BASE_URL}/lopsinhvien/${encodeURIComponent(maLopSinhVien)}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Xóa lớp sinh viên thất bại.');
+  return data.metadata;
+};
+
+
+// ==========================================
+// KHOASINHVIEN (KHÓA SINH VIÊN) API SERVICES
+// ==========================================
+
+export const apiGetKhoaSinhVienList = async ({ search = '' } = {}) => {
+  const params = new URLSearchParams();
+  if (search) params.append('search', search);
+  const url = `${API_BASE_URL}/khoasinhvien${params.toString() ? '?' + params.toString() : ''}`;
+  const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Lấy danh sách khóa sinh viên thất bại.');
+  return data.metadata;
+};
+
+export const apiCreateKhoaSinhVien = async ({ maKhoaSinhVien, tenKhoaSinhVien }) => {
+  const response = await fetch(`${API_BASE_URL}/khoasinhvien`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ maKhoaSinhVien, tenKhoaSinhVien })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Tạo khóa sinh viên thất bại.');
+  return data.metadata;
+};
+
+export const apiUpdateKhoaSinhVien = async (maKhoaSinhVien, { tenKhoaSinhVien }) => {
+  const response = await fetch(`${API_BASE_URL}/khoasinhvien/${encodeURIComponent(maKhoaSinhVien)}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ tenKhoaSinhVien })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Cập nhật khóa sinh viên thất bại.');
+  return data.metadata;
+};
+
+export const apiDeleteKhoaSinhVien = async (maKhoaSinhVien) => {
+  const response = await fetch(`${API_BASE_URL}/khoasinhvien/${encodeURIComponent(maKhoaSinhVien)}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Xóa khóa sinh viên thất bại.');
+  return data.metadata;
+};
+
+
+// ==========================================
+// HOCKY (HỌC KỲ) API SERVICES
+// ==========================================
+
+export const apiGetHocKyList = async ({ search = '' } = {}) => {
+  const params = new URLSearchParams();
+  if (search) params.append('search', search);
+  const url = `${API_BASE_URL}/hocky${params.toString() ? '?' + params.toString() : ''}`;
+  const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Lấy danh sách học kỳ thất bại.');
+  return data.metadata;
+};
+
+export const apiCreateHocKy = async ({ maHocKy, tenHocKy, dot, namHoc, ngayBatDau, ngayKetThuc }) => {
+  const response = await fetch(`${API_BASE_URL}/hocky`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ maHocKy, tenHocKy, dot, namHoc, ngayBatDau, ngayKetThuc })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Tạo học kỳ thất bại.');
+  return data.metadata;
+};
+
+export const apiUpdateHocKy = async (maHocKy, { tenHocKy, dot, namHoc, ngayBatDau, ngayKetThuc }) => {
+  const response = await fetch(`${API_BASE_URL}/hocky/${encodeURIComponent(maHocKy)}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ tenHocKy, dot, namHoc, ngayBatDau, ngayKetThuc })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Cập nhật học kỳ thất bại.');
+  return data.metadata;
+};
+
+export const apiDeleteHocKy = async (maHocKy) => {
+  const response = await fetch(`${API_BASE_URL}/hocky/${encodeURIComponent(maHocKy)}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Xóa học kỳ thất bại.');
+  return data.metadata;
+};

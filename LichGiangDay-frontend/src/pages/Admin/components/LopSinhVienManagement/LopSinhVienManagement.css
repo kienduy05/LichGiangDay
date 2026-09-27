@@ -1,0 +1,161 @@
+/* LopSinhVienManagement.css */
+
+.lsv-management-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ===== FILTER BAR ===== */
+.lsv-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--admin-border);
+  flex-wrap: wrap;
+}
+
+.lsv-filter-select {
+  min-width: 220px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-bg);
+  color: var(--admin-text-main);
+  font-size: 0.88rem;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.18s;
+}
+
+.lsv-filter-select:focus {
+  border-color: var(--primary);
+}
+
+/* ===== CARD LIST ===== */
+.lsv-card-list {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 20px;
+  gap: 12px;
+}
+
+.lsv-card-item {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  background: var(--admin-bg);
+  overflow: hidden;
+  transition: box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.lsv-card-item:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
+  border-color: #cbd5e1;
+}
+
+/* Header card */
+.lsv-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--admin-border);
+  background: var(--admin-card);
+  gap: 10px;
+}
+
+.lsv-card-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.lsv-card-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--admin-text-main);
+}
+
+.lsv-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Fields dọc */
+.lsv-card-fields {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+}
+
+.lsv-card-field {
+  display: flex;
+  align-items: baseline;
+  padding: 5px 16px;
+}
+
+.lsv-card-field:not(:last-child) {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.lsv-field-label {
+  width: 72px;
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--admin-text-sub);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.lsv-field-value {
+  font-size: 0.88rem;
+  color: var(--admin-text-main);
+  font-weight: 500;
+}
+
+.lsv-field-value.muted {
+  color: var(--admin-text-sub);
+  font-weight: 400;
+}
+
+/* Khoa badge */
+.lsv-khoa-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  background: #eff6ff;
+  color: #2563eb;
+  white-space: nowrap;
+}
+
+/* LHP badge */
+.lsv-lhp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.73rem;
+  font-weight: 600;
+  background: #f0fdf4;
+  color: #16a34a;
+  white-space: nowrap;
+}
+
+.lsv-lhp-badge.zero {
+  background: #f1f5f9;
+  color: #94a3b8;
+  font-weight: 400;
+}

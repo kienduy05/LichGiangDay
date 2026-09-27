@@ -722,23 +722,28 @@ export default function KhoaManagement() {
                     value={selectedGV}
                     onChange={(e) => setSelectedGV(e.target.value)}
                   >
-                    <option value="">— Bãi nhiệm (không phân công) —</option>
+                    {/* Chỉ hiện option bãi nhiệm khi khoa đã có giảng viên */}
+                    {giangVienList.length > 0 && (
+                      <option value="">— Bãi nhiệm (không phân công) —</option>
+                    )}
                     {giangVienList.map(gv => (
                       <option key={gv.MaGiangVien} value={gv.MaGiangVien}>
                         {gv.HoTen} ({gv.MaGiangVien}) — {gv.TenBoMon}
                       </option>
                     ))}
                   </select>
-                  {giangVienList.length === 0 && !giangVienLoading && (
-                    <span style={{ fontSize: '0.78rem', color: '#ef4444', marginTop: '4px' }}>
-                      Khoa này chưa có giảng viên Active nào. Hãy thêm bộ môn và giảng viên trước.
-                    </span>
-                  )}
-                  {selectedGV === '' && (
+                  {giangVienList.length === 0 && !giangVienLoading ? (
+                    <div className="alert-banner warning" style={{ marginTop: '8px', fontSize: '0.82rem' }}>
+                      <AlertCircle size={15} />
+                      <span>
+                        Khoa chưa có giảng viên, không thể thực hiện bãi nhiệm.
+                      </span>
+                    </div>
+                  ) : selectedGV === '' ? (
                     <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-sub)', marginTop: '4px' }}>
                       Chọn "Bãi nhiệm" để xóa phân công hiện tại.
                     </span>
-                  )}
+                  ) : null}
                 </div>
               )}
             </div>
@@ -751,14 +756,16 @@ export default function KhoaManagement() {
                 type="button"
                 onClick={handleConfirmAssign}
                 className="btn-save"
-                disabled={assignLoading || giangVienLoading}
+                disabled={assignLoading || giangVienLoading || (selectedGV === '' && giangVienList.length === 0)}
               >
                 {assignLoading ? (
                   <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Loader2 size={16} className="animate-spin" /> Đang lưu...
                   </span>
+                ) : selectedGV ? (
+                  'Xác Nhận Phân Công'
                 ) : (
-                  selectedGV ? 'Xác Nhận Phân Công' : 'Xác Nhận Bãi Nhiệm'
+                  'Xác Nhận Bãi Nhiệm'
                 )}
               </button>
             </div>

@@ -1,0 +1,238 @@
+/* MonHocManagement.css */
+
+.mh-management-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ===== FILTER BAR ===== */
+.mh-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--admin-border);
+  flex-wrap: wrap;
+}
+
+.mh-filter-select {
+  min-width: 220px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-bg);
+  color: var(--admin-text-main);
+  font-size: 0.88rem;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.18s;
+}
+
+.mh-filter-select:focus {
+  border-color: var(--primary);
+}
+
+/* ===== BADGE ===== */
+.mh-tc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: #eff6ff;
+  color: #2563eb;
+  white-space: nowrap;
+}
+
+.mh-tc-badge.empty {
+  background: #f1f5f9;
+  color: #94a3b8;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.mh-loai-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.73rem;
+  font-weight: 600;
+  background: #f0fdf4;
+  color: #16a34a;
+  white-space: nowrap;
+}
+
+.mh-bomon-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  background: #eff6ff;
+  color: #2563eb;
+  white-space: nowrap;
+}
+
+.mh-bomon-badge.empty {
+  background: #f1f5f9;
+  color: #94a3b8;
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* ===== CARD LIST ===== */
+.mh-card-list {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 20px;
+  gap: 12px;
+}
+
+.mh-card-item {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  background: var(--admin-bg);
+  overflow: hidden;
+  transition: box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.mh-card-item:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+  border-color: #cbd5e1;
+}
+
+/* Header card */
+.mh-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--admin-border);
+  background: var(--admin-card);
+  gap: 10px;
+}
+
+.mh-card-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.mh-card-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--admin-text-main);
+}
+
+.mh-card-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.mh-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Fields dọc */
+.mh-card-fields {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+  cursor: pointer;
+}
+
+.mh-card-fields:hover {
+  background: #f8fafc;
+}
+
+.mh-card-field {
+  display: flex;
+  align-items: baseline;
+  padding: 5px 16px;
+}
+
+.mh-card-field:not(:last-child) {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.mh-field-label {
+  width: 80px;
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--admin-text-sub);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.mh-field-value {
+  font-size: 0.88rem;
+  color: var(--admin-text-main);
+  font-weight: 500;
+}
+
+.mh-field-value.muted {
+  color: var(--admin-text-sub);
+  font-weight: 400;
+}
+
+/* ===== DETAIL VIEW ===== */
+.mh-detail-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.mh-detail-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-bg);
+  color: var(--admin-text-sub);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.mh-detail-back-btn:hover {
+  background: #f1f5f9;
+  color: var(--admin-text-main);
+}
+
+.mh-detail-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--admin-text-main);
+}
+
+.mh-detail-subtitle {
+  font-size: 0.82rem;
+  color: var(--admin-text-sub);
+  margin-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}

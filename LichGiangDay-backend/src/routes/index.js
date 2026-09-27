@@ -26,4 +26,22 @@ router.use('/v1/api/phonghoc', require('./phonghoc'));
 // Faculty (Khoa) management routes
 router.use('/v1/api/khoa', require('./khoa'));
 
+// Department (BoMon) management routes
+router.use('/v1/api/bomon', require('./bomon'));
+
+// Lecturer (GiangVien) management routes
+router.use('/v1/api/giangvien', require('./giangvien'));
+
+// Subject (MonHoc) management routes
+router.use('/v1/api/monhoc', require('./monhoc'));
+
+// Student Class (LopSinhVien) management routes
+router.use('/v1/api/lopsinhvien', require('./lopsinhvien'));
+
+// Student Cohort (KhoaSinhVien) management routes
+router.use('/v1/api/khoasinhvien', require('./khoasinhvien'));
+
+// Semester (HocKy) management routes
+router.use('/v1/api/hocky', require('./hocky'));
+
 module.exports = router;

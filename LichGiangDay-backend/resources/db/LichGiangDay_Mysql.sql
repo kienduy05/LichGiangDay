@@ -279,11 +279,9 @@ CREATE TABLE LopSinhVien (
         REFERENCES Khoa (MaKhoa)
 );
 
-
 -- ============================================================
 -- 3. LOP HOC PHAN
 -- ============================================================
-
 CREATE TABLE LopHocPhan (
     MaLopHocPhan       VARCHAR(100)    NOT NULL,
     TenLopHocPhan      VARCHAR(255)    NULL,

@@ -1,0 +1,176 @@
+/* BoMonManagement.css — theo pattern KhoaManagement */
+
+.bomon-management-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ===== FILTER BAR — Khoa dropdown ===== */
+.bomon-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--admin-border);
+  flex-wrap: wrap;
+}
+
+.bomon-khoa-select {
+  min-width: 220px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-bg);
+  color: var(--admin-text-main);
+  font-size: 0.88rem;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.18s;
+}
+
+.bomon-khoa-select:focus {
+  border-color: var(--primary);
+}
+
+/* ===== BADGE GV & MÔN HỌC ===== */
+.bomon-gv-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: #ecfdf5;
+  color: #059669;
+  white-space: nowrap;
+}
+
+.bomon-gv-badge.empty {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.bomon-mh-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: #fdf4ff;
+  color: #9333ea;
+  white-space: nowrap;
+}
+
+.bomon-mh-badge.empty {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* ===== TRƯỞNG BỘ MÔN CELL ===== */
+.truongbomon-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.truongbomon-name {
+  font-weight: 500;
+  color: var(--admin-text-main);
+  font-size: 0.9rem;
+}
+
+.truongbomon-empty {
+  color: var(--admin-text-muted);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+/* ===== KHOA BADGE nhỏ gọn ===== */
+.khoa-badge-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  background: #eff6ff;
+  color: #2563eb;
+  white-space: nowrap;
+}
+
+/* ===== DETAIL VIEW — 2 tabs ===== */
+.bomon-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.bomon-detail-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-bg);
+  color: var(--admin-text-sub);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.bomon-detail-back-btn:hover {
+  background: #f1f5f9;
+  color: var(--admin-text-main);
+}
+
+.bomon-detail-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--admin-text-main);
+}
+
+.bomon-detail-subtitle {
+  font-size: 0.82rem;
+  color: var(--admin-text-sub);
+  margin-top: 2px;
+}
+
+/* ===== TAB SWITCHER ===== */
+.bomon-tab-bar {
+  display: flex;
+  gap: 4px;
+  padding: 12px 20px 0;
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.bomon-tab-btn {
+  padding: 8px 18px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--admin-text-sub);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  border-radius: 6px 6px 0 0;
+}
+
+.bomon-tab-btn.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  background: #eff6ff;
+}
+
+.bomon-tab-btn:hover:not(.active) {
+  background: #f8fafc;
+  color: var(--admin-text-main);
+}
