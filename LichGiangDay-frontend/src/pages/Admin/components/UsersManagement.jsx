@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { 
   apiGetUsers, apiCreateUser, apiUpdateUser, apiResetUserPassword, 
-  apiToggleUserStatus, apiDeleteUser, apiGetRoles 
+  apiToggleUserStatus, apiDeleteUser, apiGetRoles, apiGetGiangVienList 
 } from '../../../utils/api';
 import './UsersManagement.css';
 
@@ -16,6 +16,7 @@ export default function UsersManagement() {
 
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
+  const [giangVienList, setGiangVienList] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersError, setUsersError] = useState('');
   const [userSearchQuery, setUserSearchQuery] = useState('');
@@ -36,7 +37,8 @@ export default function UsersManagement() {
     fullName: '',
     email: '',
     role: 'ADMIN',
-    isActive: 1
+    isActive: 1,
+    maGiangVien: ''
   });
   const [userFormLoading, setUserFormLoading] = useState(false);
   const [userFormError, setUserFormError] = useState('');
@@ -78,9 +80,19 @@ export default function UsersManagement() {
     }
   };
 
+  const fetchGiangViens = async () => {
+    try {
+      const data = await apiGetGiangVienList();
+      setGiangVienList(data || []);
+    } catch (err) {
+      console.error('Fetch giang vien error:', err);
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
     fetchRoles();
+    fetchGiangViens();
   }, []);
 
   const toggleRoleExpand = (roleId, e) => {
@@ -91,7 +103,32 @@ export default function UsersManagement() {
     }));
   };
 
+  const isGiangVienRole = userFormData.role === 'GIANGVIEN' || 
+    userFormData.role?.toUpperCase().includes('GIANGVIEN') || 
+    userFormData.role?.toUpperCase().includes('GV');
+
+  const handleSelectGiangVien = (selectedMaGv) => {
+    const selectedGv = giangVienList.find(g => g.MaGiangVien === selectedMaGv);
+    if (selectedGv) {
+      setUserFormData(prev => ({
+        ...prev,
+        maGiangVien: selectedMaGv,
+        fullName: prev.fullName || selectedGv.HoTen || '',
+        email: prev.email || selectedGv.Email || '',
+        username: (userModalMode === 'create' && !prev.username) 
+          ? (selectedGv.Email ? selectedGv.Email.split('@')[0] : selectedGv.MaGiangVien.toLowerCase()) 
+          : prev.username
+      }));
+    } else {
+      setUserFormData(prev => ({
+        ...prev,
+        maGiangVien: ''
+      }));
+    }
+  };
+
   const handleOpenCreateUserModal = () => {
+    const defaultRole = selectedRoleId !== 'ALL' ? selectedRoleId : (roles[0]?.RoleId || 'ADMIN');
     setUserModalMode('create');
     setUserFormData({
       userId: '',
@@ -99,8 +136,9 @@ export default function UsersManagement() {
       password: '',
       fullName: '',
       email: '',
-      role: selectedRoleId !== 'ALL' ? selectedRoleId : (roles[0]?.RoleId || 'ADMIN'),
-      isActive: 1
+      role: defaultRole,
+      isActive: 1,
+      maGiangVien: ''
     });
     setUserFormError('');
     setUserFormSuccess('');
@@ -116,7 +154,8 @@ export default function UsersManagement() {
       fullName: uItem.FullName || '',
       email: uItem.Email || '',
       role: uItem.Role || 'ADMIN',
-      isActive: uItem.IsActive !== undefined ? uItem.IsActive : 1
+      isActive: uItem.IsActive !== undefined ? uItem.IsActive : 1,
+      maGiangVien: uItem.MaGiangVien || ''
     });
     setUserFormError('');
     setUserFormSuccess('');
@@ -144,6 +183,11 @@ export default function UsersManagement() {
       return;
     }
 
+    if (isGiangVienRole && userModalMode === 'create' && !userFormData.maGiangVien) {
+      setUserFormError('Vui lòng chọn Giảng viên trong danh mục để liên kết với tài khoản này.');
+      return;
+    }
+
     setUserFormLoading(true);
     try {
       if (userModalMode === 'create') {
@@ -152,7 +196,8 @@ export default function UsersManagement() {
           password: userFormData.password,
           fullName: userFormData.fullName,
           email: userFormData.email,
-          role: userFormData.role
+          role: userFormData.role,
+          maGiangVien: isGiangVienRole ? userFormData.maGiangVien : null
         });
         setUserFormSuccess('Tạo tài khoản người dùng mới thành công!');
       } else {
@@ -160,12 +205,14 @@ export default function UsersManagement() {
           fullName: userFormData.fullName,
           email: userFormData.email,
           role: userFormData.role,
-          isActive: userFormData.isActive
+          isActive: userFormData.isActive,
+          maGiangVien: isGiangVienRole ? userFormData.maGiangVien : null
         });
         setUserFormSuccess('Cập nhật tài khoản người dùng thành công!');
       }
 
       await fetchUsers();
+      await fetchGiangViens();
 
       setTimeout(() => {
         setIsUserModalOpen(false);
@@ -464,6 +511,13 @@ export default function UsersManagement() {
                       <td>
                         <div style={{ fontWeight: 600, color: 'var(--admin-text-main)' }}>{uItem.FullName || 'Chưa cập nhật'}</div>
                         <div style={{ fontSize: '0.8rem', color: 'var(--admin-text-sub)' }}>{uItem.Email || 'Chưa có email'}</div>
+                        {uItem.MaGiangVien && (
+                          <div style={{ fontSize: '0.75rem', color: '#2563eb', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '4px', padding: '1px 6px', fontWeight: 600 }}>
+                              👨‍🏫 GV: {uItem.TenGiangVien || uItem.FullName} ({uItem.MaGiangVien})
+                            </span>
+                          </div>
+                        )}
                       </td>
                       <td>
                         <span className={`role-badge ${uItem.Role === 'ADMIN' ? 'admin' : 'primary'}`}>
@@ -594,7 +648,69 @@ export default function UsersManagement() {
               )}
 
               <div className="modal-form-group">
-                <label className="modal-label">Họ và Tên Nguời Dùng</label>
+                <label className="modal-label">
+                  Nhóm Quyền (Role) <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <select 
+                  className="modal-input"
+                  value={userFormData.role}
+                  onChange={(e) => {
+                    const newRole = e.target.value;
+                    const isGV = newRole === 'GIANGVIEN' || newRole.toUpperCase().includes('GIANGVIEN') || newRole.toUpperCase().includes('GV');
+                    setUserFormData({
+                      ...userFormData,
+                      role: newRole,
+                      maGiangVien: isGV ? userFormData.maGiangVien : ''
+                    });
+                  }}
+                  required
+                >
+                  {roles.map(r => (
+                    <option key={r.RoleId} value={r.RoleId}>
+                      {r.RoleName} ({r.RoleId})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {isGiangVienRole && (
+                <div className="modal-form-group" style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                  <label className="modal-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <span style={{ fontWeight: 700, color: '#1e40af' }}>
+                      👨‍🏫 Giảng Viên Liên Kết <span style={{ color: '#ef4444' }}>*</span>
+                    </span>
+                    <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 'normal' }}>
+                      (Chọn từ danh mục Giảng Viên)
+                    </span>
+                  </label>
+                  <select
+                    className="modal-input"
+                    value={userFormData.maGiangVien}
+                    onChange={(e) => handleSelectGiangVien(e.target.value)}
+                    required={userModalMode === 'create'}
+                    style={{ borderColor: '#3b82f6', background: '#ffffff' }}
+                  >
+                    <option value="">-- Chọn giảng viên cần liên kết --</option>
+                    {giangVienList.map((gv) => {
+                      const isCurrentLinked = userModalMode === 'edit' && gv.MaGiangVien === userFormData.maGiangVien;
+                      const isLinkedToOther = gv.DaLienKetTaiKhoan && !isCurrentLinked;
+                      return (
+                        <option key={gv.MaGiangVien} value={gv.MaGiangVien}>
+                          {gv.MaGiangVien} - {gv.HoTen} {gv.TenBoMon ? `(${gv.TenBoMon})` : ''} {isLinkedToOther ? '[Đã có tài khoản]' : ''}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  {userFormData.maGiangVien && (
+                    <p style={{ fontSize: '0.78rem', color: '#16a34a', marginTop: '6px', marginBottom: 0 }}>
+                      ✓ Đã liên kết giảng viên: <b>{giangVienList.find(g => g.MaGiangVien === userFormData.maGiangVien)?.HoTen || userFormData.fullName}</b> ({userFormData.maGiangVien})
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="modal-form-group">
+                <label className="modal-label">Họ và Tên Người Dùng</label>
                 <input 
                   type="text" 
                   className="modal-input" 
@@ -613,24 +729,6 @@ export default function UsersManagement() {
                   value={userFormData.email}
                   onChange={(e) => setUserFormData({ ...userFormData, email: e.target.value })}
                 />
-              </div>
-
-              <div className="modal-form-group">
-                <label className="modal-label">
-                  Nhóm Quyền (Role) <span style={{ color: '#ef4444' }}>*</span>
-                </label>
-                <select 
-                  className="modal-input"
-                  value={userFormData.role}
-                  onChange={(e) => setUserFormData({ ...userFormData, role: e.target.value })}
-                  required
-                >
-                  {roles.map(r => (
-                    <option key={r.RoleId} value={r.RoleId}>
-                      {r.RoleName} ({r.RoleId})
-                    </option>
-                  ))}
-                </select>
               </div>
 
               {userModalMode === 'edit' && (
