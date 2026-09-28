@@ -173,11 +173,11 @@ export const apiGetUsers = async () => {
   return data.metadata;
 };
 
-export const apiCreateUser = async ({ username, password, fullName, email, role }) => {
+export const apiCreateUser = async ({ username, password, fullName, email, role, maGiangVien }) => {
   const response = await fetch(`${API_BASE_URL}/users`, {
     method: 'POST',
     headers: getAuthHeaders(),
-    body: JSON.stringify({ username, password, fullName, email, role })
+    body: JSON.stringify({ username, password, fullName, email, role, maGiangVien })
   });
 
   const data = await response.json();
@@ -188,11 +188,11 @@ export const apiCreateUser = async ({ username, password, fullName, email, role 
   return data.metadata;
 };
 
-export const apiUpdateUser = async (userId, { fullName, email, role, isActive }) => {
+export const apiUpdateUser = async (userId, { fullName, email, role, isActive, maGiangVien }) => {
   const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
     method: 'PUT',
     headers: getAuthHeaders(),
-    body: JSON.stringify({ fullName, email, role, isActive })
+    body: JSON.stringify({ fullName, email, role, isActive, maGiangVien })
   });
 
   const data = await response.json();
