@@ -1,0 +1,182 @@
+/* HocKyManagement.css */
+
+.hk-management-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ===== FILTER BAR ===== */
+.hk-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--admin-border);
+  flex-wrap: wrap;
+}
+
+/* ===== CARD LIST ===== */
+.hk-card-list {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 20px;
+  gap: 12px;
+}
+
+.hk-card-item {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  background: var(--admin-bg);
+  overflow: hidden;
+  transition: box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.hk-card-item:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
+  border-color: #cbd5e1;
+}
+
+/* Header card */
+.hk-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--admin-border);
+  background: var(--admin-card);
+  gap: 10px;
+}
+
+.hk-card-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hk-card-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--admin-text-main);
+}
+
+.hk-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Badges */
+.hk-lhp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-size: 0.73rem;
+  font-weight: 600;
+  background: #f0fdf4;
+  color: #16a34a;
+  white-space: nowrap;
+}
+
+.hk-lhp-badge.zero {
+  background: #f1f5f9;
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.hk-namhoc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-size: 0.73rem;
+  font-weight: 600;
+  background: #eff6ff;
+  color: #2563eb;
+  white-space: nowrap;
+}
+
+.hk-dot-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.73rem;
+  font-weight: 600;
+  background: #fff7ed;
+  color: #ea580c;
+  white-space: nowrap;
+}
+
+/* Fields dọc */
+.hk-card-fields {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+}
+
+.hk-card-field {
+  display: flex;
+  align-items: baseline;
+  padding: 5px 16px;
+}
+
+.hk-card-field:not(:last-child) {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.hk-field-label {
+  width: 90px;
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--admin-text-sub);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.hk-field-value {
+  font-size: 0.88rem;
+  color: var(--admin-text-main);
+  font-weight: 500;
+}
+
+.hk-field-value.muted {
+  color: var(--admin-text-sub);
+  font-weight: 400;
+  font-style: italic;
+}
+
+/* Warning banner */
+.hk-overlap-warning {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.83rem;
+  color: #92400e;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.5;
+}
+
+.hk-narrow-warning {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.83rem;
+  color: #9a3412;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.5;
+}

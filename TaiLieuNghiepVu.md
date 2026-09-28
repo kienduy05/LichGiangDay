@@ -251,6 +251,307 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
   - `GiangVien` (`Khoa.MaTruongKhoa` $\rightarrow$ `GiangVien.MaGiangVien`).
 - **Resource ID kiểm tra quyền (`checkPermission`)**: `'Khoa'` (`CanRead`, `CanCreate`, `CanUpdate`, `CanDelete`).
 
+1. Tìm kiếm & Hiển thị Danh sách Khoa
+Thao tác người dùng: Vào  Quản lý Khoa, gõ từ khóa tìm theo MaKhoa hoặc TenKhoa.
+Nghiệp vụ xử lý:
+Gọi GET /v1/api/khoa?search=..., qua checkPermission('Khoa', 'CanRead').
+Backend JOIN 2 lần: JOIN BoMon để đếm số bộ môn trực thuộc từng khoa (giống cách ToaNha đếm PhongHoc), và JOIN GiangVien (qua MaTruongKhoa) để lấy HoTen giảng viên hiển thị tên Trưởng khoa thay vì chỉ hiện mã.
+Thay đổi CSDL: Không có, chỉ đọc.
+Kết quả hiển thị: Bảng danh sách gồm Mã khoa, Tên khoa, Tên Trưởng khoa (hoặc "Chưa phân công" nếu MaTruongKhoa là NULL), badge số lượng Bộ môn trực thuộc.
+2. Thêm mới Khoa
+Thao tác người dùng: Bấm "Thêm Khoa", nhập MaKhoa, TenKhoa. Không nhập Trưởng khoa ở bước này.
+Nghiệp vụ xử lý:
+Validation 1: MaKhoa, TenKhoa không được trống.
+Validation 2: Chuẩn hóa MaKhoa (viết hoa, xóa khoảng trắng thừa) giống quy tắc MaToaNha.
+Validation 3 (check trùng): kiểm tra MaKhoa đã tồn tại chưa, nếu có trả lỗi 400 "Mã khoa 'X' đã tồn tại".
+Lý do không cho nhập Trưởng khoa ngay lúc tạo: tại thời điểm khoa mới được tạo, chưa chắc đã có Bộ môn/Giảng viên nào thuộc khoa đó trong CSDL để chọn làm Trưởng khoa hợp lệ → cột MaTruongKhoa mặc định để NULL, sẽ gán sau bằng chức năng riêng (mục 4).
+Thay đổi CSDL: Thêm 1 dòng vào Khoa với MaTruongKhoa = NULL.
+Kết quả hiển thị: Đóng modal, danh sách reload, khoa mới hiện với Trưởng khoa "Chưa phân công".
+3. Cập nhật (Sửa) Thông tin Khoa
+Thao tác người dùng: Bấm "Sửa" tại dòng khoa, chỉ được sửa TenKhoa. MaKhoa cố định (là khóa ngoại trong BoMon, không được đổi để tránh gãy quan hệ, giống nguyên tắc khóa MaToaNha).
+Nghiệp vụ xử lý: Validation TenKhoa không được trống.
+Thay đổi CSDL: UPDATE Khoa SET TenKhoa = ? WHERE MaKhoa = ?.
+Kết quả hiển thị: Thông báo "Cập nhật khoa thành công", bảng làm mới.
+4. Gán / Thay đổi Trưởng Khoa (chức năng đặc thù, khác ToaNha)
+Thao tác người dùng: Bấm "Phân công Trưởng khoa" tại dòng khoa tương ứng, hệ thống hiện dropdown chọn Giảng viên.
+Nghiệp vụ xử lý:
+Dropdown chỉ nên liệt kê Giảng viên thuộc một Bộ môn nằm trong chính Khoa đó (join GiangVien → BoMon → Khoa), tránh trường hợp gán một giảng viên hoàn toàn không liên quan làm Trưởng khoa.
+Validation: MaGiangVien được chọn phải tồn tại và đang ở trạng thái Active trong bảng GiangVien.
+Cho phép gán NULL trở lại (bãi nhiệm Trưởng khoa) nếu cần, ví dụ khi giảng viên đó nghỉ việc/chuyển công tác.
+Thay đổi CSDL: UPDATE Khoa SET MaTruongKhoa = ? WHERE MaKhoa = ?.
+Kết quả hiển thị: Tên Trưởng khoa mới hiện ngay trên bảng danh sách, không cần load lại trang.
+5. Xem Chi tiết Khoa (Danh sách Bộ môn trực thuộc)
+Thao tác người dùng: Bấm vào tên/mã khoa để xem trang chi tiết.
+Nghiệp vụ xử lý: Truy vấn tất cả BoMon có MaKhoa tương ứng, kèm số lượng Giảng viên của từng Bộ môn (join tiếp GiangVien).
+Thay đổi CSDL: Không có, chỉ đọc.
+Kết quả hiển thị: Trang chi tiết hiện thông tin Khoa + bảng con liệt kê các Bộ môn trực thuộc, mỗi dòng có thể bấm để điều hướng sang phân hệ Quản lý Bộ môn.
+6. Xóa Khoa (Kiểm tra ràng buộc toàn vẹn)
+Thao tác người dùng: Bấm "Xóa" tại dòng khoa, xác nhận trên popup.
+Nghiệp vụ xử lý:
+Kiểm tra ràng buộc với BoMon: đếm số Bộ môn có MaKhoa này.
+Nếu > 0 → CHẶN XÓA, trả lỗi 400: "Không thể xóa Khoa 'X' vì đang chứa Y bộ môn. Vui lòng xóa hoặc chuyển các bộ môn sang khoa khác trước."
+Nếu = 0 → cho phép xóa tiếp.
+Lưu ý thêm về ràng buộc vòng: vì Khoa.MaTruongKhoa tham chiếu tới GiangVien, còn GiangVien.MaBoMon tham chiếu tới BoMon, nên trên thực tế chỉ cần đảm bảo hết BoMon trực thuộc là đủ điều kiện xóa an toàn — không cần kiểm tra GiangVien trực tiếp vì giảng viên luôn gắn với Bộ môn chứ không gắn thẳng với Khoa.
+Thay đổi CSDL: Nếu đủ điều kiện, DELETE FROM Khoa WHERE MaKhoa = ?.
+Kết quả hiển thị: Dòng khoa biến mất khỏi bảng danh sách.
+**PHÂN HỆ: QUẢN LÝ BỘ MÔN (BoMon)**
+1. Lọc & Hiển thị Danh sách Bộ môn theo Khoa
+Thao tác người dùng:
+Khi vào màn hình Danh mục đào tạo → Quản lý Bộ môn, dropdown "Khoa" mặc định ở trạng thái "Tất cả các Khoa" → bảng hiển thị toàn bộ Bộ môn trong hệ thống.
+Người dùng select một Khoa cụ thể → bảng lập tức lọc lại tức thời, chỉ hiện các Bộ môn thuộc Khoa đó, không cần bấm nút "Tìm kiếm" hay tải lại trang.
+Nghiệp vụ xử lý:
+Trang tải lần đầu: GET /v1/api/bomon (không kèm tham số) qua checkPermission('BoMon', 'CanRead') → trả về toàn bộ BoMon.
+Khi select Khoa: GET /v1/api/bomon?maKhoa=<mã khoa> → backend thêm điều kiện WHERE MaKhoa = ?.
+Backend JOIN Khoa để hiển thị tên Khoa, JOIN GiangVien (qua MaTruongBoMon) để hiển thị tên Trưởng bộ môn, và đếm riêng số lượng GiangVien và số lượng MonHoc thuộc từng bộ môn.
+Dữ liệu đổ vào dropdown "Khoa" lấy từ GET /v1/api/khoa, gắn thêm 1 lựa chọn tĩnh "Tất cả các Khoa" ở đầu danh sách.
+Thay đổi CSDL: Không có, chỉ đọc (SELECT).
+Kết quả hiển thị: Bảng Data Table gồm Mã bộ môn, Tên bộ môn, Khoa trực thuộc, Tên Trưởng bộ môn (hiển thị "Chưa phân công" nếu NULL, chỉ để xem — không có nút chỉnh sửa), badge số Giảng viên, badge số Môn học.
+2. Thêm mới Bộ môn
+Thao tác người dùng: Bấm "Thêm Bộ môn", nhập MaBoMon, TenBoMon, chọn Khoa trực thuộc (MaKhoa) từ dropdown. Không có ô nhập Trưởng bộ môn.
+Nghiệp vụ xử lý:
+Validation 1: MaBoMon, TenBoMon, MaKhoa không được trống.
+Validation 2: Chuẩn hóa MaBoMon (viết hoa, xóa khoảng trắng thừa).
+Validation 3 (khóa ngoại): Khoa được chọn phải tồn tại trong bảng Khoa.
+Validation 4 (check trùng): kiểm tra MaBoMon đã tồn tại chưa, nếu có trả lỗi 400 "Mã bộ môn 'X' đã tồn tại."
+Cột MaTruongBoMon luôn được gán NULL khi tạo mới — hệ thống không cung cấp cách gán ngay tại bước này.
+Thay đổi CSDL: Thêm 1 dòng vào BoMon với MaTruongBoMon = NULL.
+Kết quả hiển thị: Đóng modal, danh sách reload, bộ môn mới hiện với Trưởng bộ môn "Chưa phân công".
+3. Cập nhật (Sửa) Thông tin Bộ môn
+Thao tác người dùng: Bấm "Sửa" tại dòng bộ môn, được sửa TenBoMon và/hoặc chuyển MaKhoa (chuyển bộ môn sang khoa khác). MaBoMon cố định vì là khóa ngoại trong GiangVien, MonHoc, TepNhap. Không có ô chỉnh Trưởng bộ môn trên form này.
+Nghiệp vụ xử lý:
+Validation: TenBoMon không trống; MaKhoa mới (nếu đổi) phải tồn tại trong bảng Khoa.
+Cảnh báo nghiệp vụ khi đổi Khoa trực thuộc: nếu bộ môn đang có sẵn MaTruongBoMon (được gán từ trước, không qua UI này), hệ thống nên cảnh báo Admin rằng việc đổi Khoa có thể ảnh hưởng tới tính hợp lý của phân công hiện tại — chỉ cảnh báo, không tự động xóa dữ liệu.
+Thay đổi CSDL: UPDATE BoMon SET TenBoMon = ?, MaKhoa = ? WHERE MaBoMon = ?.
+Kết quả hiển thị: Thông báo "Cập nhật bộ môn thành công", bảng làm mới.
+4. Xem Chi tiết Bộ môn (Giảng viên & Môn học trực thuộc)
+Thao tác người dùng: Bấm vào tên/mã bộ môn để xem trang chi tiết.
+Nghiệp vụ xử lý: Truy vấn song song 2 danh sách con — tất cả GiangVien có MaBoMon này, và tất cả MonHoc có MaBoMon này (kèm SoTinChi, LoaiMonHoc).
+Thay đổi CSDL: Không có, chỉ đọc.
+Kết quả hiển thị: Trang chi tiết chia 2 tab/bảng con — "Danh sách Giảng viên" và "Danh sách Môn học" — mỗi dòng có thể bấm điều hướng sang phân hệ tương ứng.
+5. Xóa Bộ môn (Kiểm tra ràng buộc toàn vẹn — 3 bảng con)
+Thao tác người dùng: Bấm "Xóa" tại dòng bộ môn, xác nhận trên popup.
+Nghiệp vụ xử lý — kiểm tra tuần tự, dừng ngay khi gặp ràng buộc đầu tiên bị vi phạm:
+Đếm số GiangVien có MaBoMon này. Nếu > 0 → chặn xóa, lỗi 400: "Không thể xóa Bộ môn 'X' vì đang có Y giảng viên trực thuộc. Vui lòng chuyển giảng viên sang bộ môn khác trước."
+Nếu qua bước 1, đếm số MonHoc có MaBoMon này. Nếu > 0 → chặn xóa, lỗi tương tự về môn học.
+Nếu qua bước 2, đếm số TepNhap có MaBoMon này. Nếu > 0 → chặn xóa để bảo toàn lịch sử nhập liệu.
+Chỉ khi cả 3 điều kiện đều bằng 0 mới cho phép xóa.
+Thay đổi CSDL: Nếu đủ điều kiện, DELETE FROM BoMon WHERE MaBoMon = ?.
+Kết quả hiển thị: Dòng bộ môn biến mất khỏi bảng danh sách.
+ **PHÂN HỆ: QUẢN LÝ GIẢNG VIÊN (GiangVien) — Bản rút gọn đúng cấu trúc bảng**
+1. Tìm kiếm, Lọc & Hiển thị Danh sách Giảng viên
+•	Thao tác người dùng: Vào Danh mục đào tạo → Quản lý Giảng viên. Lọc theo Bộ môn (MaBoMon — dropdown lấy từ BoMon, mặc định "Tất cả Bộ môn", có thêm lựa chọn phụ "Chưa phân bộ môn" để lọc riêng các dòng MaBoMon IS NULL), lọc theo Trạng thái (TrangThai: Active/Inactive), hoặc gõ từ khóa tìm theo HoTen, Email, MaGiangVien.
+•	Nghiệp vụ xử lý: 
+o	Gọi GET /v1/api/giangvien?maBoMon=...&trangThai=...&search=... qua checkPermission('GiangVien', 'CanRead').
+o	Backend LEFT JOIN BoMon (bắt buộc LEFT JOIN vì MaBoMon có thể NULL) để hiển thị tên Bộ môn; LEFT JOIN Users để hiển thị đã/chưa có tài khoản đăng nhập.
+•	Thay đổi CSDL: Không có, chỉ đọc.
+•	Kết quả hiển thị: Bảng gồm Mã GV, Họ tên, Email, SĐT, Bộ môn (hoặc "Chưa phân công"), Badge trạng thái (Active = xanh / Inactive = xám), badge nhỏ báo hiệu đã liên kết tài khoản hay chưa.
+________________________________________
+2. Thêm mới Giảng viên
+•	Thao tác người dùng: Bấm "Thêm Giảng viên", nhập MaGiangVien, HoTen, Email, SoDienThoai, chọn Bộ môn (không bắt buộc — có thể để trống). Không có ô chọn tài khoản đăng nhập ở bước này.
+•	Nghiệp vụ xử lý: 
+o	Validation 1: MaGiangVien, HoTen không được trống (2 cột NOT NULL duy nhất ngoài TrangThai).
+o	Validation 2: Chuẩn hóa MaGiangVien (viết hoa, xóa khoảng trắng thừa).
+o	Validation 3 (check trùng): kiểm tra MaGiangVien đã tồn tại chưa, nếu có trả lỗi 400 "Mã giảng viên đã tồn tại."
+o	Validation 4 (khóa ngoại có điều kiện): nếu có chọn MaBoMon, phải kiểm tra Bộ môn đó tồn tại trong bảng BoMon; nếu để trống thì lưu NULL, bỏ qua kiểm tra.
+o	Validation 5 (tùy chọn nên có dù CSDL không ràng buộc): kiểm tra định dạng Email hợp lệ, SoDienThoai đúng định dạng số điện thoại nếu người dùng có nhập (vì 2 cột này cho phép NULL nhưng nếu nhập thì nên đúng định dạng).
+o	TrangThai mặc định CSDL tự gán 'Active'. UserId mặc định NULL.
+•	Thay đổi CSDL: Thêm 1 dòng vào GiangVien với TrangThai = 'Active', UserId = NULL.
+•	Kết quả hiển thị: Đóng modal, danh sách reload, giảng viên mới hiện với trạng thái Active, cột tài khoản hiện "Chưa liên kết".
+________________________________________
+3. Cập nhật (Sửa) Thông tin Giảng viên
+•	Thao tác người dùng: Bấm "Sửa" tại dòng giảng viên, được sửa HoTen, Email, SoDienThoai, và chuyển MaBoMon (kể cả đổi từ có bộ môn sang "Chưa phân công" hoặc ngược lại). MaGiangVien cố định vì là khóa ngoại trong rất nhiều bảng con.
+•	Nghiệp vụ xử lý: 
+o	Validation giống mục 2 (áp dụng lại cho MaBoMon, Email, SoDienThoai).
+o	Cảnh báo nghiệp vụ: nếu giảng viên đang được gán làm MaTruongBoMon của chính Bộ môn hiện tại, hoặc MaTruongKhoa của một Khoa nào đó, mà bị đổi MaBoMon sang bộ môn khác → cảnh báo Admin rà soát lại phân công lãnh đạo (chỉ cảnh báo, không tự động gỡ).
+•	Thay đổi CSDL: UPDATE GiangVien SET HoTen=?, Email=?, SoDienThoai=?, MaBoMon=? WHERE MaGiangVien=?.
+•	Kết quả hiển thị: Thông báo "Cập nhật giảng viên thành công", bảng làm mới.
+________________________________________
+4. Đổi Trạng thái Vận hành (Toggle: Active ↔ Inactive)
+•	Thao tác người dùng: Bấm nút "Ngừng công tác" hoặc "Kích hoạt lại" nhanh trên bảng danh sách.
+•	Nghiệp vụ xử lý: 
+o	Chuyển 'Active' → 'Inactive': nên cảnh báo nếu giảng viên đang có LopHocPhan với TrangThaiPhanCong chưa hoàn tất, hoặc đang có BuoiHoc sắp diễn ra trong tương lai — hỏi Admin xác nhận trước, vì ảnh hưởng tới thuật toán xếp lịch (không nên gợi ý giảng viên Inactive khi phân công dạy mới).
+o	Chuyển 'Inactive' → 'Active': giảng viên xuất hiện trở lại trong danh sách gợi ý phân công giảng dạy.
+•	Thay đổi CSDL: Chỉ đổi cột TrangThai giữa 2 giá trị.
+•	Kết quả hiển thị: Badge trạng thái đổi màu tức thời (xanh ↔ xám), không cần tải lại trang.
+________________________________________
+5. Xem Chi tiết Giảng viên
+•	Thao tác người dùng: Bấm vào tên/mã giảng viên để xem trang chi tiết.
+•	Nghiệp vụ xử lý: Truy vấn tổng hợp: danh sách LopHocPhan đang phụ trách, các YeuCauNghi đã gửi, các PhanCongDayThay đã nhận dạy thay, các DangKyDayBu đã đăng ký — tất cả lọc theo MaGiangVien này.
+•	Thay đổi CSDL: Không có, chỉ đọc.
+•	Kết quả hiển thị: Trang chi tiết chia nhiều tab: "Lớp học phần đang dạy", "Lịch sử xin nghỉ", "Lịch sử dạy thay/dạy bù".
+________________________________________
+6. Xóa Giảng viên (Kiểm tra ràng buộc toàn vẹn — nhiều nhất hệ thống)
+•	Thao tác người dùng: Bấm "Xóa" tại dòng giảng viên, xác nhận trên popup.
+•	Nghiệp vụ xử lý — kiểm tra tuần tự qua 7 bảng, dừng ngay khi gặp ràng buộc đầu tiên bị vi phạm: 
+1.	Khoa.MaTruongKhoa — đang là Trưởng khoa của khoa nào không.
+2.	BoMon.MaTruongBoMon — đang là Trưởng bộ môn của bộ môn nào không.
+3.	LopHocPhan.MaGiangVien — đang phụ trách lớp học phần nào không.
+4.	BuoiHoc.MaGiangVien — đã từng đứng lớp buổi học nào không (kể cả buổi học quá khứ, để giữ lịch sử).
+5.	YeuCauNghi.MaGiangVien hoặc MaGiangVienDuyet — có yêu cầu nghỉ đã gửi hoặc đã duyệt cho người khác không.
+6.	PhanCongDayThay.MaGiangVienDayThay — đã từng được phân công dạy thay không.
+7.	DangKyDayBu.MaGiangVien — đã từng đăng ký dạy bù không.
+o	Nếu bất kỳ bảng nào ở trên có bản ghi liên quan → CHẶN XÓA, báo lỗi 400 nêu rõ đang vướng ở bảng nào.
+o	Chỉ khi cả 7 điều kiện đều bằng 0 mới cho phép xóa.
+•	Khuyến nghị nghiệp vụ: Vì gần như mọi giảng viên đã hoạt động đều sẽ vướng ít nhất bảng BuoiHoc, nên chức năng Xóa cứng gần như không dùng được trong thực tế. Khuyến nghị hướng người dùng dùng chức năng Đổi trạng thái sang Inactive (mục 5) thay vì xóa, chỉ giữ nút Xóa cứng cho trường hợp hiếm — nhập nhầm dữ liệu giảng viên chưa từng phát sinh hoạt động nào.
+•	Thay đổi CSDL: Nếu đủ điều kiện, DELETE FROM GiangVien WHERE MaGiangVien = ?.
+•	Kết quả hiển thị: Dòng giảng viên biến mất khỏi bảng danh sách.
+
+##
+## PHÂN HỆ: QUẢN LÝ MÔN HỌC (MonHoc) ##
+
+Bảng tác động chính: MonHoc (MaMonHoc, TenMonHoc, SoTinChi, MaBoMon, LoaiMonHoc)
+
+Bảng liên quan: BoMon (cha, FK MaBoMon, được phép NULL), LopHocPhan (con, FK MaMonHoc, bắt buộc — mỗi Lớp học phần phải gắn với đúng 1 Môn học)
+
+ResourceId dùng cho checkPermission: 'MonHoc'
+
+
+SoTinChi được phép NULL → nghiệp vụ cho phép tạo Môn học chưa khai báo số tín chỉ (ví dụ đang chờ Bộ môn duyệt khung chương trình), nhưng nên khuyến khích nhập ngay vì số tín chỉ ảnh hưởng tới thời lượng xếp lịch.
+MaBoMon được phép NULL → giống Giảng viên, cho phép tồn tại Môn học "chưa phân về Bộ môn nào quản lý" tạm thời.
+LoaiMonHoc mặc định CSDL tự gán 'Regular' khi không nhập — đây là cột kiểu chuỗi tự do, hiện chưa thấy tài liệu nghiệp vụ nào quy định rõ danh sách các giá trị chuẩn hóa khác ngoài 'Regular'. Cần hỏi lại bên nghiệp vụ xem có những loại môn học cố định nào khác (ví dụ: Bắt buộc/Tự chọn, hay Lý thuyết/Thực hành/Đồ án...) trước khi làm dropdown cố định — tạm thời có thể để dạng ô nhập chuỗi tự do.
+1. Lọc & Hiển thị danh sách
+
+Vì mọi Môn học giờ luôn có Bộ môn, nên bỏ lựa chọn phụ "Chưa phân bộ môn" trong dropdown lọc (đã đề cập ở bản trước) — không còn trường hợp này xảy ra qua giao diện tạo mới nữa. Dropdown lọc chỉ còn: "Tất cả Bộ môn" hoặc chọn đích danh 1 Bộ môn.
+
+2. Thêm mới Môn học
+
+Thao tác người dùng: Bấm "Thêm Môn học" → nhập MaMonHoc, TenMonHoc, chọn Bộ môn (MaBoMon — bắt buộc, không còn tùy chọn để trống), nhập SoTinChi ( bắt buộc), LoaiMonHoc (không bắt buộc).
+Nghiệp vụ xử lý:
+Validation 1: MaMonHoc, TenMonHoc, MaBoMon không được để trống.
+Validation 2: Chuẩn hóa MaMonHoc (viết hoa, xóa khoảng trắng thừa).
+Validation 3 (check trùng): kiểm tra MaMonHoc đã tồn tại chưa.
+Validation 4 (khóa ngoại bắt buộc): Bộ môn được chọn phải tồn tại trong bảng BoMon — không còn nhánh "bỏ qua nếu để trống" như bản trước.
+Validation 5: nếu có nhập SoTinChi thì phải là số nguyên dương.
+Nếu người dùng không chọn Bộ môn → chặn submit ngay ở form (frontend) và/hoặc trả lỗi 400 ở backend nếu cố tình gửi thiếu: "Vui lòng chọn Bộ môn quản lý cho môn học này."
+Thay đổi CSDL: Thêm 1 dòng vào MonHoc với MaBoMon luôn có giá trị (không còn NULL).
+Kết quả hiển thị: Đóng modal, danh sách reload, môn học mới hiện kèm tên Bộ môn quản lý.
+
+3. Cập nhật thông tin
+
+Khi Sửa, MaBoMon vẫn hiển thị và cho phép đổi sang Bộ môn khác (chuyển môn học sang Bộ môn khác quản lý), nhưng không được phép để trống/xóa về NULL — dropdown Bộ môn lúc Sửa không có lựa chọn "Chưa phân công" như bên Giảng viên.
+Validation: TenMonHoc không trống, MaBoMon không trống và phải tồn tại.
+
+4. Xem chi tiết
+
+Bấm vào tên/mã Môn học → trang chi tiết hiển thị danh sách các LopHocPhan đã/đang mở cho môn này (lọc theo MaMonHoc), kèm học kỳ, giảng viên phụ trách, sĩ số.
+Chỉ đọc, mỗi dòng có thể bấm nhảy sang phân hệ Lớp học phần tương ứng.
+
+5. Xóa Môn học
+
+Bấm "Xóa" → popup xác nhận → kiểm tra duy nhất 1 ràng buộc: đếm số LopHocPhan có MaMonHoc này.
+Nếu > 0 → CHẶN XÓA, báo lỗi 400: "Không thể xóa môn học 'X' vì đang có Y lớp học phần được mở cho môn này."
+Nếu = 0 → cho phép DELETE.
+Dòng biến mất khỏi bảng khi xóa thành công.
+##
+
+## PHÂN HỆ: QUẢN LÝ LỚP SINH VIÊN (LopSinhVien) ##
+
+Bảng tác động chính: LopSinhVien (MaLopSinhVien, TenLopSinhVien, MaKhoa)
+Bảng liên quan: Khoa (cha, FK MaKhoa, bắt buộc), LopHocPhan_LopSinhVien (bảng trung gian, con, FK MaLopSinhVien)
+ResourceId dùng cho checkPermission: 'LopSinhVien'
+
+Đây là bảng đơn giản nhất trong các phân hệ danh mục đã làm — chỉ 3 cột, không có cột trạng thái, không có trường tùy chọn (mọi cột đều NOT NULL).
+  
+Luồng chi tiết từng chức năng
+
+1. Lọc & Hiển thị danh sách
+
+Vào Danh mục đào tạo → Quản lý Lớp sinh viên → mặc định dropdown "Khoa" = "Tất cả các Khoa" (đúng pattern lọc theo Khoa đã áp dụng cho Bộ môn).
+Select 1 Khoa cụ thể → bảng lọc lại ngay, gọi GET /v1/api/lopsinhvien?maKhoa=....
+Có thể kèm ô tìm từ khóa theo TenLopSinhVien/MaLopSinhVien nếu 1 Khoa có nhiều lớp.
+Backend JOIN Khoa (INNER JOIN được, vì MaKhoa là NOT NULL) để hiển thị tên Khoa.
+Mỗi dòng hiển thị: Mã lớp, Tên lớp, Khoa quản lý, badge số Lớp học phần đang tham gia (đếm qua bảng trung gian LopHocPhan_LopSinhVien).
+
+2. Thêm mới Lớp sinh viên
+
+Bấm "Thêm Lớp sinh viên" → nhập MaLopSinhVien, TenLopSinhVien, chọn Khoa (bắt buộc, không có lựa chọn để trống vì cột NOT NULL) → bấm "Lưu".
+Validate: cả 3 trường đều không được trống; chuẩn hóa MaLopSinhVien (viết hoa, xóa khoảng trắng thừa); check trùng mã; check Khoa được chọn tồn tại trong bảng Khoa.
+Ghi 1 dòng mới → đóng modal → bảng reload.
+
+3. Cập nhật thông tin
+
+Bấm "Sửa" tại dòng → sửa TenLopSinhVien và/hoặc đổi MaKhoa (chuyển lớp sang Khoa khác quản lý — hiếm khi xảy ra nhưng vẫn nên cho phép, ví dụ sáp nhập/tách Khoa). MaLopSinhVien khóa cứng vì là khóa ngoại trong bảng trung gian LopHocPhan_LopSinhVien.
+Validate: TenLopSinhVien không trống, MaKhoa không trống và phải tồn tại.
+Lưu → UPDATE → thông báo thành công → bảng reload.
+
+4. Xóa Lớp sinh viên
+
+Bấm "Xóa" → popup xác nhận → kiểm tra duy nhất 1 ràng buộc: đếm số dòng trong LopHocPhan_LopSinhVien có MaLopSinhVien này (tức lớp đã từng/đang học ghép với Lớp học phần nào chưa).
+Nếu > 0 → CHẶN XÓA, báo lỗi 400: "Không thể xóa lớp sinh viên 'X' vì đang tham gia Y lớp học phần."
+Nếu = 0 → cho phép DELETE.
+Dòng biến mất khỏi bảng khi xóa thành công.
+##
+
+## 
+PHÂN HỆ: QUẢN LÝ KHÓA SINH VIÊN (KhoaSinhVien)
+
+Bảng tác động chính: KhoaSinhVien (MaKhoaSinhVien, TenKhoaSinhVien)
+Bảng liên quan: LopHocPhan (con, FK KhoaHoc → KhoaSinhVien.MaKhoaSinhVien, được phép NULL)
+
+Luồng chi tiết từng chức năng
+
+1. Hiển thị danh sách
+
+Vào Danh mục đào tạo → Quản lý Khóa sinh viên → hiển thị toàn bộ danh sách ngay, không cần bộ lọc theo bảng cha (vì bảng này đứng độc lập, không có MaKhoa/MaBoMon nào để lọc theo).
+Chỉ cần 1 ô tìm kiếm từ khóa theo TenKhoaSinhVien/MaKhoaSinhVien (danh sách này thường rất ngắn — vài niên khóa như K62, K63, K64, K65 — nên có thể không cần cả phân trang).
+Gọi GET /v1/api/khoasinhvien?search=....
+Mỗi dòng hiển thị: Mã khóa (VD K65), Tên khóa (VD "Khóa 65"), badge số Lớp học phần đang gắn niên khóa này (đếm qua LopHocPhan.KhoaHoc).
+
+2. Thêm mới Khóa sinh viên
+
+Bấm "Thêm Khóa sinh viên" → nhập MaKhoaSinhVien (VD K66), TenKhoaSinhVien (VD "Khóa 66") → bấm "Lưu".
+Validate: cả 2 trường không được trống (đều NOT NULL); chuẩn hóa mã (viết hoa, xóa khoảng trắng thừa); check trùng mã.
+Ghi 1 dòng mới → đóng modal → bảng reload.
+
+3. Cập nhật thông tin
+
+Bấm "Sửa" tại dòng → chỉ sửa được TenKhoaSinhVien. MaKhoaSinhVien khóa cứng vì là khóa ngoại trong LopHocPhan.KhoaHoc.
+Validate: TenKhoaSinhVien không trống.
+Lưu → UPDATE → thông báo thành công → bảng reload.
+
+4. Xóa Khóa sinh viên
+
+Bấm "Xóa" → popup xác nhận → kiểm tra duy nhất 1 ràng buộc: đếm số LopHocPhan có KhoaHoc = mã khóa này.
+Nếu > 0 → CHẶN XÓA, báo lỗi 400: "Không thể xóa khóa sinh viên 'K65' vì đang có X lớp học phần gắn với niên khóa này."
+Nếu = 0 → cho phép DELETE.
+Dòng biến mất khỏi bảng khi xóa thành công.
+
+##  QUẢN LÝ HỌC KỲ (HocKy)##
+
+Bảng tác động chính: HocKy (MaHocKy, TenHocKy, Dot, NamHoc, NgayBatDau, NgayKetThuc)
+Bảng liên quan: LopHocPhan (con, FK MaHocKy, bắt buộc)
+ResourceId dùng cho checkPermission: 'HocKy'
+
+ ## Cấu trúc dữ liệu cần lưu ý##
+Dot (Đợt) và NamHoc (Năm học) đều được phép NULL — CSDL không bắt buộc, nhưng nên khuyến nghị bắt buộc nhập ở tầng ứng dụng vì đây là 2 thông tin quan trọng để phân biệt các học kỳ trùng số (VD "Học kỳ 1" của năm 2024-2025 khác với "Học kỳ 1" của năm 2025-2026), giống nguyên tắc "CSDL cho NULL nhưng nghiệp vụ bắt buộc" đã áp dụng cho MonHoc.MaBoMon.
+NgayBatDau, NgayKetThuc là NOT NULL — đây là khoảng thời gian tổng của cả học kỳ, dùng làm giới hạn hợp lệ khi xếp ThoiKhoaBieu cho từng Lớp học phần thuộc học kỳ này (ngày giai đoạn lịch không được vượt ra ngoài khoảng này).
+Chức năng
+
+1. Tìm kiếm & Hiển thị danh sách Học kỳ
+
+Hiển thị toàn bộ, sắp xếp theo NgayBatDau giảm dần (học kỳ mới nhất lên đầu) — vì đây là bảng có ít bản ghi (vài chục học kỳ trong suốt vòng đời hệ thống), không cần lọc phức tạp, có thể chỉ cần ô tìm theo TenHocKy/NamHoc.
+Mỗi dòng hiển thị: Mã học kỳ, Tên học kỳ, Đợt, Năm học, Ngày bắt đầu – kết thúc, badge số Lớp học phần đã mở trong học kỳ này.
+
+2. Thêm mới Học kỳ
+
+Nhập MaHocKy, TenHocKy, Dot, NamHoc, NgayBatDau, NgayKetThuc.
+Validate 1: MaHocKy, TenHocKy không trống; check trùng mã.
+Validate 2: NgayBatDau phải nhỏ hơn NgayKetThuc.
+Validate 3 (khuyến nghị nên có): kiểm tra chồng lấn ngày (overlap check) với các Học kỳ đã tồn tại — nếu khoảng [NgayBatDau, NgayKetThuc] giao nhau với 1 học kỳ khác đã có → cảnh báo Admin xác nhận có thực sự muốn tạo học kỳ trùng thời gian không (trường hợp hợp lệ hiếm gặp: 2 hệ đào tạo chạy song song có lịch lệch nhau).
+Ghi 1 dòng mới vào HocKy.
+
+3. Cập nhật thông tin Học kỳ
+
+Sửa TenHocKy, Dot, NamHoc, NgayBatDau, NgayKetThuc. MaHocKy khóa cứng vì là khóa ngoại trong LopHocPhan.
+Cảnh báo quan trọng khi thu hẹp NgayBatDau/NgayKetThuc: nếu học kỳ đã có LopHocPhan với ThoiKhoaBieu/BuoiHoc nằm ngoài khoảng ngày mới → phải cảnh báo rõ, không tự động xóa dữ liệu lịch đã sinh, để Admin tự quyết định xử lý thủ công.
+
+4. Xóa Học kỳ
+
+Kiểm tra ràng buộc: đếm số LopHocPhan có MaHocKy này.
+Nếu > 0 → CHẶN XÓA, báo lỗi 400: "Không thể xóa học kỳ 'X' vì đang có Y lớp học phần thuộc học kỳ này."
+Nếu = 0 → cho phép DELETE.
+
+
 #### 1.3.1. Tìm kiếm & Hiển thị Danh sách Khoa
 - **Thao tác người dùng (User Action)**:
   - Người dùng truy cập menu `Dữ liệu nền` $\rightarrow$ `Quản lý Khoa`.

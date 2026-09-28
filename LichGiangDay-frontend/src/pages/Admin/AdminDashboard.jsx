@@ -14,6 +14,12 @@ import PermissionsManagement from './components/PermissionsManagement';
 import ToaNhaManagement from './components/ToaNhaManagement';
 import PhongHocManagement from './components/PhongHocManagement';
 import KhoaManagement from './components/KhoaManagement';
+import BoMonManagement from './components/BoMonManagement/BoMonManagement';
+import GiangVienManagement from './components/GiangVienManagement/GiangVienManagement';
+import MonHocManagement from './components/MonHocManagement/MonHocManagement';
+import LopSinhVienManagement from './components/LopSinhVienManagement/LopSinhVienManagement';
+import KhoaSinhVienManagement from './components/KhoaSinhVienManagement/KhoaSinhVienManagement';
+import HocKyManagement from './components/HocKyManagement/HocKyManagement';
 
 import './AdminDashboard.css';
 
@@ -146,6 +152,12 @@ export default function AdminDashboard() {
           {activeTab === 'toanha' && <ToaNhaManagement />}
           {activeTab === 'phonghoc' && <PhongHocManagement />}
           {activeTab === 'khoa' && <KhoaManagement />}
+          {activeTab === 'bomon' && <BoMonManagement />}
+          {activeTab === 'giangvien' && <GiangVienManagement />}
+          {activeTab === 'monhoc' && <MonHocManagement />}
+          {activeTab === 'lopsinhvien' && <LopSinhVienManagement />}
+          {activeTab === 'khoasinhvien' && <KhoaSinhVienManagement />}
+          {activeTab === 'hocky' && <HocKyManagement />}
           {activeTab === 'roles' && <RolesManagement />}
           {activeTab === 'users' && <UsersManagement />}
           {activeTab === 'permissions' && <PermissionsManagement />}
