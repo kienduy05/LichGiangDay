@@ -44,4 +44,7 @@ router.use('/v1/api/khoasinhvien', require('./khoasinhvien'));
 // Semester (HocKy) management routes
 router.use('/v1/api/hocky', require('./hocky'));
 
+// Class Period (TietHoc) management routes
+router.use('/v1/api/tiethoc', require('./tiethoc'));
+
 module.exports = router;

@@ -20,6 +20,7 @@ import MonHocManagement from './components/MonHocManagement/MonHocManagement';
 import LopSinhVienManagement from './components/LopSinhVienManagement/LopSinhVienManagement';
 import KhoaSinhVienManagement from './components/KhoaSinhVienManagement/KhoaSinhVienManagement';
 import HocKyManagement from './components/HocKyManagement/HocKyManagement';
+import TietHocManagement from './components/TietHocManagement/TietHocManagement';
 
 import './AdminDashboard.css';
 
@@ -158,6 +159,7 @@ export default function AdminDashboard() {
           {activeTab === 'lopsinhvien' && <LopSinhVienManagement />}
           {activeTab === 'khoasinhvien' && <KhoaSinhVienManagement />}
           {activeTab === 'hocky' && <HocKyManagement />}
+          {activeTab === 'tiethoc' && <TietHocManagement />}
           {activeTab === 'roles' && <RolesManagement />}
           {activeTab === 'users' && <UsersManagement />}
           {activeTab === 'permissions' && <PermissionsManagement />}
