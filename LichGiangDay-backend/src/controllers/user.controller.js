@@ -47,7 +47,7 @@ class UserController {
 
   create = async (req, res, next) => {
     try {
-      const { username, password, fullName, email, role } = req.body;
+      const { username, password, fullName, email, role, maGiangVien } = req.body;
       if (!username || !password || !role) {
         return res.status(400).json({
           status: 'error',
@@ -64,7 +64,7 @@ class UserController {
         });
       }
 
-      const newUser = await UserService.createUser({ username, password, fullName, email, role });
+      const newUser = await UserService.createUser({ username, password, fullName, email, role, maGiangVien });
       return res.status(201).json({
         status: 'success',
         code: 201,
@@ -83,7 +83,7 @@ class UserController {
   updateAdmin = async (req, res, next) => {
     try {
       const { userId } = req.params;
-      const { fullName, email, role, isActive } = req.body;
+      const { fullName, email, role, isActive, maGiangVien } = req.body;
       if (!role) {
         return res.status(400).json({
           status: 'error',
@@ -92,7 +92,7 @@ class UserController {
         });
       }
 
-      const updatedUser = await UserService.updateAdminUser(userId, { fullName, email, role, isActive });
+      const updatedUser = await UserService.updateAdminUser(userId, { fullName, email, role, isActive, maGiangVien });
       return res.status(200).json({
         status: 'success',
         code: 200,

@@ -1,7 +1,7 @@
 /* Floor Row Component CSS */
 .floor-row-wrapper {
   display: grid;
-  grid-template-columns: 140px 1fr;
+  grid-template-columns: 160px 1fr;
   gap: 16px;
   align-items: start;
   background: #ffffff;
@@ -29,7 +29,7 @@
   border: 1px solid #cbd5e1;
   padding: 8px 12px;
   border-radius: 8px;
-  min-width: 110px;
+  min-width: 130px;
 }
 
 .floor-badge-icon {
