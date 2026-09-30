@@ -1,15 +1,15 @@
 # TÀI LIỆU CHI TIẾT NGHIỆP VỤ TỪNG CHỨC NĂNG (FUNCTIONAL BUSINESS SPECIFICATION)
 
 **Dự án**: Hệ thống Quản lý Lịch Giảng Dạy & Thời khóa biểu Trường Đại học (`LichGiangDay`)  
-**Phân hệ**: Phân hệ Dữ liệu nền (Master / Base Data)  
+**Phân hệ**: Phân hệ 1: Dữ liệu nền (Master / Base Data)  
 **Tác giả**: Business Analyst (BA)  
-**Ngày cập nhật**: 19/09/2026
+**Ngày cập nhật**: 30/09/2026
 
 ---
 
 ## 1. PHÂN HỆ 1: PHÂN HỆ DỮ LIỆU NỀN
 
-Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh mục thực thể cốt lõi của nhà trường: cơ sở vật chất hạ tầng (Tòa nhà, Phòng học), cơ cấu tổ chức học thuật (Khoa, Bộ môn) và danh mục người dùng/giảng viên. Đây là nền tảng dữ liệu chuẩn xác để phục vụ cho các phân hệ nghiệp vụ tiếp theo như Quản lý Học phần, Lập kế hoạch giảng dạy, Phân công giảng viên và Xếp Thời khóa biểu tự động.
+Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh mục thực thể cốt lõi của nhà trường: cơ sở vật chất hạ tầng (Tòa nhà, Phòng học, Tiết học), cơ cấu tổ chức học thuật (Khoa, Bộ môn, Lớp sinh viên, Khóa sinh viên, Học kỳ), và danh mục người dùng/giảng viên. Đây là nền tảng dữ liệu chuẩn xác để phục vụ cho các phân hệ nghiệp vụ tiếp theo như Quản lý Học phần, Lập kế hoạch giảng dạy, Phân công giảng viên và Xếp Thời khóa biểu tự động.
 
 ---
 
@@ -175,14 +175,11 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
     - Nếu đã có $\rightarrow$ Trả lỗi: _"Mã phòng học 'A1-101' đã tồn tại trong hệ thống."_ (HTTP 400).
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - **Tạo mới 1 dòng bản ghi trong bảng `PhongHoc`**:
-
     ```sql
     INSERT INTO PhongHoc (MaPhong, TenPhong, MaToaNha, SucChua, LoaiPhong, TrangThai)
     VALUES (?, ?, ?, ?, ?, ?);
     ```
-
     - `TrangThai`: Mặc định CSDL tự động gán giá trị chuỗi là **`'Ready'`** (Sẵn sàng phục vụ giảng dạy).
-
 - **Kết quả hiển thị (UI Response)**:
   - Đóng Modal, hiển thị phòng học mới trên danh sách với trạng thái **Ready (Sẵn sàng)**.
 
@@ -231,30 +228,21 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
   - Kiểm tra quyền `CanDelete` trên Resource `PhongHoc`.
   - **Kiểm tra ràng buộc toàn vẹn CSDL (3 tầng liên kết)**:
     1. **Kiểm tra Thời khóa biểu (`ThoiKhoaBieu`)**:
-
        ```sql
        SELECT COUNT(*) AS total FROM ThoiKhoaBieu WHERE MaPhong = ?;
        ```
-
        - Nếu `total > 0` $\rightarrow$ **CHẶN XÓA**: _"Không thể xóa phòng học 'X' vì đang có N lịch học (Thời khóa biểu) được xếp tại phòng này."_
-
     2. **Kiểm tra Buổi học (`BuoiHoc`)**:
-
        ```sql
        SELECT COUNT(*) AS total FROM BuoiHoc WHERE MaPhong = ?;
        ```
-
        - Nếu `total > 0` $\rightarrow$ **CHẶN XÓA**: _"Không thể xóa phòng học 'X' vì đang có N buổi học được gán cho phòng này."_
-
     3. **Kiểm tra Đăng ký dạy bù (`DangKyDayBu`)**:
-
        ```sql
        SELECT COUNT(*) AS total FROM DangKyDayBu WHERE MaPhong = ?;
        ```
-
        - Nếu `total > 0` $\rightarrow$ **CHẶN XÓA**: _"Không thể xóa phòng học 'X' vì đang có N đơn đăng ký dạy bù tại phòng này."_
     - **Trường hợp cả 3 điều kiện đều bằng 0**: Cho phép xóa.
-
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - **Trường hợp xóa thành công**: Bản ghi bị **XÓA VĨNH VIỄN** khỏi bảng `PhongHoc`:
     ```sql
@@ -270,386 +258,1084 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
 - **Bảng dữ liệu tác động trong CSDL**: **`Khoa`** (`MaKhoa`, `TenKhoa`, `MaTruongKhoa`).
 - **Bảng liên quan (Ràng buộc FK)**:
   - `BoMon` (`BoMon.MaKhoa` $\rightarrow$ `Khoa.MaKhoa`).
+  - `LopSinhVien` (`LopSinhVien.MaKhoa` $\rightarrow$ `Khoa.MaKhoa`).
   - `GiangVien` (`Khoa.MaTruongKhoa` $\rightarrow$ `GiangVien.MaGiangVien`).
 - **Resource ID kiểm tra quyền (`checkPermission`)**: `'Khoa'` (`CanRead`, `CanCreate`, `CanUpdate`, `CanDelete`).
 
-1. Tìm kiếm & Hiển thị Danh sách Khoa
-   Thao tác người dùng: Vào Quản lý Khoa, gõ từ khóa tìm theo MaKhoa hoặc TenKhoa.
-   Nghiệp vụ xử lý:
-   Gọi GET /v1/api/khoa?search=..., qua checkPermission('Khoa', 'CanRead').
-   Backend JOIN 2 lần: JOIN BoMon để đếm số bộ môn trực thuộc từng khoa (giống cách ToaNha đếm PhongHoc), và JOIN GiangVien (qua MaTruongKhoa) để lấy HoTen giảng viên hiển thị tên Trưởng khoa thay vì chỉ hiện mã.
-   Thay đổi CSDL: Không có, chỉ đọc.
-   Kết quả hiển thị: Bảng danh sách gồm Mã khoa, Tên khoa, Tên Trưởng khoa (hoặc "Chưa phân công" nếu MaTruongKhoa là NULL), badge số lượng Bộ môn trực thuộc.
-2. Thêm mới Khoa
-   Thao tác người dùng: Bấm "Thêm Khoa", nhập MaKhoa, TenKhoa. Không nhập Trưởng khoa ở bước này.
-   Nghiệp vụ xử lý:
-   Validation 1: MaKhoa, TenKhoa không được trống.
-   Validation 2: Chuẩn hóa MaKhoa (viết hoa, xóa khoảng trắng thừa) giống quy tắc MaToaNha.
-   Validation 3 (check trùng): kiểm tra MaKhoa đã tồn tại chưa, nếu có trả lỗi 400 "Mã khoa 'X' đã tồn tại".
-   Lý do không cho nhập Trưởng khoa ngay lúc tạo: tại thời điểm khoa mới được tạo, chưa chắc đã có Bộ môn/Giảng viên nào thuộc khoa đó trong CSDL để chọn làm Trưởng khoa hợp lệ → cột MaTruongKhoa mặc định để NULL, sẽ gán sau bằng chức năng riêng (mục 4).
-   Thay đổi CSDL: Thêm 1 dòng vào Khoa với MaTruongKhoa = NULL.
-   Kết quả hiển thị: Đóng modal, danh sách reload, khoa mới hiện với Trưởng khoa "Chưa phân công".
-3. Cập nhật (Sửa) Thông tin Khoa
-   Thao tác người dùng: Bấm "Sửa" tại dòng khoa, chỉ được sửa TenKhoa. MaKhoa cố định (là khóa ngoại trong BoMon, không được đổi để tránh gãy quan hệ, giống nguyên tắc khóa MaToaNha).
-   Nghiệp vụ xử lý: Validation TenKhoa không được trống.
-   Thay đổi CSDL: UPDATE Khoa SET TenKhoa = ? WHERE MaKhoa = ?.
-   Kết quả hiển thị: Thông báo "Cập nhật khoa thành công", bảng làm mới.
-4. Gán / Thay đổi Trưởng Khoa (chức năng đặc thù, khác ToaNha)
-   Thao tác người dùng: Bấm "Phân công Trưởng khoa" tại dòng khoa tương ứng, hệ thống hiện dropdown chọn Giảng viên.
-   Nghiệp vụ xử lý:
-   Dropdown chỉ nên liệt kê Giảng viên thuộc một Bộ môn nằm trong chính Khoa đó (join GiangVien → BoMon → Khoa), tránh trường hợp gán một giảng viên hoàn toàn không liên quan làm Trưởng khoa.
-   Validation: MaGiangVien được chọn phải tồn tại và đang ở trạng thái Active trong bảng GiangVien.
-   Cho phép gán NULL trở lại (bãi nhiệm Trưởng khoa) nếu cần, ví dụ khi giảng viên đó nghỉ việc/chuyển công tác.
-   Thay đổi CSDL: UPDATE Khoa SET MaTruongKhoa = ? WHERE MaKhoa = ?.
-   Kết quả hiển thị: Tên Trưởng khoa mới hiện ngay trên bảng danh sách, không cần load lại trang.
-5. Xem Chi tiết Khoa (Danh sách Bộ môn trực thuộc)
-   Thao tác người dùng: Bấm vào tên/mã khoa để xem trang chi tiết.
-   Nghiệp vụ xử lý: Truy vấn tất cả BoMon có MaKhoa tương ứng, kèm số lượng Giảng viên của từng Bộ môn (join tiếp GiangVien).
-   Thay đổi CSDL: Không có, chỉ đọc.
-   Kết quả hiển thị: Trang chi tiết hiện thông tin Khoa + bảng con liệt kê các Bộ môn trực thuộc, mỗi dòng có thể bấm để điều hướng sang phân hệ Quản lý Bộ môn.
-6. Xóa Khoa (Kiểm tra ràng buộc toàn vẹn)
-   Thao tác người dùng: Bấm "Xóa" tại dòng khoa, xác nhận trên popup.
-   Nghiệp vụ xử lý:
-   Kiểm tra ràng buộc với BoMon: đếm số Bộ môn có MaKhoa này.
-   Nếu > 0 → CHẶN XÓA, trả lỗi 400: "Không thể xóa Khoa 'X' vì đang chứa Y bộ môn. Vui lòng xóa hoặc chuyển các bộ môn sang khoa khác trước."
-   Nếu = 0 → cho phép xóa tiếp.
-   Lưu ý thêm về ràng buộc vòng: vì Khoa.MaTruongKhoa tham chiếu tới GiangVien, còn GiangVien.MaBoMon tham chiếu tới BoMon, nên trên thực tế chỉ cần đảm bảo hết BoMon trực thuộc là đủ điều kiện xóa an toàn — không cần kiểm tra GiangVien trực tiếp vì giảng viên luôn gắn với Bộ môn chứ không gắn thẳng với Khoa.
-   Thay đổi CSDL: Nếu đủ điều kiện, DELETE FROM Khoa WHERE MaKhoa = ?.
-   Kết quả hiển thị: Dòng khoa biến mất khỏi bảng danh sách.
-   **PHÂN HỆ: QUẢN LÝ BỘ MÔN (BoMon)**
-7. Lọc & Hiển thị Danh sách Bộ môn theo Khoa
-   Thao tác người dùng:
-   Khi vào màn hình Danh mục đào tạo → Quản lý Bộ môn, dropdown "Khoa" mặc định ở trạng thái "Tất cả các Khoa" → bảng hiển thị toàn bộ Bộ môn trong hệ thống.
-   Người dùng select một Khoa cụ thể → bảng lập tức lọc lại tức thời, chỉ hiện các Bộ môn thuộc Khoa đó, không cần bấm nút "Tìm kiếm" hay tải lại trang.
-   Nghiệp vụ xử lý:
-   Trang tải lần đầu: GET /v1/api/bomon (không kèm tham số) qua checkPermission('BoMon', 'CanRead') → trả về toàn bộ BoMon.
-   Khi select Khoa: GET /v1/api/bomon?maKhoa=<mã khoa> → backend thêm điều kiện WHERE MaKhoa = ?.
-   Backend JOIN Khoa để hiển thị tên Khoa, JOIN GiangVien (qua MaTruongBoMon) để hiển thị tên Trưởng bộ môn, và đếm riêng số lượng GiangVien và số lượng MonHoc thuộc từng bộ môn.
-   Dữ liệu đổ vào dropdown "Khoa" lấy từ GET /v1/api/khoa, gắn thêm 1 lựa chọn tĩnh "Tất cả các Khoa" ở đầu danh sách.
-   Thay đổi CSDL: Không có, chỉ đọc (SELECT).
-   Kết quả hiển thị: Bảng Data Table gồm Mã bộ môn, Tên bộ môn, Khoa trực thuộc, Tên Trưởng bộ môn (hiển thị "Chưa phân công" nếu NULL, chỉ để xem — không có nút chỉnh sửa), badge số Giảng viên, badge số Môn học.
-8. Thêm mới Bộ môn
-   Thao tác người dùng: Bấm "Thêm Bộ môn", nhập MaBoMon, TenBoMon, chọn Khoa trực thuộc (MaKhoa) từ dropdown. Không có ô nhập Trưởng bộ môn.
-   Nghiệp vụ xử lý:
-   Validation 1: MaBoMon, TenBoMon, MaKhoa không được trống.
-   Validation 2: Chuẩn hóa MaBoMon (viết hoa, xóa khoảng trắng thừa).
-   Validation 3 (khóa ngoại): Khoa được chọn phải tồn tại trong bảng Khoa.
-   Validation 4 (check trùng): kiểm tra MaBoMon đã tồn tại chưa, nếu có trả lỗi 400 "Mã bộ môn 'X' đã tồn tại."
-   Cột MaTruongBoMon luôn được gán NULL khi tạo mới — hệ thống không cung cấp cách gán ngay tại bước này.
-   Thay đổi CSDL: Thêm 1 dòng vào BoMon với MaTruongBoMon = NULL.
-   Kết quả hiển thị: Đóng modal, danh sách reload, bộ môn mới hiện với Trưởng bộ môn "Chưa phân công".
-9. Cập nhật (Sửa) Thông tin Bộ môn
-   Thao tác người dùng: Bấm "Sửa" tại dòng bộ môn, được sửa TenBoMon và/hoặc chuyển MaKhoa (chuyển bộ môn sang khoa khác). MaBoMon cố định vì là khóa ngoại trong GiangVien, MonHoc, TepNhap. Không có ô chỉnh Trưởng bộ môn trên form này.
-   Nghiệp vụ xử lý:
-   Validation: TenBoMon không trống; MaKhoa mới (nếu đổi) phải tồn tại trong bảng Khoa.
-   Cảnh báo nghiệp vụ khi đổi Khoa trực thuộc: nếu bộ môn đang có sẵn MaTruongBoMon (được gán từ trước, không qua UI này), hệ thống nên cảnh báo Admin rằng việc đổi Khoa có thể ảnh hưởng tới tính hợp lý của phân công hiện tại — chỉ cảnh báo, không tự động xóa dữ liệu.
-   Thay đổi CSDL: UPDATE BoMon SET TenBoMon = ?, MaKhoa = ? WHERE MaBoMon = ?.
-   Kết quả hiển thị: Thông báo "Cập nhật bộ môn thành công", bảng làm mới.
-10. Xem Chi tiết Bộ môn (Giảng viên & Môn học trực thuộc)
-    Thao tác người dùng: Bấm vào tên/mã bộ môn để xem trang chi tiết.
-    Nghiệp vụ xử lý: Truy vấn song song 2 danh sách con — tất cả GiangVien có MaBoMon này, và tất cả MonHoc có MaBoMon này (kèm SoTinChi, LoaiMonHoc).
-    Thay đổi CSDL: Không có, chỉ đọc.
-    Kết quả hiển thị: Trang chi tiết chia 2 tab/bảng con — "Danh sách Giảng viên" và "Danh sách Môn học" — mỗi dòng có thể bấm điều hướng sang phân hệ tương ứng.
-11. Xóa Bộ môn (Kiểm tra ràng buộc toàn vẹn — 3 bảng con)
-    Thao tác người dùng: Bấm "Xóa" tại dòng bộ môn, xác nhận trên popup.
-    Nghiệp vụ xử lý — kiểm tra tuần tự, dừng ngay khi gặp ràng buộc đầu tiên bị vi phạm:
-    Đếm số GiangVien có MaBoMon này. Nếu > 0 → chặn xóa, lỗi 400: "Không thể xóa Bộ môn 'X' vì đang có Y giảng viên trực thuộc. Vui lòng chuyển giảng viên sang bộ môn khác trước."
-    Nếu qua bước 1, đếm số MonHoc có MaBoMon này. Nếu > 0 → chặn xóa, lỗi tương tự về môn học.
-    Nếu qua bước 2, đếm số TepNhap có MaBoMon này. Nếu > 0 → chặn xóa để bảo toàn lịch sử nhập liệu.
-    Chỉ khi cả 3 điều kiện đều bằng 0 mới cho phép xóa.
-    Thay đổi CSDL: Nếu đủ điều kiện, DELETE FROM BoMon WHERE MaBoMon = ?.
-    Kết quả hiển thị: Dòng bộ môn biến mất khỏi bảng danh sách.
-    **PHÂN HỆ: QUẢN LÝ GIẢNG VIÊN (GiangVien) — Bản rút gọn đúng cấu trúc bảng**
-12. Tìm kiếm, Lọc & Hiển thị Danh sách Giảng viên
-    • Thao tác người dùng: Vào Danh mục đào tạo → Quản lý Giảng viên. Lọc theo Bộ môn (MaBoMon — dropdown lấy từ BoMon, mặc định "Tất cả Bộ môn", có thêm lựa chọn phụ "Chưa phân bộ môn" để lọc riêng các dòng MaBoMon IS NULL), lọc theo Trạng thái (TrangThai: Active/Inactive), hoặc gõ từ khóa tìm theo HoTen, Email, MaGiangVien.
-    • Nghiệp vụ xử lý:
-    o Gọi GET /v1/api/giangvien?maBoMon=...&trangThai=...&search=... qua checkPermission('GiangVien', 'CanRead').
-    o Backend LEFT JOIN BoMon (bắt buộc LEFT JOIN vì MaBoMon có thể NULL) để hiển thị tên Bộ môn; LEFT JOIN Users để hiển thị đã/chưa có tài khoản đăng nhập.
-    • Thay đổi CSDL: Không có, chỉ đọc.
-    • Kết quả hiển thị: Bảng gồm Mã GV, Họ tên, Email, SĐT, Bộ môn (hoặc "Chưa phân công"), Badge trạng thái (Active = xanh / Inactive = xám), badge nhỏ báo hiệu đã liên kết tài khoản hay chưa.
+> 📌 **CHÚ THÍCH ĐẶC THÙ NGHIỆP VỤ (`Khoa`)**:
+> - Cột `MaTruongKhoa`: Cho phép `NULL`. Tại thời điểm tạo mới Khoa, `MaTruongKhoa` luôn mặc định là `NULL` do chưa có giảng viên thuộc khoa để phân công. Việc gán/bãi nhiệm Trưởng khoa được thực hiện qua chức năng phân công riêng.
+> - Giảng viên được phân công làm Trưởng khoa phải thuộc một Bộ môn trực thuộc chính Khoa đó và đang ở trạng thái `Active`.
+
+#### 1.3.1. Tìm kiếm & Hiển thị Danh sách Khoa
+
+- **Thao tác người dùng (User Action)**:
+  - Người dùng truy cập menu `Dữ liệu nền` (hoặc `Danh mục đào tạo`) $\rightarrow$ `Quản lý Khoa`.
+  - Nhập từ khóa vào ô tìm kiếm theo Mã khoa (`MaKhoa`) hoặc Tên khoa (`TenKhoa`).
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Gửi request `GET /v1/api/khoa?search=...`.
+  - Hệ thống kiểm tra quyền `CanRead` trên Resource `Khoa`.
+  - Backend thực hiện truy vấn `LEFT JOIN BoMon` để đếm số lượng bộ môn trực thuộc và `LEFT JOIN GiangVien` (qua `MaTruongKhoa`) để lấy họ tên Trưởng khoa:
+    ```sql
+    SELECT
+      k.MaKhoa,
+      k.TenKhoa,
+      k.MaTruongKhoa,
+      gv.HoTen AS TenTruongKhoa,
+      COUNT(DISTINCT bm.MaBoMon) AS SoBoMon
+    FROM Khoa k
+    LEFT JOIN GiangVien gv ON k.MaTruongKhoa = gv.MaGiangVien
+    LEFT JOIN BoMon bm ON k.MaKhoa = bm.MaKhoa
+    WHERE k.MaKhoa LIKE ? OR k.TenKhoa LIKE ?
+    GROUP BY k.MaKhoa, k.TenKhoa, k.MaTruongKhoa, gv.HoTen
+    ORDER BY k.MaKhoa ASC;
+    ```
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Không làm thay đổi CSDL** (`SELECT` Read-only).
+- **Kết quả hiển thị (UI Response)**:
+  - Bảng Data Table hiển thị danh sách các khoa: Mã khoa, Tên khoa, Tên Trưởng khoa (hoặc nhãn *"Chưa phân công"* nếu `MaTruongKhoa` là `NULL`), badge số lượng Bộ môn trực thuộc.
+
+#### 1.3.2. Thêm mới Khoa
+
+- **Thao tác người dùng (User Action)**:
+  - Bấm nút **"Thêm Khoa"**.
+  - Nhập thông tin trên Form: **Mã khoa** (`MaKhoa`), **Tên khoa** (`TenKhoa`).
+  - Nhấn **"Lưu Khoa"**.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Kiểm tra quyền `CanCreate` trên Resource `Khoa`.
+  - **Validation 1**: `MaKhoa` và `TenKhoa` không được để trống.
+  - **Validation 2**: Chuẩn hóa `MaKhoa` (Viết hoa `UPPERCASE`, xóa khoảng trắng thừa).
+  - **Validation 3 (Check trùng mã)**:
+    ```sql
+    SELECT MaKhoa FROM Khoa WHERE MaKhoa = ? LIMIT 1;
+    ```
+    - Nếu đã tồn tại $\rightarrow$ Trả lỗi: _"Mã khoa 'CNTT' đã tồn tại trong hệ thống."_ (HTTP 400).
+  - Cột `MaTruongKhoa` tự động gán giá trị mặc định `NULL`.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Tạo mới 1 dòng bản ghi trong bảng `Khoa`**:
+    ```sql
+    INSERT INTO Khoa (MaKhoa, TenKhoa, MaTruongKhoa)
+    VALUES (?, ?, NULL);
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Đóng Modal, tải lại danh sách, khoa mới xuất hiện với cột Trưởng khoa là *"Chưa phân công"*.
+
+#### 1.3.3. Cập nhật (Sửa) Thông tin Khoa
+
+- **Thao tác người dùng (User Action)**:
+  - Bấm icon **"Sửa"** tại dòng khoa cần cập nhật.
+  - Thay đổi **Tên khoa** (`TenKhoa`).
+  - Nhấn **"Lưu Thay Đổi"**.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Kiểm tra quyền `CanUpdate` trên Resource `Khoa`.
+  - Khóa cố định khóa chính `MaKhoa` (Không cho phép sửa mã khoa để bảo toàn toàn vẹn dữ liệu với `BoMon` và `LopSinhVien`).
+  - Validation: `TenKhoa` không được để trống.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Cập nhật thông tin trong bảng `Khoa`**:
+    ```sql
+    UPDATE Khoa
+    SET TenKhoa = ?
+    WHERE MaKhoa = ?;
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Đóng Modal, thông báo toast _"Cập nhật khoa thành công!"_, làm mới dữ liệu bảng.
+
+#### 1.3.4. Phân công / Bãi nhiệm Trưởng khoa
+
+- **Thao tác người dùng (User Action)**:
+  - Bấm nút **"Phân công Trưởng khoa"** tại dòng khoa tương ứng.
+  - Chọn Giảng viên từ Dropdown danh sách (hoặc chọn *"Bãi nhiệm / Để trống"* nếu muốn hủy phân công).
+  - Nhấn **"Xác Nhận"**.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Kiểm tra quyền `CanUpdate` trên Resource `Khoa`.
+  - **Trường hợp Bãi nhiệm (`maGiangVien` là `null`)**:
+    - Cập nhật `MaTruongKhoa = NULL`.
+  - **Trường hợp Gán mới / Đổi Trưởng khoa**:
+    - Backend kiểm tra giảng viên:
+      ```sql
+      SELECT gv.MaGiangVien, gv.HoTen, gv.TrangThai, bm.MaKhoa AS MaKhoaGV
+      FROM GiangVien gv
+      JOIN BoMon bm ON gv.MaBoMon = bm.MaBoMon
+      WHERE gv.MaGiangVien = ?
+      LIMIT 1;
+      ```
+    - **Validation**: Giảng viên phải tồn tại, đang ở trạng thái `Active`, và có `MaKhoaGV` trùng khớp với `MaKhoa` của Khoa được phân công.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Cập nhật cột `MaTruongKhoa` trong bảng `Khoa`**:
+    ```sql
+    UPDATE Khoa SET MaTruongKhoa = ? WHERE MaKhoa = ?;
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Tên Trưởng khoa mới hiển thị ngay trên bảng danh sách, hiển thị toast thông báo thành công.
+
+#### 1.3.5. Xem Chi tiết Khoa (Danh sách Bộ môn trực thuộc)
+
+- **Thao tác người dùng (User Action)**:
+  - Bấm vào Tên/Mã khoa để mở trang xem chi tiết.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Gửi request `GET /v1/api/khoa/:maKhoa/bomon`.
+  - Backend thực hiện truy vấn danh sách các Bộ môn trực thuộc kèm số lượng giảng viên từng bộ môn:
+    ```sql
+    SELECT
+      bm.MaBoMon,
+      bm.TenBoMon,
+      bm.MaKhoa,
+      COUNT(DISTINCT gv.MaGiangVien) AS SoGiangVien
+    FROM BoMon bm
+    LEFT JOIN GiangVien gv ON bm.MaBoMon = gv.MaBoMon
+    WHERE bm.MaKhoa = ?
+    GROUP BY bm.MaBoMon, bm.TenBoMon, bm.MaKhoa
+    ORDER BY bm.MaBoMon ASC;
+    ```
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Không làm thay đổi CSDL** (`SELECT` Read-only).
+- **Kết quả hiển thị (UI Response)**:
+  - Màn hình chi tiết hiển thị thông tin Khoa kèm bảng danh sách Bộ môn trực thuộc, hỗ trợ điều hướng nhanh sang Quản lý Bộ môn.
+
+#### 1.3.6. Xóa Khoa (Kiểm tra Ràng buộc toàn vẹn)
+
+- **Thao tác người dùng (User Action)**:
+  - Bấm icon **"Xóa"** tại dòng khoa, xác nhận trên Popup.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Kiểm tra quyền `CanDelete` trên Resource `Khoa`.
+  - **Kiểm tra ràng buộc Bộ môn (`BoMon`)**:
+    ```sql
+    SELECT COUNT(*) AS total FROM BoMon WHERE MaKhoa = ?;
+    ```
+    - **Trường hợp `total > 0`**: **CHẶN XÓA HOÀN TOÀN**. Trả lỗi HTTP 400: _"Không thể xóa Khoa 'CNTT' vì đang chứa N bộ môn trực thuộc. Vui lòng xóa hoặc chuyển các bộ môn sang khoa khác trước."_
+    - **Trường hợp `total == 0`**: Cho phép xóa.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Trường hợp đủ điều kiện xóa**: Bản ghi bị **XÓA VĨNH VIỄN** khỏi bảng `Khoa`:
+    ```sql
+    DELETE FROM Khoa WHERE MaKhoa = ?;
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Khoa bị xóa khỏi CSDL và biến mất khỏi bảng danh sách.
 
 ---
 
-2. Thêm mới Giảng viên
-   • Thao tác người dùng: Bấm "Thêm Giảng viên", nhập MaGiangVien, HoTen, Email, SoDienThoai, chọn Bộ môn (không bắt buộc — có thể để trống). Không có ô chọn tài khoản đăng nhập ở bước này.
-   • Nghiệp vụ xử lý:
-   o Validation 1: MaGiangVien, HoTen không được trống (2 cột NOT NULL duy nhất ngoài TrangThai).
-   o Validation 2: Chuẩn hóa MaGiangVien (viết hoa, xóa khoảng trắng thừa).
-   o Validation 3 (check trùng): kiểm tra MaGiangVien đã tồn tại chưa, nếu có trả lỗi 400 "Mã giảng viên đã tồn tại."
-   o Validation 4 (khóa ngoại có điều kiện): nếu có chọn MaBoMon, phải kiểm tra Bộ môn đó tồn tại trong bảng BoMon; nếu để trống thì lưu NULL, bỏ qua kiểm tra.
-   o Validation 5 (tùy chọn nên có dù CSDL không ràng buộc): kiểm tra định dạng Email hợp lệ, SoDienThoai đúng định dạng số điện thoại nếu người dùng có nhập (vì 2 cột này cho phép NULL nhưng nếu nhập thì nên đúng định dạng).
-   o TrangThai mặc định CSDL tự gán 'Active'. UserId mặc định NULL.
-   • Thay đổi CSDL: Thêm 1 dòng vào GiangVien với TrangThai = 'Active', UserId = NULL.
-   • Kết quả hiển thị: Đóng modal, danh sách reload, giảng viên mới hiện với trạng thái Active, cột tài khoản hiện "Chưa liên kết".
+### 1.4. Chức năng 4: Quản lý Bộ môn (`BoMon`)
+
+- **Bảng dữ liệu tác động trong CSDL**: **`BoMon`** (`MaBoMon`, `TenBoMon`, `MaKhoa`, `MaTruongBoMon`).
+- **Bảng liên quan (Ràng buộc FK)**:
+  - `Khoa` (`BoMon.MaKhoa` $\rightarrow$ `Khoa.MaKhoa`).
+  - `GiangVien` (`BoMon.MaTruongBoMon` $\rightarrow$ `GiangVien.MaGiangVien`, `GiangVien.MaBoMon` $\rightarrow$ `BoMon.MaBoMon`).
+  - `MonHoc` (`MonHoc.MaBoMon` $\rightarrow$ `BoMon.MaBoMon`).
+  - `LopHocPhan` (`LopHocPhan.MaBoMon` $\rightarrow$ `BoMon.MaBoMon`).
+  - `TepNhap` (`TepNhap.MaBoMon` $\rightarrow$ `BoMon.MaBoMon`).
+- **Resource ID kiểm tra quyền (`checkPermission`)**: `'BoMon'` (`CanRead`, `CanCreate`, `CanUpdate`, `CanDelete`).
+
+> 📌 **CHÚ THÍCH ĐẶC THÙ NGHIỆP VỤ (`BoMon`)**:
+> - Cột `MaTruongBoMon`: Mặc định `NULL` khi tạo mới.
+> - Cột `MaKhoa`: Bắt buộc (`NOT NULL`), mỗi Bộ môn phải trực thuộc một Khoa quản lý xác định.
+
+#### 1.4.1. Lọc & Hiển thị Danh sách Bộ môn theo Khoa
+
+- **Thao tác người dùng (User Action)**:
+  - Người dùng truy cập menu `Dữ liệu nền` $\rightarrow$ `Quản lý Bộ môn`.
+  - Chọn Bộ lọc: Dropdown **Khoa** (`MaKhoa`) mặc định *"Tất cả các Khoa"* hoặc chọn 1 Khoa cụ thể; có thể nhập từ khóa tìm kiếm theo Tên bộ môn hoặc Mã bộ môn.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Gửi request `GET /v1/api/bomon?maKhoa=...`.
+  - Kiểm tra quyền `CanRead` trên Resource `BoMon`.
+  - Backend thực hiện truy vấn `LEFT JOIN Khoa`, `LEFT JOIN GiangVien` (lấy tên Trưởng bộ môn), đồng thời đếm số Giảng viên và số Môn học thuộc từng bộ môn:
+    ```sql
+    SELECT
+      bm.MaBoMon,
+      bm.TenBoMon,
+      bm.MaKhoa,
+      bm.MaTruongBoMon,
+      k.TenKhoa,
+      gv.HoTen AS TenTruongBoMon,
+      COUNT(DISTINCT gv2.MaGiangVien) AS SoGiangVien,
+      COUNT(DISTINCT mh.MaMonHoc) AS SoMonHoc
+    FROM BoMon bm
+    LEFT JOIN Khoa k ON bm.MaKhoa = k.MaKhoa
+    LEFT JOIN GiangVien gv ON bm.MaTruongBoMon = gv.MaGiangVien
+    LEFT JOIN GiangVien gv2 ON bm.MaBoMon = gv2.MaBoMon
+    LEFT JOIN MonHoc mh ON bm.MaBoMon = mh.MaBoMon
+    WHERE bm.MaKhoa = ?
+    GROUP BY bm.MaBoMon, bm.TenBoMon, bm.MaKhoa, bm.MaTruongBoMon, k.TenKhoa, gv.HoTen
+    ORDER BY bm.MaKhoa ASC, bm.MaBoMon ASC;
+    ```
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Không làm thay đổi CSDL** (`SELECT` Read-only).
+- **Kết quả hiển thị (UI Response)**:
+  - Bảng dữ liệu hiển thị: Mã bộ môn, Tên bộ môn, Khoa trực thuộc, Tên Trưởng bộ môn (hoặc nhãn *"Chưa phân công"*), badge số Giảng viên, badge số Môn học.
+
+#### 1.4.2. Thêm mới Bộ môn
+
+- **Thao tác người dùng (User Action)**:
+  - Bấm nút **"Thêm Bộ Môn"**.
+  - Nhập: **Mã bộ môn** (`MaBoMon`), **Tên bộ môn** (`TenBoMon`), chọn **Khoa trực thuộc** (`MaKhoa`) từ Dropdown.
+  - Nhấn **"Lưu Bộ Môn"**.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Kiểm tra quyền `CanCreate` trên Resource `BoMon`.
+  - **Validation 1**: `MaBoMon`, `TenBoMon`, `MaKhoa` không được để trống.
+  - **Validation 2**: Chuẩn hóa `MaBoMon` (Tự động viết hoa `UPPERCASE`, xóa khoảng trắng thừa).
+  - **Validation 3 (Kiểm tra khóa ngoại `MaKhoa`)**: Khoa được chọn phải tồn tại trong bảng `Khoa`.
+  - **Validation 4 (Check trùng mã)**:
+    ```sql
+    SELECT MaBoMon FROM BoMon WHERE MaBoMon = ? LIMIT 1;
+    ```
+    - Nếu đã tồn tại $\rightarrow$ Trả lỗi: _"Mã bộ môn 'CNPM' đã tồn tại."_ (HTTP 400).
+  - Cột `MaTruongBoMon` tự động gán `NULL`.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Tạo mới 1 dòng bản ghi trong bảng `BoMon`**:
+    ```sql
+    INSERT INTO BoMon (MaBoMon, TenBoMon, MaKhoa, MaTruongBoMon)
+    VALUES (?, ?, ?, NULL);
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Đóng Modal, làm mới danh sách, bộ môn mới hiện trên bảng với Trưởng bộ môn là *"Chưa phân công"*.
+
+#### 1.4.3. Cập nhật (Sửa) Thông tin Bộ môn
+
+- **Thao tác người dùng (User Action)**:
+  - Bấm icon **"Sửa"** tại dòng bộ môn.
+  - Chỉnh sửa **Tên bộ môn** (`TenBoMon`) và/hoặc chọn lại **Khoa trực thuộc** (`MaKhoa`).
+  - Nhấn **"Lưu Thay Đổi"**.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Kiểm tra quyền `CanUpdate` trên Resource `BoMon`.
+  - Khóa cố định `MaBoMon` (Không cho phép sửa mã bộ môn).
+  - **Validation**: `TenBoMon` không được để trống; `MaKhoa` mới phải tồn tại trong bảng `Khoa`.
+  - **Cảnh báo nghiệp vụ khi đổi Khoa trực thuộc**: Nếu bộ môn đang có `MaTruongBoMon`, hệ thống trả thêm cờ cảnh báo `warnTruongBoMon` để Admin rà soát lại nhân sự.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Cập nhật thông tin trong bảng `BoMon`**:
+    ```sql
+    UPDATE BoMon
+    SET TenBoMon = ?, MaKhoa = ?
+    WHERE MaBoMon = ?;
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Đóng Modal, thông báo _"Cập nhật bộ môn thành công!"_, làm mới dữ liệu bảng.
+
+#### 1.4.4. Xem Chi tiết Bộ môn (Giảng viên & Môn học trực thuộc)
+
+- **Thao tác người dùng (User Action)**:
+  - Bấm vào Tên/Mã bộ môn để xem trang chi tiết.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Gửi request `GET /v1/api/bomon/:maBoMon/detail`.
+  - Backend thực hiện truy vấn đồng thời danh sách Giảng viên và Môn học thuộc bộ môn:
+    ```sql
+    -- Lấy danh sách Giảng viên trực thuộc
+    SELECT gv.MaGiangVien, gv.HoTen, gv.Email, gv.SoDienThoai, gv.TrangThai
+    FROM GiangVien gv
+    WHERE gv.MaBoMon = ?
+    ORDER BY gv.HoTen ASC;
+
+    -- Lấy danh sách Môn học trực thuộc
+    SELECT mh.MaMonHoc, mh.TenMonHoc, mh.SoTinChi, mh.LoaiMonHoc
+    FROM MonHoc mh
+    WHERE mh.MaBoMon = ?
+    ORDER BY mh.MaMonHoc ASC;
+    ```
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Không làm thay đổi CSDL** (`SELECT` Read-only).
+- **Kết quả hiển thị (UI Response)**:
+  - Giao diện chi tiết hiển thị 2 Tab con: *"Danh sách Giảng viên"* và *"Danh sách Môn học"*, hỗ trợ điều hướng nhanh sang phân hệ tương ứng.
+
+#### 1.4.5. Xóa Bộ môn (Kiểm tra Ràng buộc toàn vẹn — 3 bảng con)
+
+- **Thao tác người dùng (User Action)**:
+  - Bấm icon **"Xóa"** tại dòng bộ môn, xác nhận trên Popup.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Kiểm tra quyền `CanDelete` trên Resource `BoMon`.
+  - **Kiểm tra tuần tự 3 ràng buộc toàn vẹn CSDL**:
+    1. **Kiểm tra Giảng viên (`GiangVien`)**:
+       ```sql
+       SELECT COUNT(*) AS total FROM GiangVien WHERE MaBoMon = ?;
+       ```
+       - Nếu `total > 0` $\rightarrow$ **CHẶN XÓA**: _"Không thể xóa Bộ môn 'X' vì đang có N giảng viên trực thuộc. Vui lòng chuyển giảng viên sang bộ môn khác trước."_
+    2. **Kiểm tra Môn học (`MonHoc`)**:
+       ```sql
+       SELECT COUNT(*) AS total FROM MonHoc WHERE MaBoMon = ?;
+       ```
+       - Nếu `total > 0` $\rightarrow$ **CHẶN XÓA**: _"Không thể xóa Bộ môn 'X' vì đang có N môn học trực thuộc. Vui lòng xóa hoặc chuyển các môn học trước."_
+    3. **Kiểm tra Tệp nhập liệu (`TepNhap`)**:
+       ```sql
+       SELECT COUNT(*) AS total FROM TepNhap WHERE MaBoMon = ?;
+       ```
+       - Nếu `total > 0` $\rightarrow$ **CHẶN XÓA**: _"Không thể xóa Bộ môn 'X' vì đang có N tệp nhập liệu liên quan để bảo toàn lịch sử."_
+    - Chỉ khi cả 3 điều kiện đều bằng 0 mới cho phép xóa.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Trường hợp xóa thành công**: Bản ghi bị **XÓA VĨNH VIỄN** khỏi bảng `BoMon`:
+    ```sql
+    DELETE FROM BoMon WHERE MaBoMon = ?;
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Bộ môn bị xóa khỏi CSDL và biến mất khỏi bảng danh sách.
 
 ---
 
-3. Cập nhật (Sửa) Thông tin Giảng viên
-   • Thao tác người dùng: Bấm "Sửa" tại dòng giảng viên, được sửa HoTen, Email, SoDienThoai, và chuyển MaBoMon (kể cả đổi từ có bộ môn sang "Chưa phân công" hoặc ngược lại). MaGiangVien cố định vì là khóa ngoại trong rất nhiều bảng con.
-   • Nghiệp vụ xử lý:
-   o Validation giống mục 2 (áp dụng lại cho MaBoMon, Email, SoDienThoai).
-   o Cảnh báo nghiệp vụ: nếu giảng viên đang được gán làm MaTruongBoMon của chính Bộ môn hiện tại, hoặc MaTruongKhoa của một Khoa nào đó, mà bị đổi MaBoMon sang bộ môn khác → cảnh báo Admin rà soát lại phân công lãnh đạo (chỉ cảnh báo, không tự động gỡ).
-   • Thay đổi CSDL: UPDATE GiangVien SET HoTen=?, Email=?, SoDienThoai=?, MaBoMon=? WHERE MaGiangVien=?.
-   • Kết quả hiển thị: Thông báo "Cập nhật giảng viên thành công", bảng làm mới.
+### 1.5. Chức năng 5: Quản lý Giảng viên (`GiangVien`)
+
+- **Bảng dữ liệu tác động trong CSDL**: **`GiangVien`** (`MaGiangVien`, `UserId`, `HoTen`, `Email`, `SoDienThoai`, `MaBoMon`, `TrangThai`).
+- **Bảng liên quan (Ràng buộc FK)**:
+  - `Users` (`GiangVien.UserId` $\rightarrow$ `Users.UserId`).
+  - `BoMon` (`GiangVien.MaBoMon` $\rightarrow$ `BoMon.MaBoMon`, `BoMon.MaTruongBoMon` $\rightarrow$ `GiangVien.MaGiangVien`).
+  - `Khoa` (`Khoa.MaTruongKhoa` $\rightarrow$ `GiangVien.MaGiangVien`).
+  - `LopHocPhan` (`LopHocPhan.MaGiangVien` $\rightarrow$ `GiangVien.MaGiangVien`).
+  - `BuoiHoc` (`BuoiHoc.MaGiangVien` $\rightarrow$ `GiangVien.MaGiangVien`).
+  - `YeuCauNghi` (`YeuCauNghi.MaGiangVien`, `YeuCauNghi.MaGiangVienDuyet`).
+  - `PhanCongDayThay` (`PhanCongDayThay.MaGiangVienDayThay`).
+  - `DangKyDayBu` (`DangKyDayBu.MaGiangVien`).
+- **Resource ID kiểm tra quyền (`checkPermission`)**: `'GiangVien'` (`CanRead`, `CanCreate`, `CanUpdate`, `CanDelete`).
+
+> 📌 **CHÚ THÍCH CÁC TRƯỜNG DỮ LIỆU ĐẶC THÙ TRONG CSDL (`GiangVien`)**:
+> - **Cột `TrangThai`**: Mặc định là **`'Active'`** (Đang công tác/giảng dạy) hoặc **`'Inactive'`** (Ngừng công tác).
+> - **Cột `MaBoMon`**: Cho phép `NULL` (giảng viên mới tiếp nhận chưa phân bổ bộ môn cụ thể).
+> - **Cột `UserId`**: Khóa ngoại liên kết tài khoản đăng nhập người dùng (cho phép `NULL` nếu chưa tạo tài khoản hệ thống).
+
+#### 1.5.1. Tìm kiếm, Lọc & Hiển thị Danh sách Giảng viên
+
+- **Thao tác người dùng (User Action)**:
+  - Truy cập menu `Dữ liệu nền` $\rightarrow$ `Quản lý Giảng viên`.
+  - Chọn Bộ lọc: Theo **Bộ môn** (`MaBoMon` — dropdown gồm danh sách Bộ môn, lựa chọn *"Tất cả Bộ môn"*, và *"Chưa phân bộ môn"* để lọc `MaBoMon IS NULL`), theo **Trạng thái** (`TrangThai`: `Active` / `Inactive`), hoặc nhập từ khóa tìm kiếm theo Họ tên, Email, Mã giảng viên.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Gửi request `GET /v1/api/giangvien?maBoMon=...&trangThai=...&search=...`.
+  - Backend kiểm tra quyền `CanRead` trên Resource `GiangVien`.
+  - Backend thực hiện truy vấn `LEFT JOIN BoMon` (lấy tên bộ môn) và `LEFT JOIN Users` (kiểm tra trạng thái liên kết tài khoản):
+    ```sql
+    SELECT
+      gv.MaGiangVien,
+      gv.HoTen,
+      gv.Email,
+      gv.SoDienThoai,
+      gv.MaBoMon,
+      gv.TrangThai,
+      bm.TenBoMon,
+      CASE WHEN gv.UserId IS NOT NULL THEN 1 ELSE 0 END AS DaLienKetTaiKhoan
+    FROM GiangVien gv
+    LEFT JOIN BoMon bm ON gv.MaBoMon = bm.MaBoMon
+    LEFT JOIN Users u ON gv.UserId = u.UserId
+    WHERE (gv.HoTen LIKE ? OR gv.Email LIKE ? OR gv.MaGiangVien LIKE ?)
+    ORDER BY gv.MaBoMon ASC, gv.HoTen ASC;
+    ```
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Không làm thay đổi CSDL** (`SELECT` Read-only).
+- **Kết quả hiển thị (UI Response)**:
+  - Bảng danh sách gồm: Mã GV, Họ tên, Email, SĐT, Bộ môn trực thuộc (hoặc *"Chưa phân công"*), Badge trạng thái (**Active** = Xanh lá / **Inactive** = Xám), badge báo hiệu tình trạng liên kết tài khoản.
+
+#### 1.5.2. Thêm mới Giảng viên
+
+- **Thao tác người dùng (User Action)**:
+  - Bấm nút **"Thêm Giảng Viên"**.
+  - Nhập: **Mã giảng viên** (`MaGiangVien`), **Họ tên** (`HoTen`), **Email**, **Số điện thoại**, chọn **Bộ môn** (`MaBoMon` — có thể để trống).
+  - Nhấn **"Lưu Giảng Viên"**.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Kiểm tra quyền `CanCreate` trên Resource `GiangVien`.
+  - **Validation 1**: `MaGiangVien` và `HoTen` bắt buộc không được để trống.
+  - **Validation 2**: Chuẩn hóa `MaGiangVien` (Viết hoa `UPPERCASE`, xóa khoảng trắng thừa).
+  - **Validation 3 (Check trùng mã)**:
+    ```sql
+    SELECT MaGiangVien FROM GiangVien WHERE MaGiangVien = ? LIMIT 1;
+    ```
+    - Nếu đã tồn tại $\rightarrow$ Trả lỗi: _"Mã giảng viên đã tồn tại."_ (HTTP 400).
+  - **Validation 4 (Kiểm tra khóa ngoại `MaBoMon`)**: Nếu có chọn Bộ môn, Bộ môn đó phải tồn tại trong bảng `BoMon`; nếu không chọn thì lưu giá trị `NULL`.
+  - **Validation 5**: Kiểm tra đúng định dạng Email và Số điện thoại hợp lệ nếu người dùng có nhập.
+  - CSDL tự động gán `TrangThai = 'Active'` và `UserId = NULL`.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Tạo mới 1 dòng bản ghi trong bảng `GiangVien`**:
+    ```sql
+    INSERT INTO GiangVien (MaGiangVien, HoTen, Email, SoDienThoai, MaBoMon, TrangThai, UserId)
+    VALUES (?, ?, ?, ?, ?, 'Active', NULL);
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Đóng Modal, tải lại bảng danh sách, giảng viên mới hiện diện với trạng thái **Active** và tài khoản *"Chưa liên kết"*.
+
+#### 1.5.3. Cập nhật (Sửa) Thông tin Giảng viên
+
+- **Thao tác người dùng (User Action)**:
+  - Bấm icon **"Sửa"** tại dòng giảng viên.
+  - Chỉnh sửa: Họ tên, Email, Số điện thoại, chọn lại Bộ môn trực thuộc.
+  - Nhấn **"Lưu Thay Đổi"**.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Kiểm tra quyền `CanUpdate` trên Resource `GiangVien`.
+  - Khóa cố định `MaGiangVien` (Không cho phép sửa mã giảng viên vì là khóa ngoại trong rất nhiều bảng giao dịch).
+  - Validation: `HoTen` không được trống; kiểm tra định dạng Email, SĐT; kiểm tra `MaBoMon` mới hợp lệ nếu có chọn.
+  - **Cảnh báo nghiệp vụ khi chuyển Bộ môn**: Nếu giảng viên đang là Trưởng bộ môn hoặc Trưởng khoa, backend gửi cờ `warnLanhDao = true` để nhắc nhở Admin kiểm tra lại phân công lãnh đạo.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Cập nhật thông tin trong bảng `GiangVien`**:
+    ```sql
+    UPDATE GiangVien
+    SET HoTen = ?, Email = ?, SoDienThoai = ?, MaBoMon = ?
+    WHERE MaGiangVien = ?;
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Đóng Modal, hiển thị toast _"Cập nhật giảng viên thành công!"_, làm mới dữ liệu trên bảng.
+
+#### 1.5.4. Đổi Trạng thái Vận hành (Toggle Status: Active ↔ Inactive)
+
+- **Thao tác người dùng (User Action)**:
+  - Bấm nút **"Ngừng công tác"** hoặc **"Kích hoạt lại"** nhanh trên bảng danh sách.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Kiểm tra quyền `CanUpdate` trên Resource `GiangVien`.
+  - **Trường hợp Chuyển sang `'Inactive'`**:
+    - Backend kiểm tra các lớp học phần chưa hoàn tất và buổi học sắp diễn ra:
+      ```sql
+      SELECT COUNT(*) AS cnt FROM LopHocPhan
+      WHERE MaGiangVien = ? AND TrangThaiPhanCong NOT IN ('Completed', 'Cancelled');
+
+      SELECT COUNT(*) AS cnt FROM BuoiHoc
+      WHERE MaGiangVien = ? AND NgayHoc >= CURDATE();
+      ```
+    - Nếu có hoạt động đang diễn ra $\rightarrow$ Trả thông điệp cảnh báo xác nhận cho Admin trước khi thực hiện.
+  - **Trường hợp Chuyển sang `'Active'`**:
+    - Giảng viên được kích hoạt trở lại và sẵn sàng được gợi ý phân công giảng dạy.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Cập nhật duy nhất cột `TrangThai` trong bảng `GiangVien`**:
+    ```sql
+    UPDATE GiangVien SET TrangThai = ? WHERE MaGiangVien = ?;
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Badge trạng thái trên dòng đổi màu tức thời (Xanh lá ↔ Xám) kèm nhãn tương ứng (**Active ↔ Inactive**).
+
+#### 1.5.5. Xem Chi tiết Giảng viên (Lịch dạy & Hoạt động liên quan)
+
+- **Thao tác người dùng (User Action)**:
+  - Bấm vào Tên/Mã giảng viên để xem trang chi tiết.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Gửi request `GET /v1/api/giangvien/:maGiangVien/detail`.
+  - Backend thực hiện tổng hợp dữ liệu đa bảng:
+    ```sql
+    -- 1. Danh sách Lớp học phần đang phụ trách
+    SELECT lhp.MaLopHocPhan, lhp.TenLopHocPhan, mh.TenMonHoc, hk.TenHocKy, lhp.TrangThaiPhanCong
+    FROM LopHocPhan lhp
+    LEFT JOIN MonHoc mh ON lhp.MaMonHoc = mh.MaMonHoc
+    LEFT JOIN HocKy hk ON lhp.MaHocKy = hk.MaHocKy
+    WHERE lhp.MaGiangVien = ?
+    ORDER BY lhp.NgayBatDau DESC;
+
+    -- 2. Lịch sử Yêu cầu nghỉ
+    SELECT ycn.MaYeuCauNghi, ycn.LoaiYeuCau, ycn.LyDo, ycn.ThoiGianGui, ycn.TrangThai, bh.NgayHoc
+    FROM YeuCauNghi ycn
+    LEFT JOIN BuoiHoc bh ON ycn.MaBuoiHoc = bh.MaBuoiHoc
+    WHERE ycn.MaGiangVien = ?
+    ORDER BY ycn.ThoiGianGui DESC LIMIT 50;
+
+    -- 3. Lịch sử Dạy thay
+    SELECT pcdt.MaPhanCongDayThay, pcdt.ThoiGianPhanCong, pcdt.TrangThai, bh.NgayHoc, bh.MaLopHocPhan
+    FROM PhanCongDayThay pcdt
+    LEFT JOIN BuoiHoc bh ON pcdt.MaBuoiHoc = bh.MaBuoiHoc
+    WHERE pcdt.MaGiangVienDayThay = ?
+    ORDER BY pcdt.ThoiGianPhanCong DESC LIMIT 50;
+
+    -- 4. Lịch sử Đăng ký dạy bù
+    SELECT dkdb.MaDangKyDayBu, dkdb.ThoiGianDangKy, dkdb.NgayDeXuat, dkdb.TrangThai, dkdb.MaLopHocPhan
+    FROM DangKyDayBu dkdb
+    WHERE dkdb.MaGiangVien = ?
+    ORDER BY dkdb.ThoiGianDangKy DESC LIMIT 50;
+    ```
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Không làm thay đổi CSDL** (`SELECT` Read-only).
+- **Kết quả hiển thị (UI Response)**:
+  - Màn hình chi tiết hiển thị các Tab chuyên biệt: *"Lớp học phần đang dạy"*, *"Lịch sử xin nghỉ"*, *"Lịch sử dạy thay"*, *"Lịch sử dạy bù"*.
+
+#### 1.5.6. Xóa Giảng viên (Kiểm tra Ràng buộc toàn vẹn — 7 bảng)
+
+- **Thao tác người dùng (User Action)**:
+  - Bấm icon **"Xóa"** tại dòng giảng viên, xác nhận trên Popup.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Kiểm tra quyền `CanDelete` trên Resource `GiangVien`.
+  - **Kiểm tra tuần tự qua 7 bảng dữ liệu liên kết**:
+    1. `Khoa.MaTruongKhoa`: Đang là Trưởng khoa?
+    2. `BoMon.MaTruongBoMon`: Đang là Trưởng bộ môn?
+    3. `LopHocPhan.MaGiangVien`: Đang phụ trách lớp học phần nào không?
+    4. `BuoiHoc.MaGiangVien`: Đã từng có buổi học nào trong lịch sử không?
+    5. `YeuCauNghi`: Có yêu cầu nghỉ đã gửi hoặc đã duyệt không?
+    6. `PhanCongDayThay`: Đã từng được phân công dạy thay không?
+    7. `DangKyDayBu`: Đã từng đăng ký dạy bù không?
+    - Nếu bất kỳ điều kiện nào $> 0$ $\rightarrow$ **CHẶN XÓA HOÀN TOÀN** và trả thông báo lỗi chi tiết nguyên nhân ràng buộc.
+    - Chỉ khi toàn bộ 7 điều kiện đều $= 0$ (giảng viên mới tạo, chưa có dữ liệu giao dịch) mới cho phép xóa.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Trường hợp xóa thành công**: Bản ghi bị **XÓA VĨNH VIỄN** khỏi bảng `GiangVien`:
+    ```sql
+    DELETE FROM GiangVien WHERE MaGiangVien = ?;
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Giảng viên bị xóa khỏi CSDL và biến mất khỏi bảng danh sách.
 
 ---
 
-4. Đổi Trạng thái Vận hành (Toggle: Active ↔ Inactive)
-   • Thao tác người dùng: Bấm nút "Ngừng công tác" hoặc "Kích hoạt lại" nhanh trên bảng danh sách.
-   • Nghiệp vụ xử lý:
-   o Chuyển 'Active' → 'Inactive': nên cảnh báo nếu giảng viên đang có LopHocPhan với TrangThaiPhanCong chưa hoàn tất, hoặc đang có BuoiHoc sắp diễn ra trong tương lai — hỏi Admin xác nhận trước, vì ảnh hưởng tới thuật toán xếp lịch (không nên gợi ý giảng viên Inactive khi phân công dạy mới).
-   o Chuyển 'Inactive' → 'Active': giảng viên xuất hiện trở lại trong danh sách gợi ý phân công giảng dạy.
-   • Thay đổi CSDL: Chỉ đổi cột TrangThai giữa 2 giá trị.
-   • Kết quả hiển thị: Badge trạng thái đổi màu tức thời (xanh ↔ xám), không cần tải lại trang.
+### 1.6. Chức năng 6: Quản lý Môn học (`MonHoc`)
+
+- **Bảng dữ liệu tác động trong CSDL**: **`MonHoc`** (`MaMonHoc`, `TenMonHoc`, `SoTinChi`, `MaBoMon`, `LoaiMonHoc`).
+- **Bảng liên quan (Ràng buộc FK)**:
+  - `BoMon` (`MonHoc.MaBoMon` $\rightarrow$ `BoMon.MaBoMon`).
+  - `LopHocPhan` (`LopHocPhan.MaMonHoc` $\rightarrow$ `MonHoc.MaMonHoc`).
+- **Resource ID kiểm tra quyền (`checkPermission`)**: `'MonHoc'` (`CanRead`, `CanCreate`, `CanUpdate`, `CanDelete`).
+
+> 📌 **CHÚ THÍCH CÁC TRƯỜNG DỮ LIỆU ĐẶC THÙ TRONG CSDL (`MonHoc`)**:
+> - **Cột `MaBoMon`**: Bắt buộc trên giao diện nghiệp vụ (Mỗi môn học phải do đúng 1 Bộ môn phụ trách quản lý chuyên môn).
+> - **Cột `LoaiMonHoc`**: Mặc định CSDL tự gán chuỗi **`'Regular'`** (Môn học thông thường).
+> - **Cột `SoTinChi`**: Phải là số nguyên dương $> 0$ (ảnh hưởng trực tiếp tới cấu trúc số tiết/thời lượng xếp lịch).
+
+#### 1.6.1. Tìm kiếm, Lọc & Hiển thị Danh sách Môn học
+
+- **Thao tác người dùng (User Action)**:
+  - Truy cập menu `Dữ liệu nền` $\rightarrow$ `Quản lý Môn học`.
+  - Chọn Bộ lọc: Dropdown **Bộ môn** (`MaBoMon` — mặc định *"Tất cả Bộ môn"* hoặc chọn 1 Bộ môn cụ thể), ô tìm kiếm theo Mã môn học hoặc Tên môn học.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Gửi request `GET /v1/api/monhoc?maBoMon=...&search=...`.
+  - Kiểm tra quyền `CanRead` trên Resource `MonHoc`.
+  - Backend thực hiện truy vấn `LEFT JOIN BoMon` (lấy tên bộ môn) và đếm số lượng lớp học phần đã mở qua `LopHocPhan`:
+    ```sql
+    SELECT
+      mh.MaMonHoc,
+      mh.TenMonHoc,
+      mh.SoTinChi,
+      mh.MaBoMon,
+      mh.LoaiMonHoc,
+      bm.TenBoMon,
+      COUNT(DISTINCT lhp.MaLopHocPhan) AS SoLopHocPhan
+    FROM MonHoc mh
+    LEFT JOIN BoMon bm ON mh.MaBoMon = bm.MaBoMon
+    LEFT JOIN LopHocPhan lhp ON mh.MaMonHoc = lhp.MaMonHoc
+    WHERE (mh.MaMonHoc LIKE ? OR mh.TenMonHoc LIKE ?)
+    GROUP BY mh.MaMonHoc, mh.TenMonHoc, mh.SoTinChi, mh.MaBoMon, mh.LoaiMonHoc, bm.TenBoMon
+    ORDER BY mh.MaBoMon ASC, mh.MaMonHoc ASC;
+    ```
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Không làm thay đổi CSDL** (`SELECT` Read-only).
+- **Kết quả hiển thị (UI Response)**:
+  - Bảng dữ liệu hiển thị: Mã môn học, Tên môn học, Số tín chỉ, Bộ môn quản lý, Loại môn học, badge số lượng Lớp học phần đã mở.
+
+#### 1.6.2. Thêm mới Môn học
+
+- **Thao tác người dùng (User Action)**:
+  - Bấm nút **"Thêm Môn Học"**.
+  - Nhập: **Mã môn học** (`MaMonHoc`), **Tên môn học** (`TenMonHoc`), **Số tín chỉ** (`SoTinChi`), chọn **Bộ môn quản lý** (`MaBoMon`), **Loại môn học** (`LoaiMonHoc`).
+  - Nhấn **"Lưu Môn Học"**.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Kiểm tra quyền `CanCreate` trên Resource `MonHoc`.
+  - **Validation 1**: `MaMonHoc`, `TenMonHoc`, `MaBoMon` bắt buộc không được để trống.
+  - **Validation 2**: Chuẩn hóa `MaMonHoc` (Viết hoa `UPPERCASE`, xóa khoảng trắng thừa).
+  - **Validation 3 (Check trùng mã)**:
+    ```sql
+    SELECT MaMonHoc FROM MonHoc WHERE MaMonHoc = ? LIMIT 1;
+    ```
+    - Nếu đã tồn tại $\rightarrow$ Trả lỗi: _"Mã môn học 'INT1001' đã tồn tại."_ (HTTP 400).
+  - **Validation 4 (Kiểm tra khóa ngoại `MaBoMon`)**: Bộ môn được chọn phải tồn tại trong bảng `BoMon`.
+  - **Validation 5**: `SoTinChi` nếu nhập phải là số nguyên dương $> 0$.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Tạo mới 1 dòng bản ghi trong bảng `MonHoc`**:
+    ```sql
+    INSERT INTO MonHoc (MaMonHoc, TenMonHoc, SoTinChi, MaBoMon, LoaiMonHoc)
+    VALUES (?, ?, ?, ?, ?);
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Đóng Modal, làm mới bảng danh sách, hiển thị môn học mới kèm tên Bộ môn quản lý.
+
+#### 1.6.3. Cập nhật (Sửa) Thông tin Môn học
+
+- **Thao tác người dùng (User Action)**:
+  - Bấm icon **"Sửa"** tại dòng môn học.
+  - Chỉnh sửa: Tên môn học, Số tín chỉ, Bộ môn quản lý, Loại môn học.
+  - Nhấn **"Lưu Thay Đổi"**.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Kiểm tra quyền `CanUpdate` trên Resource `MonHoc`.
+  - Khóa cố định `MaMonHoc` (Không cho phép sửa mã môn học).
+  - Validation: `TenMonHoc` và `MaBoMon` không được để trống; Bộ môn mới phải tồn tại trong CSDL; `SoTinChi` phải là số nguyên dương hợp lệ.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Cập nhật thông tin trong bảng `MonHoc`**:
+    ```sql
+    UPDATE MonHoc
+    SET TenMonHoc = ?, SoTinChi = ?, MaBoMon = ?, LoaiMonHoc = ?
+    WHERE MaMonHoc = ?;
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Đóng Modal, thông báo _"Cập nhật môn học thành công!"_, làm mới dữ liệu trên bảng.
+
+#### 1.6.4. Xem Chi tiết Môn học (Danh sách Lớp học phần đã mở)
+
+- **Thao tác người dùng (User Action)**:
+  - Bấm vào Tên/Mã môn học để xem thông tin chi tiết.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Gửi request `GET /v1/api/monhoc/:maMonHoc/detail`.
+  - Backend truy vấn danh sách các lớp học phần (`LopHocPhan`) đã/đang mở cho môn này:
+    ```sql
+    SELECT
+      lhp.MaLopHocPhan,
+      lhp.TenLopHocPhan,
+      lhp.LoaiHoc,
+      lhp.SiSoDuKien,
+      lhp.SiSoDangKy,
+      lhp.TrangThaiPhanCong,
+      lhp.NgayBatDau,
+      lhp.NgayKetThuc,
+      lhp.KhoaHoc,
+      hk.TenHocKy,
+      hk.NamHoc,
+      gv.HoTen AS TenGiangVien
+    FROM LopHocPhan lhp
+    LEFT JOIN HocKy hk ON lhp.MaHocKy = hk.MaHocKy
+    LEFT JOIN GiangVien gv ON lhp.MaGiangVien = gv.MaGiangVien
+    WHERE lhp.MaMonHoc = ?
+    ORDER BY lhp.NgayBatDau DESC;
+    ```
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Không làm thay đổi CSDL** (`SELECT` Read-only).
+- **Kết quả hiển thị (UI Response)**:
+  - Hiển thị danh sách toàn bộ Lớp học phần của môn kèm Học kỳ, Giảng viên phụ trách, Sĩ số và Thời gian học.
+
+#### 1.6.5. Xóa Môn học (Kiểm tra Ràng buộc toàn vẹn)
+
+- **Thao tác người dùng (User Action)**:
+  - Bấm icon **"Xóa"** tại dòng môn học, xác nhận trên Popup.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Kiểm tra quyền `CanDelete` trên Resource `MonHoc`.
+  - **Kiểm tra ràng buộc Lớp học phần (`LopHocPhan`)**:
+    ```sql
+    SELECT COUNT(*) AS total FROM LopHocPhan WHERE MaMonHoc = ?;
+    ```
+    - **Trường hợp `total > 0`**: **CHẶN XÓA HOÀN TOÀN**: _"Không thể xóa môn học 'X' vì đang có N lớp học phần được mở cho môn này."_
+    - **Trường hợp `total == 0`**: Cho phép xóa.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Trường hợp xóa thành công**: Bản ghi bị **XÓA VĨNH VIỄN** khỏi bảng `MonHoc`:
+    ```sql
+    DELETE FROM MonHoc WHERE MaMonHoc = ?;
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Môn học bị xóa khỏi CSDL và biến mất khỏi bảng danh sách.
 
 ---
 
-5. Xem Chi tiết Giảng viên
-   • Thao tác người dùng: Bấm vào tên/mã giảng viên để xem trang chi tiết.
-   • Nghiệp vụ xử lý: Truy vấn tổng hợp: danh sách LopHocPhan đang phụ trách, các YeuCauNghi đã gửi, các PhanCongDayThay đã nhận dạy thay, các DangKyDayBu đã đăng ký — tất cả lọc theo MaGiangVien này.
-   • Thay đổi CSDL: Không có, chỉ đọc.
-   • Kết quả hiển thị: Trang chi tiết chia nhiều tab: "Lớp học phần đang dạy", "Lịch sử xin nghỉ", "Lịch sử dạy thay/dạy bù".
+### 1.7. Chức năng 7: Quản lý Lớp sinh viên (`LopSinhVien`)
+
+- **Bảng dữ liệu tác động trong CSDL**: **`LopSinhVien`** (`MaLopSinhVien`, `TenLopSinhVien`, `MaKhoa`).
+- **Bảng liên quan (Ràng buộc FK)**:
+  - `Khoa` (`LopSinhVien.MaKhoa` $\rightarrow$ `Khoa.MaKhoa`).
+  - `LopHocPhan_LopSinhVien` (`LopHocPhan_LopSinhVien.MaLopSinhVien` $\rightarrow$ `LopSinhVien.MaLopSinhVien`).
+- **Resource ID kiểm tra quyền (`checkPermission`)**: `'LopSinhVien'` (`CanRead`, `CanCreate`, `CanUpdate`, `CanDelete`).
+
+> 📌 **CHÚ THÍCH ĐẶC THÙ NGHIỆP VỤ (`LopSinhVien`)**:
+> - Toàn bộ các trường dữ liệu của bảng đều là `NOT NULL`. Mỗi Lớp sinh viên (lớp hành chính/chủ nhiệm) bắt buộc phải trực thuộc một Khoa quản lý.
+
+#### 1.7.1. Tìm kiếm, Lọc & Hiển thị Danh sách Lớp sinh viên
+
+- **Thao tác người dùng (User Action)**:
+  - Truy cập menu `Dữ liệu nền` $\rightarrow$ `Quản lý Lớp sinh viên`.
+  - Chọn Bộ lọc: Dropdown **Khoa** (`MaKhoa` — mặc định *"Tất cả các Khoa"*), ô tìm kiếm từ khóa theo Mã lớp hoặc Tên lớp sinh viên.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Gửi request `GET /v1/api/lopsinhvien?maKhoa=...&search=...`.
+  - Kiểm tra quyền `CanRead` trên Resource `LopSinhVien`.
+  - Backend thực hiện truy vấn `INNER JOIN Khoa` và đếm số lượng lớp học phần đang tham gia qua bảng liên kết `LopHocPhan_LopSinhVien`:
+    ```sql
+    SELECT
+      lsv.MaLopSinhVien,
+      lsv.TenLopSinhVien,
+      lsv.MaKhoa,
+      k.TenKhoa,
+      COUNT(DISTINCT lhl.MaLopHocPhan) AS SoLopHocPhan
+    FROM LopSinhVien lsv
+    INNER JOIN Khoa k ON lsv.MaKhoa = k.MaKhoa
+    LEFT JOIN LopHocPhan_LopSinhVien lhl ON lsv.MaLopSinhVien = lhl.MaLopSinhVien
+    WHERE (lsv.MaLopSinhVien LIKE ? OR lsv.TenLopSinhVien LIKE ?)
+    GROUP BY lsv.MaLopSinhVien, lsv.TenLopSinhVien, lsv.MaKhoa, k.TenKhoa
+    ORDER BY lsv.MaKhoa ASC, lsv.MaLopSinhVien ASC;
+    ```
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Không làm thay đổi CSDL** (`SELECT` Read-only).
+- **Kết quả hiển thị (UI Response)**:
+  - Bảng dữ liệu hiển thị: Mã lớp sinh viên, Tên lớp, Khoa quản lý, badge số lượng Lớp học phần đang tham gia.
+
+#### 1.7.2. Thêm mới Lớp sinh viên
+
+- **Thao tác người dùng (User Action)**:
+  - Bấm nút **"Thêm Lớp Sinh Viên"**.
+  - Nhập: **Mã lớp sinh viên** (`MaLopSinhVien`), **Tên lớp sinh viên** (`TenLopSinhVien`), chọn **Khoa quản lý** (`MaKhoa`).
+  - Nhấn **"Lưu Lớp Sinh Viên"**.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Kiểm tra quyền `CanCreate` trên Resource `LopSinhVien`.
+  - **Validation 1**: Cả 3 trường `MaLopSinhVien`, `TenLopSinhVien`, `MaKhoa` không được để trống.
+  - **Validation 2**: Chuẩn hóa `MaLopSinhVien` (Viết hoa `UPPERCASE`, xóa khoảng trắng thừa).
+  - **Validation 3 (Check trùng mã)**:
+    ```sql
+    SELECT MaLopSinhVien FROM LopSinhVien WHERE MaLopSinhVien = ? LIMIT 1;
+    ```
+    - Nếu đã tồn tại $\rightarrow$ Trả lỗi: _"Mã lớp sinh viên 'CNTT1-K63' đã tồn tại."_ (HTTP 400).
+  - **Validation 4 (Khóa ngoại `MaKhoa`)**: Khoa được chọn phải tồn tại trong bảng `Khoa`.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Tạo mới 1 dòng bản ghi trong bảng `LopSinhVien`**:
+    ```sql
+    INSERT INTO LopSinhVien (MaLopSinhVien, TenLopSinhVien, MaKhoa)
+    VALUES (?, ?, ?);
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Đóng Modal, làm mới bảng dữ liệu, hiển thị dòng lớp sinh viên mới tạo.
+
+#### 1.7.3. Cập nhật (Sửa) Thông tin Lớp sinh viên
+
+- **Thao tác người dùng (User Action)**:
+  - Bấm icon **"Sửa"** tại dòng lớp sinh viên.
+  - Chỉnh sửa: **Tên lớp sinh viên** và/hoặc chọn lại **Khoa quản lý**.
+  - Nhấn **"Lưu Thay Đổi"**.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Kiểm tra quyền `CanUpdate` trên Resource `LopSinhVien`.
+  - Khóa cố định khóa chính `MaLopSinhVien` (Không cho phép sửa mã).
+  - Validation: `TenLopSinhVien` và `MaKhoa` không được để trống; Khoa mới phải tồn tại trong CSDL.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Cập nhật thông tin trong bảng `LopSinhVien`**:
+    ```sql
+    UPDATE LopSinhVien
+    SET TenLopSinhVien = ?, MaKhoa = ?
+    WHERE MaLopSinhVien = ?;
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Đóng Modal, thông báo _"Cập nhật lớp sinh viên thành công!"_, tải lại danh sách.
+
+#### 1.7.4. Xóa Lớp sinh viên (Kiểm tra Ràng buộc toàn vẹn)
+
+- **Thao tác người dùng (User Action)**:
+  - Bấm icon **"Xóa"** tại dòng lớp sinh viên, xác nhận trên Popup.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Kiểm tra quyền `CanDelete` trên Resource `LopSinhVien`.
+  - **Kiểm tra ràng buộc liên kết Lớp học phần (`LopHocPhan_LopSinhVien`)**:
+    ```sql
+    SELECT COUNT(*) AS total FROM LopHocPhan_LopSinhVien WHERE MaLopSinhVien = ?;
+    ```
+    - **Trường hợp `total > 0`**: **CHẶN XÓA HOÀN TOÀN**: _"Không thể xóa lớp sinh viên 'X' vì đang tham gia N lớp học phần."_
+    - **Trường hợp `total == 0`**: Cho phép xóa.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Trường hợp xóa thành công**: Bản ghi bị **XÓA VĨNH VIỄN** khỏi bảng `LopSinhVien`:
+    ```sql
+    DELETE FROM LopSinhVien WHERE MaLopSinhVien = ?;
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Lớp sinh viên bị xóa khỏi CSDL và biến mất khỏi bảng danh sách.
 
 ---
 
-6. Xóa Giảng viên (Kiểm tra ràng buộc toàn vẹn — nhiều nhất hệ thống)
-   • Thao tác người dùng: Bấm "Xóa" tại dòng giảng viên, xác nhận trên popup.
-   • Nghiệp vụ xử lý — kiểm tra tuần tự qua 7 bảng, dừng ngay khi gặp ràng buộc đầu tiên bị vi phạm:
-1. Khoa.MaTruongKhoa — đang là Trưởng khoa của khoa nào không.
-1. BoMon.MaTruongBoMon — đang là Trưởng bộ môn của bộ môn nào không.
-1. LopHocPhan.MaGiangVien — đang phụ trách lớp học phần nào không.
-1. BuoiHoc.MaGiangVien — đã từng đứng lớp buổi học nào không (kể cả buổi học quá khứ, để giữ lịch sử).
-1. YeuCauNghi.MaGiangVien hoặc MaGiangVienDuyet — có yêu cầu nghỉ đã gửi hoặc đã duyệt cho người khác không.
-1. PhanCongDayThay.MaGiangVienDayThay — đã từng được phân công dạy thay không.
-1. DangKyDayBu.MaGiangVien — đã từng đăng ký dạy bù không.
-   o Nếu bất kỳ bảng nào ở trên có bản ghi liên quan → CHẶN XÓA, báo lỗi 400 nêu rõ đang vướng ở bảng nào.
-   o Chỉ khi cả 7 điều kiện đều bằng 0 mới cho phép xóa.
-   • Khuyến nghị nghiệp vụ: Vì gần như mọi giảng viên đã hoạt động đều sẽ vướng ít nhất bảng BuoiHoc, nên chức năng Xóa cứng gần như không dùng được trong thực tế. Khuyến nghị hướng người dùng dùng chức năng Đổi trạng thái sang Inactive (mục 5) thay vì xóa, chỉ giữ nút Xóa cứng cho trường hợp hiếm — nhập nhầm dữ liệu giảng viên chưa từng phát sinh hoạt động nào.
-   • Thay đổi CSDL: Nếu đủ điều kiện, DELETE FROM GiangVien WHERE MaGiangVien = ?.
-   • Kết quả hiển thị: Dòng giảng viên biến mất khỏi bảng danh sách.
+### 1.8. Chức năng 8: Quản lý Khóa sinh viên (`KhoaSinhVien`)
 
-##
+- **Bảng dữ liệu tác động trong CSDL**: **`KhoaSinhVien`** (`MaKhoaSinhVien`, `TenKhoaSinhVien`).
+- **Bảng liên quan (Ràng buộc FK)**:
+  - `LopHocPhan` (`LopHocPhan.KhoaHoc` $\rightarrow$ `KhoaSinhVien.MaKhoaSinhVien`).
+- **Resource ID kiểm tra quyền (`checkPermission`)**: `'KhoaSinhVien'` (`CanRead`, `CanCreate`, `CanUpdate`, `CanDelete`).
 
-## PHÂN HỆ: QUẢN LÝ MÔN HỌC (MonHoc)
+> 📌 **CHÚ THÍCH ĐẶC THÙ NGHIỆP VỤ (`KhoaSinhVien`)**:
+> - Bảng danh mục niên khóa độc lập (Ví dụ: `K62`, `K63`, `K64`, `K65`, `K66`...).
+> - Dùng để gắn nhãn niên khóa tuyển sinh cho Lớp học phần (`LopHocPhan.KhoaHoc`).
 
-Bảng tác động chính: MonHoc (MaMonHoc, TenMonHoc, SoTinChi, MaBoMon, LoaiMonHoc)
+#### 1.8.1. Tìm kiếm & Hiển thị Danh sách Khóa sinh viên
 
-Bảng liên quan: BoMon (cha, FK MaBoMon, được phép NULL), LopHocPhan (con, FK MaMonHoc, bắt buộc — mỗi Lớp học phần phải gắn với đúng 1 Môn học)
+- **Thao tác người dùng (User Action)**:
+  - Truy cập menu `Dữ liệu nền` $\rightarrow$ `Quản lý Khóa sinh viên`.
+  - Nhập từ khóa vào ô tìm kiếm theo Mã khóa hoặc Tên khóa sinh viên.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Gửi request `GET /v1/api/khoasinhvien?search=...`.
+  - Kiểm tra quyền `CanRead` trên Resource `KhoaSinhVien`.
+  - Backend thực hiện truy vấn `LEFT JOIN LopHocPhan` (qua `KhoaHoc`) để đếm số lượng lớp học phần gắn với từng niên khóa:
+    ```sql
+    SELECT
+      ksv.MaKhoaSinhVien,
+      ksv.TenKhoaSinhVien,
+      COUNT(DISTINCT lhp.MaLopHocPhan) AS SoLopHocPhan
+    FROM KhoaSinhVien ksv
+    LEFT JOIN LopHocPhan lhp ON ksv.MaKhoaSinhVien = lhp.KhoaHoc
+    WHERE (ksv.MaKhoaSinhVien LIKE ? OR ksv.TenKhoaSinhVien LIKE ?)
+    GROUP BY ksv.MaKhoaSinhVien, ksv.TenKhoaSinhVien
+    ORDER BY ksv.MaKhoaSinhVien ASC;
+    ```
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Không làm thay đổi CSDL** (`SELECT` Read-only).
+- **Kết quả hiển thị (UI Response)**:
+  - Bảng dữ liệu hiển thị: Mã khóa (VD: `K65`), Tên khóa (VD: `Khóa 65`), badge số lượng Lớp học phần gắn niên khóa này.
 
-ResourceId dùng cho checkPermission: 'MonHoc'
+#### 1.8.2. Thêm mới Khóa sinh viên
 
-SoTinChi được phép NULL → nghiệp vụ cho phép tạo Môn học chưa khai báo số tín chỉ (ví dụ đang chờ Bộ môn duyệt khung chương trình), nhưng nên khuyến khích nhập ngay vì số tín chỉ ảnh hưởng tới thời lượng xếp lịch.
-MaBoMon được phép NULL → giống Giảng viên, cho phép tồn tại Môn học "chưa phân về Bộ môn nào quản lý" tạm thời.
-LoaiMonHoc mặc định CSDL tự gán 'Regular' khi không nhập — đây là cột kiểu chuỗi tự do, hiện chưa thấy tài liệu nghiệp vụ nào quy định rõ danh sách các giá trị chuẩn hóa khác ngoài 'Regular'. Cần hỏi lại bên nghiệp vụ xem có những loại môn học cố định nào khác (ví dụ: Bắt buộc/Tự chọn, hay Lý thuyết/Thực hành/Đồ án...) trước khi làm dropdown cố định — tạm thời có thể để dạng ô nhập chuỗi tự do.
+- **Thao tác người dùng (User Action)**:
+  - Bấm nút **"Thêm Khóa Sinh Viên"**.
+  - Nhập: **Mã khóa** (`MaKhoaSinhVien` — VD: `K66`), **Tên khóa** (`TenKhoaSinhVien` — VD: `Khóa 66`).
+  - Nhấn **"Lưu Khóa Sinh Viên"**.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Kiểm tra quyền `CanCreate` trên Resource `KhoaSinhVien`.
+  - **Validation 1**: `MaKhoaSinhVien` và `TenKhoaSinhVien` không được để trống.
+  - **Validation 2**: Chuẩn hóa mã (Viết hoa `UPPERCASE`, xóa khoảng trắng thừa).
+  - **Validation 3 (Check trùng mã)**:
+    ```sql
+    SELECT MaKhoaSinhVien FROM KhoaSinhVien WHERE MaKhoaSinhVien = ? LIMIT 1;
+    ```
+    - Nếu đã tồn tại $\rightarrow$ Trả lỗi: _"Mã khóa sinh viên 'K66' đã tồn tại."_ (HTTP 400).
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Tạo mới 1 dòng bản ghi trong bảng `KhoaSinhVien`**:
+    ```sql
+    INSERT INTO KhoaSinhVien (MaKhoaSinhVien, TenKhoaSinhVien)
+    VALUES (?, ?);
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Đóng Modal, tải lại bảng danh sách, hiển thị khóa sinh viên mới tạo.
 
-1. Lọc & Hiển thị danh sách
+#### 1.8.3. Cập nhật (Sửa) Thông tin Khóa sinh viên
 
-Vì mọi Môn học giờ luôn có Bộ môn, nên bỏ lựa chọn phụ "Chưa phân bộ môn" trong dropdown lọc (đã đề cập ở bản trước) — không còn trường hợp này xảy ra qua giao diện tạo mới nữa. Dropdown lọc chỉ còn: "Tất cả Bộ môn" hoặc chọn đích danh 1 Bộ môn.
+- **Thao tác người dùng (User Action)**:
+  - Bấm icon **"Sửa"** tại dòng khóa sinh viên.
+  - Chỉnh sửa **Tên khóa sinh viên** (`TenKhoaSinhVien`).
+  - Nhấn **"Lưu Thay Đổi"**.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Kiểm tra quyền `CanUpdate` trên Resource `KhoaSinhVien`.
+  - Khóa cố định `MaKhoaSinhVien` (Không cho phép sửa mã niên khóa).
+  - Validation: `TenKhoaSinhVien` không được để trống.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Cập nhật thông tin trong bảng `KhoaSinhVien`**:
+    ```sql
+    UPDATE KhoaSinhVien
+    SET TenKhoaSinhVien = ?
+    WHERE MaKhoaSinhVien = ?;
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Đóng Modal, thông báo _"Cập nhật khóa sinh viên thành công!"_, làm mới danh sách.
 
-2. Thêm mới Môn học
+#### 1.8.4. Xóa Khóa sinh viên (Kiểm tra Ràng buộc toàn vẹn)
 
-Thao tác người dùng: Bấm "Thêm Môn học" → nhập MaMonHoc, TenMonHoc, chọn Bộ môn (MaBoMon — bắt buộc, không còn tùy chọn để trống), nhập SoTinChi ( bắt buộc), LoaiMonHoc (không bắt buộc).
-Nghiệp vụ xử lý:
-Validation 1: MaMonHoc, TenMonHoc, MaBoMon không được để trống.
-Validation 2: Chuẩn hóa MaMonHoc (viết hoa, xóa khoảng trắng thừa).
-Validation 3 (check trùng): kiểm tra MaMonHoc đã tồn tại chưa.
-Validation 4 (khóa ngoại bắt buộc): Bộ môn được chọn phải tồn tại trong bảng BoMon — không còn nhánh "bỏ qua nếu để trống" như bản trước.
-Validation 5: nếu có nhập SoTinChi thì phải là số nguyên dương.
-Nếu người dùng không chọn Bộ môn → chặn submit ngay ở form (frontend) và/hoặc trả lỗi 400 ở backend nếu cố tình gửi thiếu: "Vui lòng chọn Bộ môn quản lý cho môn học này."
-Thay đổi CSDL: Thêm 1 dòng vào MonHoc với MaBoMon luôn có giá trị (không còn NULL).
-Kết quả hiển thị: Đóng modal, danh sách reload, môn học mới hiện kèm tên Bộ môn quản lý.
+- **Thao tác người dùng (User Action)**:
+  - Bấm icon **"Xóa"** tại dòng khóa sinh viên, xác nhận trên Popup.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Kiểm tra quyền `CanDelete` trên Resource `KhoaSinhVien`.
+  - **Kiểm tra ràng buộc Lớp học phần (`LopHocPhan.KhoaHoc`)**:
+    ```sql
+    SELECT COUNT(*) AS total FROM LopHocPhan WHERE KhoaHoc = ?;
+    ```
+    - **Trường hợp `total > 0`**: **CHẶN XÓA HOÀN TOÀN**: _"Không thể xóa khóa sinh viên 'K65' vì đang có N lớp học phần gắn với niên khóa này."_
+    - **Trường hợp `total == 0`**: Cho phép xóa.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Trường hợp xóa thành công**: Bản ghi bị **XÓA VĨNH VIỄN** khỏi bảng `KhoaSinhVien`:
+    ```sql
+    DELETE FROM KhoaSinhVien WHERE MaKhoaSinhVien = ?;
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Khóa sinh viên bị xóa khỏi CSDL và biến mất khỏi bảng danh sách.
 
-3. Cập nhật thông tin
+---
 
-Khi Sửa, MaBoMon vẫn hiển thị và cho phép đổi sang Bộ môn khác (chuyển môn học sang Bộ môn khác quản lý), nhưng không được phép để trống/xóa về NULL — dropdown Bộ môn lúc Sửa không có lựa chọn "Chưa phân công" như bên Giảng viên.
-Validation: TenMonHoc không trống, MaBoMon không trống và phải tồn tại.
+### 1.9. Chức năng 9: Quản lý Học kỳ & Năm học (`HocKy`)
 
-4. Xem chi tiết
+- **Bảng dữ liệu tác động trong CSDL**: **`HocKy`** (`MaHocKy`, `TenHocKy`, `Dot`, `NamHoc`, `NgayBatDau`, `NgayKetThuc`).
+- **Bảng liên quan (Ràng buộc FK)**:
+  - `LopHocPhan` (`LopHocPhan.MaHocKy` $\rightarrow$ `HocKy.MaHocKy`).
+- **Resource ID kiểm tra quyền (`checkPermission`)**: `'HocKy'` (`CanRead`, `CanCreate`, `CanUpdate`, `CanDelete`).
 
-Bấm vào tên/mã Môn học → trang chi tiết hiển thị danh sách các LopHocPhan đã/đang mở cho môn này (lọc theo MaMonHoc), kèm học kỳ, giảng viên phụ trách, sĩ số.
-Chỉ đọc, mỗi dòng có thể bấm nhảy sang phân hệ Lớp học phần tương ứng.
+> 📌 **CHÚ THÍCH CÁC TRƯỜNG DỮ LIỆU ĐẶC THÙ TRONG CSDL (`HocKy`)**:
+> - **Cột `NgayBatDau` & `NgayKetThuc`**: `NOT NULL`. Xác định khoảng thời gian hợp lệ tổng của toàn bộ học kỳ, dùng làm biên giới hạn thời gian khi xếp Thời khóa biểu và Buổi học cho các lớp học phần.
+> - **Cột `Dot` & `NamHoc`**: Cho phép `NULL` trong CSDL, nhưng bắt buộc nhập ở tầng ứng dụng để phân biệt chính xác các học kỳ (VD: Học kỳ 1 năm học 2025-2026).
 
-5. Xóa Môn học
+#### 1.9.1. Tìm kiếm & Hiển thị Danh sách Học kỳ
 
-Bấm "Xóa" → popup xác nhận → kiểm tra duy nhất 1 ràng buộc: đếm số LopHocPhan có MaMonHoc này.
-Nếu > 0 → CHẶN XÓA, báo lỗi 400: "Không thể xóa môn học 'X' vì đang có Y lớp học phần được mở cho môn này."
-Nếu = 0 → cho phép DELETE.
-Dòng biến mất khỏi bảng khi xóa thành công.
+- **Thao tác người dùng (User Action)**:
+  - Truy cập menu `Dữ liệu nền` $\rightarrow$ `Quản lý Học kỳ`.
+  - Nhập từ khóa vào ô tìm kiếm theo Tên học kỳ, Năm học, hoặc Mã học kỳ.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Gửi request `GET /v1/api/hocky?search=...`.
+  - Kiểm tra quyền `CanRead` trên Resource `HocKy`.
+  - Backend truy vấn danh sách học kỳ sắp xếp theo `NgayBatDau DESC` (học kỳ mới nhất lên đầu), đồng thời đếm số lượng lớp học phần trực thuộc:
+    ```sql
+    SELECT
+      hk.MaHocKy,
+      hk.TenHocKy,
+      hk.Dot,
+      hk.NamHoc,
+      hk.NgayBatDau,
+      hk.NgayKetThuc,
+      COUNT(DISTINCT lhp.MaLopHocPhan) AS SoLopHocPhan
+    FROM HocKy hk
+    LEFT JOIN LopHocPhan lhp ON hk.MaHocKy = lhp.MaHocKy
+    WHERE (hk.TenHocKy LIKE ? OR hk.NamHoc LIKE ? OR hk.MaHocKy LIKE ?)
+    GROUP BY hk.MaHocKy, hk.TenHocKy, hk.Dot, hk.NamHoc, hk.NgayBatDau, hk.NgayKetThuc
+    ORDER BY hk.NgayBatDau DESC;
+    ```
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Không làm thay đổi CSDL** (`SELECT` Read-only).
+- **Kết quả hiển thị (UI Response)**:
+  - Bảng dữ liệu hiển thị: Mã học kỳ, Tên học kỳ, Đợt, Năm học, Ngày bắt đầu – Ngày kết thúc, badge số lượng Lớp học phần đã mở.
 
-##
+#### 1.9.2. Thêm mới Học kỳ (Kiểm tra Chồng lấn thời gian)
 
-## PHÂN HỆ: QUẢN LÝ LỚP SINH VIÊN (LopSinhVien)
+- **Thao tác người dùng (User Action)**:
+  - Bấm nút **"Thêm Học Kỳ"**.
+  - Nhập: **Mã học kỳ** (`MaHocKy`), **Tên học kỳ** (`TenHocKy`), **Đợt** (`Dot`), **Năm học** (`NamHoc`), **Ngày bắt đầu** (`NgayBatDau`), **Ngày kết thúc** (`NgayKetThuc`).
+  - Nhấn **"Lưu Học Kỳ"**.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Kiểm tra quyền `CanCreate` trên Resource `HocKy`.
+  - **Validation 1**: `MaHocKy`, `TenHocKy`, `NgayBatDau`, `NgayKetThuc` không được để trống.
+  - **Validation 2 (Check trùng mã)**: Truy vấn kiểm tra `MaHocKy` đã tồn tại trong bảng `HocKy` chưa.
+  - **Validation 3**: `NgayBatDau` phải nhỏ hơn `NgayKetThuc`.
+  - **Validation 4 (Kiểm tra chồng lấn khoảng ngày - Overlap Check)**:
+    ```sql
+    SELECT MaHocKy, TenHocKy, NgayBatDau, NgayKetThuc
+    FROM HocKy
+    WHERE NgayBatDau < ? AND NgayKetThuc > ?;
+    ```
+    - Nếu có học kỳ bị chồng lấn thời gian $\rightarrow$ Backend trả kèm cờ cảnh báo `overlapWarning` để Admin xác nhận.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Tạo mới 1 dòng bản ghi trong bảng `HocKy`**:
+    ```sql
+    INSERT INTO HocKy (MaHocKy, TenHocKy, Dot, NamHoc, NgayBatDau, NgayKetThuc)
+    VALUES (?, ?, ?, ?, ?, ?);
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Đóng Modal, tải lại danh sách, học kỳ mới xuất hiện trên bảng dữ liệu.
 
-Bảng tác động chính: LopSinhVien (MaLopSinhVien, TenLopSinhVien, MaKhoa)
-Bảng liên quan: Khoa (cha, FK MaKhoa, bắt buộc), LopHocPhan_LopSinhVien (bảng trung gian, con, FK MaLopSinhVien)
-ResourceId dùng cho checkPermission: 'LopSinhVien'
+#### 1.9.3. Cập nhật (Sửa) Thông tin Học kỳ
 
-Đây là bảng đơn giản nhất trong các phân hệ danh mục đã làm — chỉ 3 cột, không có cột trạng thái, không có trường tùy chọn (mọi cột đều NOT NULL).
+- **Thao tác người dùng (User Action)**:
+  - Bấm icon **"Sửa"** tại dòng học kỳ.
+  - Chỉnh sửa: Tên học kỳ, Đợt, Năm học, Ngày bắt đầu, Ngày kết thúc.
+  - Nhấn **"Lưu Thay Đổi"**.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Kiểm tra quyền `CanUpdate` trên Resource `HocKy`.
+  - Khóa cố định `MaHocKy` (Không cho phép sửa mã học kỳ).
+  - Validation: `TenHocKy` không trống, `NgayBatDau < NgayKetThuc`.
+  - **Cảnh báo khi thu hẹp khoảng ngày**: Nếu học kỳ đã có `LopHocPhan` (`SoLopHocPhan > 0`) mà khoảng ngày mới bị thu hẹp $\rightarrow$ Trả cờ cảnh báo `dateNarrowWarning = true` để Admin rà soát lại các lịch học đã tạo.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Cập nhật thông tin trong bảng `HocKy`**:
+    ```sql
+    UPDATE HocKy
+    SET TenHocKy = ?, Dot = ?, NamHoc = ?, NgayBatDau = ?, NgayKetThuc = ?
+    WHERE MaHocKy = ?;
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Đóng Modal, hiển thị toast _"Cập nhật học kỳ thành công!"_, làm mới dữ liệu trên bảng.
 
-Luồng chi tiết từng chức năng
+#### 1.9.4. Xóa Học kỳ (Kiểm tra Ràng buộc toàn vẹn)
 
-1. Lọc & Hiển thị danh sách
+- **Thao tác người dùng (User Action)**:
+  - Bấm icon **"Xóa"** tại dòng học kỳ, xác nhận trên Popup.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Kiểm tra quyền `CanDelete` trên Resource `HocKy`.
+  - **Kiểm tra ràng buộc Lớp học phần (`LopHocPhan`)**:
+    ```sql
+    SELECT COUNT(*) AS total FROM LopHocPhan WHERE MaHocKy = ?;
+    ```
+    - **Trường hợp `total > 0`**: **CHẶN XÓA HOÀN TOÀN**: _"Không thể xóa học kỳ 'X' vì đang có N lớp học phần thuộc học kỳ này."_
+    - **Trường hợp `total == 0`**: Cho phép xóa.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Trường hợp xóa thành công**: Bản ghi bị **XÓA VĨNH VIỄN** khỏi bảng `HocKy`:
+    ```sql
+    DELETE FROM HocKy WHERE MaHocKy = ?;
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Học kỳ bị xóa khỏi CSDL và biến mất khỏi bảng danh sách.
 
-Vào Danh mục đào tạo → Quản lý Lớp sinh viên → mặc định dropdown "Khoa" = "Tất cả các Khoa" (đúng pattern lọc theo Khoa đã áp dụng cho Bộ môn).
-Select 1 Khoa cụ thể → bảng lọc lại ngay, gọi GET /v1/api/lopsinhvien?maKhoa=....
-Có thể kèm ô tìm từ khóa theo TenLopSinhVien/MaLopSinhVien nếu 1 Khoa có nhiều lớp.
-Backend JOIN Khoa (INNER JOIN được, vì MaKhoa là NOT NULL) để hiển thị tên Khoa.
-Mỗi dòng hiển thị: Mã lớp, Tên lớp, Khoa quản lý, badge số Lớp học phần đang tham gia (đếm qua bảng trung gian LopHocPhan_LopSinhVien).
+---
 
-2. Thêm mới Lớp sinh viên
+### 1.10. Chức năng 10: Quản lý Tiết học & Khung ca học (`TietHoc`)
 
-Bấm "Thêm Lớp sinh viên" → nhập MaLopSinhVien, TenLopSinhVien, chọn Khoa (bắt buộc, không có lựa chọn để trống vì cột NOT NULL) → bấm "Lưu".
-Validate: cả 3 trường đều không được trống; chuẩn hóa MaLopSinhVien (viết hoa, xóa khoảng trắng thừa); check trùng mã; check Khoa được chọn tồn tại trong bảng Khoa.
-Ghi 1 dòng mới → đóng modal → bảng reload.
+- **Bảng dữ liệu tác động trong CSDL**: **`TietHoc`** (`MaTiet`, `TenTiet`, `GioBatDau`, `GioKetThuc`).
+- **Bảng liên quan (Ràng buộc FK)**:
+  - `ThoiKhoaBieu` (`ThoiKhoaBieu.MaTiet` $\rightarrow$ `TietHoc.MaTiet`).
+  - `BuoiHoc` (`BuoiHoc.MaTiet` $\rightarrow$ `TietHoc.MaTiet`).
+  - `DangKyDayBu` (`DangKyDayBu.MaTiet` $\rightarrow$ `TietHoc.MaTiet`).
+- **Resource ID kiểm tra quyền (`checkPermission`)**: `'TietHoc'` (`CanRead`, `CanCreate`, `CanUpdate`, `CanDelete`).
 
-3. Cập nhật thông tin
+> 📌 **CHÚ THÍCH CÁC TRƯỜNG DỮ LIỆU ĐẶC THÙ TRONG CSDL (`TietHoc`)**:
+> - Cả 4 cột đều là **`NOT NULL`**.
+> - Mỗi dòng `TietHoc` đại diện cho một ca học trọn gói (Ví dụ: Ca 1 tương ứng Tiết 1-3 từ 07:00 đến 09:25).
+> - Dữ liệu khởi tạo chuẩn của nhà trường:
+>   - `MaTiet: 1` | `TenTiet: Tiết 1-3` | `GioBatDau: 07:00` | `GioKetThuc: 09:25`
+>   - `MaTiet: 2` | `TenTiet: Tiết 4-6` | `GioBatDau: 09:35` | `GioKetThuc: 12:00`
+>   - `MaTiet: 3` | `TenTiet: Tiết 7-9` | `GioBatDau: 13:00` | `GioKetThuc: 15:25`
+>   - `MaTiet: 4` | `TenTiet: Tiết 10-12` | `GioBatDau: 15:35` | `GioKetThuc: 18:00`
+>   - `MaTiet: 5` | `TenTiet: Tiết 13-16 (Tối)` | `GioBatDau: 18:00` | `GioKetThuc: 21:30`
+> - Các bảng nghiệp vụ xếp lịch (`ThoiKhoaBieu`, `BuoiHoc`, `DangKyDayBu`) lưu trực tiếp khóa ngoại **`MaTiet`** (kiểu `TINYINT`), không lưu tách rời `MaTietBatDau`/`MaTietKetThuc`. Khung giờ học được quản lý tập trung duy nhất tại bảng này.
 
-Bấm "Sửa" tại dòng → sửa TenLopSinhVien và/hoặc đổi MaKhoa (chuyển lớp sang Khoa khác quản lý — hiếm khi xảy ra nhưng vẫn nên cho phép, ví dụ sáp nhập/tách Khoa). MaLopSinhVien khóa cứng vì là khóa ngoại trong bảng trung gian LopHocPhan_LopSinhVien.
-Validate: TenLopSinhVien không trống, MaKhoa không trống và phải tồn tại.
-Lưu → UPDATE → thông báo thành công → bảng reload.
+#### 1.10.1. Tìm kiếm & Hiển thị Danh sách Tiết học
 
-4. Xóa Lớp sinh viên
+- **Thao tác người dùng (User Action)**:
+  - Truy cập menu `Dữ liệu nền` (hoặc `Danh mục đào tạo`) $\rightarrow$ `Tiết học & Ca học`.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Gửi request `GET /v1/api/tiethoc`.
+  - Kiểm tra quyền `CanRead` trên Resource `TietHoc`.
+  - Backend thực hiện truy vấn sắp xếp theo `GioBatDau ASC`, đồng thời đếm số lượt sử dụng trong bảng `ThoiKhoaBieu` và `BuoiHoc`:
+    ```sql
+    SELECT
+      th.MaTiet,
+      th.TenTiet,
+      TIME_FORMAT(th.GioBatDau, '%H:%i') AS GioBatDau,
+      TIME_FORMAT(th.GioKetThuc, '%H:%i') AS GioKetThuc,
+      (SELECT COUNT(*) FROM ThoiKhoaBieu WHERE MaTiet = th.MaTiet) AS SoThoiKhoaBieu,
+      (SELECT COUNT(*) FROM BuoiHoc WHERE MaTiet = th.MaTiet) AS SoBuoiHoc
+    FROM TietHoc th
+    ORDER BY th.GioBatDau ASC;
+    ```
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Không làm thay đổi CSDL** (`SELECT` Read-only).
+- **Kết quả hiển thị (UI Response)**:
+  - Bảng dữ liệu hiển thị: Mã tiết, Tên ca học, Giờ bắt đầu, Giờ kết thúc, badge số lượng lịch thời khóa biểu và buổi học đang sử dụng.
 
-Bấm "Xóa" → popup xác nhận → kiểm tra duy nhất 1 ràng buộc: đếm số dòng trong LopHocPhan_LopSinhVien có MaLopSinhVien này (tức lớp đã từng/đang học ghép với Lớp học phần nào chưa).
-Nếu > 0 → CHẶN XÓA, báo lỗi 400: "Không thể xóa lớp sinh viên 'X' vì đang tham gia Y lớp học phần."
-Nếu = 0 → cho phép DELETE.
-Dòng biến mất khỏi bảng khi xóa thành công.
+#### 1.10.2. Thêm mới Tiết học (Kiểm tra Chồng lấn khung giờ)
 
-##
+- **Thao tác người dùng (User Action)**:
+  - Bấm nút **"Thêm Tiết Học"**.
+  - Chọn mẫu tiết có sẵn từ danh sách gợi ý hoặc chọn *"Tùy chỉnh (nhập tay)"*.
+  - Nhập: **Mã tiết** (`MaTiet`), **Tên tiết** (`TenTiet`), **Giờ bắt đầu** (`GioBatDau`), **Giờ kết thúc** (`GioKetThuc`).
+  - Nhấn **"Lưu Tiết Học"**.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Kiểm tra quyền `CanCreate` trên Resource `TietHoc`.
+  - **Validation 1**: Cả 4 trường `MaTiet`, `TenTiet`, `GioBatDau`, `GioKetThuc` không được để trống.
+  - **Validation 2 (Check trùng mã)**:
+    ```sql
+    SELECT MaTiet FROM TietHoc WHERE MaTiet = ? LIMIT 1;
+    ```
+    - Nếu đã tồn tại $\rightarrow$ Trả lỗi: _"Mã tiết đã tồn tại."_ (HTTP 400).
+  - **Validation 3**: `GioBatDau` phải nhỏ hơn `GioKetThuc`.
+  - **Validation 4 (Kiểm tra chồng lấn khung giờ - Overlap Check)**:
+    - Backend so sánh khoảng giờ `[GioBatDau, GioKetThuc]` với toàn bộ các ca học đã có trong bảng:
+      ```sql
+      SELECT MaTiet, TenTiet FROM TietHoc
+      WHERE GioBatDau < ? AND GioKetThuc > ?;
+      ```
+    - Nếu bị giao nhau khung giờ $\rightarrow$ **CHẶN LƯU**: _"Khung giờ của tiết này trùng với 'Tiết X' đã tồn tại."_
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Tạo mới 1 dòng bản ghi trong bảng `TietHoc`**:
+    ```sql
+    INSERT INTO TietHoc (MaTiet, TenTiet, GioBatDau, GioKetThuc)
+    VALUES (?, ?, ?, ?);
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Đóng Modal, làm mới danh sách, tiết học mới hiện diện trên bảng.
 
-##
+#### 1.10.3. Cập nhật (Sửa) Thông tin Tiết học
 
-PHÂN HỆ: QUẢN LÝ KHÓA SINH VIÊN (KhoaSinhVien)
+- **Thao tác người dùng (User Action)**:
+  - Bấm icon **"Sửa"** tại dòng tiết học.
+  - Chỉnh sửa: **Tên tiết**, **Giờ bắt đầu**, **Giờ kết thúc**.
+  - Nhấn **"Lưu Thay Đổi"**.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Kiểm tra quyền `CanUpdate` trên Resource `TietHoc`.
+  - Khóa cố định khóa chính `MaTiet` (Không cho phép sửa mã tiết).
+  - Validation: `TenTiet`, `GioBatDau`, `GioKetThuc` không được trống; `GioBatDau < GioKetThuc`; kiểm tra chồng lấn giờ với các tiết khác (loại trừ chính tiết đang sửa).
+  - **Cảnh báo ảnh hưởng lịch đã xếp**: Nếu tiết học đang được sử dụng trong `ThoiKhoaBieu` hoặc `BuoiHoc` (`usages > 0`), hệ thống hiển thị cảnh báo cho Admin rằng thay đổi khung giờ sẽ tác động trực tiếp lên toàn bộ các buổi học đó.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Cập nhật thông tin trong bảng `TietHoc`**:
+    ```sql
+    UPDATE TietHoc
+    SET TenTiet = ?, GioBatDau = ?, GioKetThuc = ?
+    WHERE MaTiet = ?;
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Đóng Modal, thông báo toast _"Cập nhật tiết học thành công!"_, làm mới bảng dữ liệu.
 
-Bảng tác động chính: KhoaSinhVien (MaKhoaSinhVien, TenKhoaSinhVien)
-Bảng liên quan: LopHocPhan (con, FK KhoaHoc → KhoaSinhVien.MaKhoaSinhVien, được phép NULL)
+#### 1.10.4. Xóa Tiết học (Kiểm tra Ràng buộc toàn vẹn)
 
-Luồng chi tiết từng chức năng
-
-1. Hiển thị danh sách
-
-Vào Danh mục đào tạo → Quản lý Khóa sinh viên → hiển thị toàn bộ danh sách ngay, không cần bộ lọc theo bảng cha (vì bảng này đứng độc lập, không có MaKhoa/MaBoMon nào để lọc theo).
-Chỉ cần 1 ô tìm kiếm từ khóa theo TenKhoaSinhVien/MaKhoaSinhVien (danh sách này thường rất ngắn — vài niên khóa như K62, K63, K64, K65 — nên có thể không cần cả phân trang).
-Gọi GET /v1/api/khoasinhvien?search=....
-Mỗi dòng hiển thị: Mã khóa (VD K65), Tên khóa (VD "Khóa 65"), badge số Lớp học phần đang gắn niên khóa này (đếm qua LopHocPhan.KhoaHoc).
-
-2. Thêm mới Khóa sinh viên
-
-Bấm "Thêm Khóa sinh viên" → nhập MaKhoaSinhVien (VD K66), TenKhoaSinhVien (VD "Khóa 66") → bấm "Lưu".
-Validate: cả 2 trường không được trống (đều NOT NULL); chuẩn hóa mã (viết hoa, xóa khoảng trắng thừa); check trùng mã.
-Ghi 1 dòng mới → đóng modal → bảng reload.
-
-3. Cập nhật thông tin
-
-Bấm "Sửa" tại dòng → chỉ sửa được TenKhoaSinhVien. MaKhoaSinhVien khóa cứng vì là khóa ngoại trong LopHocPhan.KhoaHoc.
-Validate: TenKhoaSinhVien không trống.
-Lưu → UPDATE → thông báo thành công → bảng reload.
-
-4. Xóa Khóa sinh viên
-
-Bấm "Xóa" → popup xác nhận → kiểm tra duy nhất 1 ràng buộc: đếm số LopHocPhan có KhoaHoc = mã khóa này.
-Nếu > 0 → CHẶN XÓA, báo lỗi 400: "Không thể xóa khóa sinh viên 'K65' vì đang có X lớp học phần gắn với niên khóa này."
-Nếu = 0 → cho phép DELETE.
-Dòng biến mất khỏi bảng khi xóa thành công.
-
-## QUẢN LÝ HỌC KỲ (HocKy)##
-
-Bảng tác động chính: HocKy (MaHocKy, TenHocKy, Dot, NamHoc, NgayBatDau, NgayKetThuc)
-Bảng liên quan: LopHocPhan (con, FK MaHocKy, bắt buộc)
-ResourceId dùng cho checkPermission: 'HocKy'
-
-## Cấu trúc dữ liệu cần lưu ý##
-
-Dot (Đợt) và NamHoc (Năm học) đều được phép NULL — CSDL không bắt buộc, nhưng nên khuyến nghị bắt buộc nhập ở tầng ứng dụng vì đây là 2 thông tin quan trọng để phân biệt các học kỳ trùng số (VD "Học kỳ 1" của năm 2024-2025 khác với "Học kỳ 1" của năm 2025-2026), giống nguyên tắc "CSDL cho NULL nhưng nghiệp vụ bắt buộc" đã áp dụng cho MonHoc.MaBoMon.
-NgayBatDau, NgayKetThuc là NOT NULL — đây là khoảng thời gian tổng của cả học kỳ, dùng làm giới hạn hợp lệ khi xếp ThoiKhoaBieu cho từng Lớp học phần thuộc học kỳ này (ngày giai đoạn lịch không được vượt ra ngoài khoảng này).
-Chức năng
-
-1. Tìm kiếm & Hiển thị danh sách Học kỳ
-
-Hiển thị toàn bộ, sắp xếp theo NgayBatDau giảm dần (học kỳ mới nhất lên đầu) — vì đây là bảng có ít bản ghi (vài chục học kỳ trong suốt vòng đời hệ thống), không cần lọc phức tạp, có thể chỉ cần ô tìm theo TenHocKy/NamHoc.
-Mỗi dòng hiển thị: Mã học kỳ, Tên học kỳ, Đợt, Năm học, Ngày bắt đầu – kết thúc, badge số Lớp học phần đã mở trong học kỳ này.
-
-2. Thêm mới Học kỳ
-
-Nhập MaHocKy, TenHocKy, Dot, NamHoc, NgayBatDau, NgayKetThuc.
-Validate 1: MaHocKy, TenHocKy không trống; check trùng mã.
-Validate 2: NgayBatDau phải nhỏ hơn NgayKetThuc.
-Validate 3 (khuyến nghị nên có): kiểm tra chồng lấn ngày (overlap check) với các Học kỳ đã tồn tại — nếu khoảng [NgayBatDau, NgayKetThuc] giao nhau với 1 học kỳ khác đã có → cảnh báo Admin xác nhận có thực sự muốn tạo học kỳ trùng thời gian không (trường hợp hợp lệ hiếm gặp: 2 hệ đào tạo chạy song song có lịch lệch nhau).
-Ghi 1 dòng mới vào HocKy.
-
-3. Cập nhật thông tin Học kỳ
-
-Sửa TenHocKy, Dot, NamHoc, NgayBatDau, NgayKetThuc. MaHocKy khóa cứng vì là khóa ngoại trong LopHocPhan.
-Cảnh báo quan trọng khi thu hẹp NgayBatDau/NgayKetThuc: nếu học kỳ đã có LopHocPhan với ThoiKhoaBieu/BuoiHoc nằm ngoài khoảng ngày mới → phải cảnh báo rõ, không tự động xóa dữ liệu lịch đã sinh, để Admin tự quyết định xử lý thủ công.
-
-4. Xóa Học kỳ
-
-Kiểm tra ràng buộc: đếm số LopHocPhan có MaHocKy này.
-Nếu > 0 → CHẶN XÓA, báo lỗi 400: "Không thể xóa học kỳ 'X' vì đang có Y lớp học phần thuộc học kỳ này."
-Nếu = 0 → cho phép DELETE.
-
-## PHÂN HỆ: QUẢN LÝ TIẾT HỌC (TietHoc)
-
-Bảng tác động chính: TietHoc (MaTiet, TenTiet, GioBatDau, GioKetThuc)
-Bảng liên quan (ràng buộc): ThoiKhoaBieu (FK MaTietBatDau/MaTietKetThuc), BuoiHoc (FK MaTietBatDau/MaTietKetThuc)
-ResourceId dùng cho checkPermission: 'TietHoc'
-
-Cấu trúc dữ liệu và quy ước của trường
-Cả 4 cột đều NOT NULL.
-Mỗi dòng TietHoc đại diện cho một ca gồm nhiều tiết, vì nhà trường chỉ quy định giờ theo khối chứ không theo từng tiết lẻ.
-Dữ liệu chuẩn (seed sẵn khi triển khai):
-MaTiet TenTiet GioBatDau GioKetThuc
-1 Tiết 1-3 07:00 09:25
-2 Tiết 4-6 09:35 12:00
-3 Tiết 7-9 13:00 15:25
-4 Tiết 10-12 15:35 18:00
-5 Tiết 13-16 (tối) 18:00 21:30
-Một lớp học nhiều ca liền nhau được biểu diễn bằng MaTietBatDau và MaTietKetThuc khác nhau. Ví dụ học tiết 1-6 là MaTietBatDau = 1, MaTietKetThuc = 2.
-Đơn vị nhỏ nhất của hệ thống là ca. Nếu sau này cần xếp lịch chính xác đến từng tiết lẻ thì phải thiết kế lại.
-Giờ học chỉ được sửa tại phân hệ này. ThoiKhoaBieu và BuoiHoc chỉ lưu mã tiết, không có cột giờ riêng, nên mọi nơi khác chỉ hiển thị giờ để xem.
-
-1. Hiển thị danh sách Tiết học
-   Thao tác người dùng: Vào Danh mục đào tạo → Quản lý Tiết học.
-   Nghiệp vụ xử lý:
-   Gọi GET /v1/api/tiethoc qua checkPermission('TietHoc', 'CanRead').
-   Sắp xếp theo GioBatDau tăng dần.
-   Danh sách chỉ có khoảng 5 dòng nên không cần bộ lọc hay phân trang.
-   Thay đổi CSDL: Không có, chỉ đọc.
-   Kết quả hiển thị: Bảng gồm Mã tiết, Tên tiết, Giờ bắt đầu, Giờ kết thúc. Nếu một dòng có giờ khác mẫu chuẩn thì hiện nhãn nhỏ "Đã chỉnh khác mẫu chuẩn".
-2. Thêm mới Tiết học (có tự động điền giờ)
-   Thao tác người dùng:
-   Bấm "Thêm Tiết học".
-   Chọn mẫu tiết từ dropdown gồm 5 mẫu chuẩn ở trên và thêm lựa chọn "Tùy chỉnh (nhập tay)".
-   Ngay khi chọn mẫu, hệ thống tự động điền TenTiet, GioBatDau, GioKetThuc.
-   Người dùng vẫn sửa được cả ba ô sau khi điền, ví dụ đổi 09:35 thành 09:30.
-   Nhập MaTiet rồi bấm "Lưu".
-   Nghiệp vụ xử lý:
-   Danh sách 5 mẫu chuẩn là hằng số cấu hình của hệ thống, không tạo bảng CSDL riêng. Mẫu chỉ dùng để gợi ý điền nhanh.
-   Chọn "Tùy chỉnh" thì các ô để trống, người dùng nhập toàn bộ.
-   Validation 1: MaTiet, TenTiet, GioBatDau, GioKetThuc không được trống.
-   Validation 2: MaTiet không trùng với dòng đã có, nếu trùng trả lỗi 400 "Mã tiết đã tồn tại."
-   Validation 3: GioBatDau phải nhỏ hơn GioKetThuc.
-   Validation 4 (kiểm tra chồng lấn giờ): so với mọi tiết đã có, hai khoảng giờ chỉ bị coi là chồng lấn khi tiết mới bắt đầu trước lúc tiết kia kết thúc và kết thúc sau lúc tiết kia bắt đầu. Hai ca chạm mốc vẫn hợp lệ, ví dụ Tiết 10-12 kết thúc 18:00 và ca tối bắt đầu 18:00. Nếu chồng lấn thì chặn, trả lỗi 400: "Khung giờ của tiết này trùng với 'Tiết X' đã tồn tại."
-   Kiểm tra chồng lấn áp dụng cho giá trị cuối cùng trên form (sau khi người dùng chỉnh), không phải giá trị mẫu.
-   Thay đổi CSDL: Thêm 1 dòng vào TietHoc với đúng giá trị cuối cùng trên form.
-   Kết quả hiển thị: Đóng modal, danh sách tải lại và xuất hiện dòng mới.
-3. Cập nhật (Sửa) Thông tin Tiết học
-   Thao tác người dùng: Bấm "Sửa" tại dòng tiết học, chỉnh TenTiet, GioBatDau, GioKetThuc, rồi bấm "Lưu Thay Đổi".
-   Nghiệp vụ xử lý:
-   Form nạp giá trị hiện có trong CSDL, không ghi đè bằng mẫu chuẩn. Dropdown chọn mẫu bị khóa.
-   MaTiet cố định, không cho sửa, vì là khóa ngoại trong ThoiKhoaBieu và BuoiHoc.
-   Có nút phụ "Khôi phục giờ chuẩn" để đưa hai ô giờ về giá trị mẫu tương ứng với TenTiet, dùng khi lỡ sửa nhầm.
-   Validation: các trường không trống, GioBatDau < GioKetThuc, kiểm tra chồng lấn giờ như mục 2 (loại trừ chính dòng đang sửa khỏi phép so sánh).
-   Cảnh báo ảnh hưởng lịch đã xếp: vì lịch chỉ lưu mã tiết, đổi giờ ở đây sẽ áp dụng ngay cho mọi buổi học đang dùng tiết này. Hệ thống đếm số ThoiKhoaBieu và BuoiHoc đang tham chiếu tới tiết đó. Nếu lớn hơn 0 thì hiện cảnh báo, ví dụ "Có X buổi học đang sử dụng tiết này, thay đổi giờ sẽ áp dụng cho toàn bộ các buổi học đó", và yêu cầu Admin xác nhận trước khi lưu.
-   Thay đổi CSDL: Cập nhật các cột TenTiet, GioBatDau, GioKetThuc của bản ghi có MaTiet tương ứng.
-   Kết quả hiển thị: Đóng modal, thông báo "Cập nhật tiết học thành công!", bảng làm mới.
-4. Xóa Tiết học
-   Thao tác người dùng: Bấm icon "Xóa" tại dòng tiết học và xác nhận trên popup.
-   Nghiệp vụ xử lý (kiểm tra tuần tự 2 bảng, dừng ngay khi vướng):
-   Đếm số ThoiKhoaBieu có MaTietBatDau hoặc MaTietKetThuc bằng mã tiết này. Nếu > 0 thì chặn xóa, trả lỗi 400: "Không thể xóa tiết học vì đang được dùng trong Y giai đoạn thời khóa biểu."
-   Nếu qua bước 1, đếm số BuoiHoc có MaTietBatDau hoặc MaTietKetThuc bằng mã tiết này. Nếu > 0 thì chặn xóa, báo lỗi tương tự về buổi học.
-   Chỉ khi cả 2 bằng 0 mới cho phép xóa. Thực tế chỉ xóa được các tiết vừa tạo nhầm, chưa từng dùng để xếp lịch.
-   Thay đổi CSDL: Nếu đủ điều kiện, bản ghi bị xóa vĩnh viễn khỏi bảng TietHoc.
-   Kết quả hiển thị: Dòng tiết học biến mất khỏi bảng.
-
-##
+- **Thao tác người dùng (User Action)**:
+  - Bấm icon **"Xóa"** tại dòng tiết học, xác nhận trên Popup.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Kiểm tra quyền `CanDelete` trên Resource `TietHoc`.
+  - **Kiểm tra tuần tự ràng buộc toàn vẹn CSDL**:
+    1. **Kiểm tra Thời khóa biểu (`ThoiKhoaBieu`)**:
+       ```sql
+       SELECT COUNT(*) AS total FROM ThoiKhoaBieu WHERE MaTiet = ?;
+       ```
+       - Nếu `total > 0` $\rightarrow$ **CHẶN XÓA**: _"Không thể xóa tiết học vì đang được dùng trong N giai đoạn thời khóa biểu."_
+    2. **Kiểm tra Buổi học (`BuoiHoc`)**:
+       ```sql
+       SELECT COUNT(*) AS total FROM BuoiHoc WHERE MaTiet = ?;
+       ```
+       - Nếu `total > 0` $\rightarrow$ **CHẶN XÓA**: _"Không thể xóa tiết học vì đang được dùng trong N buổi học."_
+    - Nếu cả 2 điều kiện đều $= 0$ $\rightarrow$ Cho phép xóa.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Trường hợp xóa thành công**: Bản ghi bị **XÓA VĨNH VIỄN** khỏi bảng `TietHoc`:
+    ```sql
+    DELETE FROM TietHoc WHERE MaTiet = ?;
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Tiết học bị xóa khỏi CSDL và biến mất khỏi bảng danh sách.

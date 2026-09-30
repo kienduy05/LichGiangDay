@@ -13,8 +13,8 @@ class TietHocService {
         th.TenTiet,
         TIME_FORMAT(th.GioBatDau, '%H:%i') AS GioBatDau,
         TIME_FORMAT(th.GioKetThuc, '%H:%i') AS GioKetThuc,
-        (SELECT COUNT(*) FROM ThoiKhoaBieu WHERE MaTietBatDau = th.MaTiet OR MaTietKetThuc = th.MaTiet) AS SoThoiKhoaBieu,
-        (SELECT COUNT(*) FROM BuoiHoc WHERE MaTietBatDau = th.MaTiet OR MaTietKetThuc = th.MaTiet) AS SoBuoiHoc
+        (SELECT COUNT(*) FROM ThoiKhoaBieu WHERE MaTiet = th.MaTiet) AS SoThoiKhoaBieu,
+        (SELECT COUNT(*) FROM BuoiHoc WHERE MaTiet = th.MaTiet) AS SoBuoiHoc
       FROM TietHoc th
       ORDER BY th.GioBatDau ASC
     `);
@@ -45,13 +45,13 @@ class TietHocService {
   static countUsages = async (maTiet) => {
     const [[tkb]] = await db.query(`
       SELECT COUNT(*) AS total FROM ThoiKhoaBieu
-      WHERE MaTietBatDau = ? OR MaTietKetThuc = ?
-    `, [maTiet, maTiet]);
+      WHERE MaTiet = ?
+    `, [maTiet]);
 
     const [[bh]] = await db.query(`
       SELECT COUNT(*) AS total FROM BuoiHoc
-      WHERE MaTietBatDau = ? OR MaTietKetThuc = ?
-    `, [maTiet, maTiet]);
+      WHERE MaTiet = ?
+    `, [maTiet]);
 
     return { soThoiKhoaBieu: tkb.total, soBuoiHoc: bh.total };
   };
@@ -168,8 +168,8 @@ class TietHocService {
     // Bước 1: ThoiKhoaBieu
     const [[tkb]] = await db.query(`
       SELECT COUNT(*) AS total FROM ThoiKhoaBieu
-      WHERE MaTietBatDau = ? OR MaTietKetThuc = ?
-    `, [maTiet, maTiet]);
+      WHERE MaTiet = ?
+    `, [maTiet]);
 
     if (tkb.total > 0) {
       throw new Error(
@@ -180,8 +180,8 @@ class TietHocService {
     // Bước 2: BuoiHoc
     const [[bh]] = await db.query(`
       SELECT COUNT(*) AS total FROM BuoiHoc
-      WHERE MaTietBatDau = ? OR MaTietKetThuc = ?
-    `, [maTiet, maTiet]);
+      WHERE MaTiet = ?
+    `, [maTiet]);
 
     if (bh.total > 0) {
       throw new Error(

@@ -349,8 +349,7 @@ CREATE TABLE ThoiKhoaBieu (
     MaThoiKhoaBieu     VARCHAR(20)     NOT NULL,
     MaLopHocPhan       VARCHAR(100)    NOT NULL,
     ThuTrongTuan       TINYINT         NOT NULL,
-    MaTietBatDau       TINYINT         NOT NULL,
-    MaTietKetThuc      TINYINT         NOT NULL,
+    MaTiet             TINYINT         NOT NULL,
     MaPhong            VARCHAR(30)     NOT NULL,
     NgayBatDau         DATE            NOT NULL,
     NgayKetThuc        DATE            NOT NULL,
@@ -365,12 +364,8 @@ CREATE TABLE ThoiKhoaBieu (
         FOREIGN KEY (MaLopHocPhan)
         REFERENCES LopHocPhan (MaLopHocPhan),
 
-    CONSTRAINT FK_ThoiKhoaBieu_TietBatDau
-        FOREIGN KEY (MaTietBatDau)
-        REFERENCES TietHoc (MaTiet),
-
-    CONSTRAINT FK_ThoiKhoaBieu_TietKetThuc
-        FOREIGN KEY (MaTietKetThuc)
+    CONSTRAINT FK_ThoiKhoaBieu_TietHoc
+        FOREIGN KEY (MaTiet)
         REFERENCES TietHoc (MaTiet),
 
     CONSTRAINT FK_ThoiKhoaBieu_PhongHoc
@@ -384,8 +379,7 @@ CREATE TABLE BuoiHoc (
     MaThoiKhoaBieu     VARCHAR(20)     NULL,
     MaLopHocPhan       VARCHAR(100)    NOT NULL,
     NgayHoc            DATE            NOT NULL,
-    MaTietBatDau       TINYINT         NOT NULL,
-    MaTietKetThuc      TINYINT         NOT NULL,
+    MaTiet             TINYINT         NOT NULL,
     MaPhong            VARCHAR(30)     NOT NULL,
     MaGiangVien        VARCHAR(10)     NOT NULL,
     LoaiBuoiHoc        VARCHAR(20)     NOT NULL DEFAULT 'Regular',
@@ -403,12 +397,8 @@ CREATE TABLE BuoiHoc (
         FOREIGN KEY (MaLopHocPhan)
         REFERENCES LopHocPhan (MaLopHocPhan),
 
-    CONSTRAINT FK_BuoiHoc_TietBatDau
-        FOREIGN KEY (MaTietBatDau)
-        REFERENCES TietHoc (MaTiet),
-
-    CONSTRAINT FK_BuoiHoc_TietKetThuc
-        FOREIGN KEY (MaTietKetThuc)
+    CONSTRAINT FK_BuoiHoc_TietHoc
+        FOREIGN KEY (MaTiet)
         REFERENCES TietHoc (MaTiet),
 
     CONSTRAINT FK_BuoiHoc_PhongHoc
@@ -494,8 +484,7 @@ CREATE TABLE DangKyDayBu (
     MaLopHocPhan        VARCHAR(100)    NOT NULL,
     ThoiGianDangKy      DATETIME       NOT NULL,
     NgayDeXuat          DATE            NOT NULL,
-    MaTietBatDau        TINYINT         NOT NULL,
-    MaTietKetThuc       TINYINT         NOT NULL,
+    MaTiet              TINYINT         NOT NULL,
     MaPhong             VARCHAR(30)     NOT NULL,
     TrangThai           VARCHAR(30)     NOT NULL DEFAULT 'Processing',
     LyDoTuChoi          VARCHAR(255)   NULL,
@@ -517,12 +506,8 @@ CREATE TABLE DangKyDayBu (
         FOREIGN KEY (MaLopHocPhan)
         REFERENCES LopHocPhan (MaLopHocPhan),
 
-    CONSTRAINT FK_DangKyDayBu_TietBatDau
-        FOREIGN KEY (MaTietBatDau)
-        REFERENCES TietHoc (MaTiet),
-
-    CONSTRAINT FK_DangKyDayBu_TietKetThuc
-        FOREIGN KEY (MaTietKetThuc)
+    CONSTRAINT FK_DangKyDayBu_TietHoc
+        FOREIGN KEY (MaTiet)
         REFERENCES TietHoc (MaTiet),
 
     CONSTRAINT FK_DangKyDayBu_PhongHoc
