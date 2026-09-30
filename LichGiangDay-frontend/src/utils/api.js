@@ -838,3 +838,50 @@ export const apiDeleteHocKy = async (maHocKy) => {
   if (!response.ok) throw new Error(data.message || 'Xóa học kỳ thất bại.');
   return data.metadata;
 };
+
+
+// ==========================================
+// TIETHOC (TIẾT HỌC) API SERVICES
+// ==========================================
+
+export const apiGetTietHocList = async () => {
+  const response = await fetch(`${API_BASE_URL}/tiethoc`, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Lấy danh sách tiết học thất bại.');
+  return data.metadata;
+};
+
+export const apiCreateTietHoc = async ({ maTiet, tenTiet, gioBatDau, gioKetThuc }) => {
+  const response = await fetch(`${API_BASE_URL}/tiethoc`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ maTiet, tenTiet, gioBatDau, gioKetThuc })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Tạo tiết học thất bại.');
+  return data.metadata;
+};
+
+export const apiUpdateTietHoc = async (maTiet, { tenTiet, gioBatDau, gioKetThuc }) => {
+  const response = await fetch(`${API_BASE_URL}/tiethoc/${maTiet}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ tenTiet, gioBatDau, gioKetThuc })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Cập nhật tiết học thất bại.');
+  return data.metadata;
+};
+
+export const apiDeleteTietHoc = async (maTiet) => {
+  const response = await fetch(`${API_BASE_URL}/tiethoc/${maTiet}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Xóa tiết học thất bại.');
+  return data.metadata;
+};
