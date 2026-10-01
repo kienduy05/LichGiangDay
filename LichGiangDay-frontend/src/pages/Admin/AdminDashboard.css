@@ -361,9 +361,11 @@ select.filter-select:focus {
   background: rgba(15, 23, 42, 0.45);
   backdrop-filter: blur(6px);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   z-index: 200;
+  padding: 32px 16px;
+  overflow-y: auto;
 }
 
 .modal-card {
@@ -371,9 +373,12 @@ select.filter-select:focus {
   border-radius: 20px;
   width: 100%;
   max-width: 480px;
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
   padding: 32px;
   box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.25);
   border: 1px solid #e2e8f0;
+  margin: auto;
 }
 
 .modal-header {
