@@ -33,6 +33,10 @@ export default function PhongHocManagement() {
   const [selectedLoaiPhongFilter, setSelectedLoaiPhongFilter] = useState('ALL');
   const [selectedTrangThaiFilter, setSelectedTrangThaiFilter] = useState('ALL');
 
+  // Pagination state (diagram view: 2 tòa/trang)
+  const BUILDINGS_PER_PAGE = 2;
+  const [currentPage, setCurrentPage] = useState(1);
+
   // Modal Create/Edit state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create'); // 'create' | 'edit'
@@ -220,6 +224,20 @@ export default function PhongHocManagement() {
   // Gom nhóm danh sách phòng học đã lọc cho Giao diện Sơ đồ
   const groupedBuildings = groupRoomsByBuildingAndFloor(filteredList, toaNhaList);
 
+  // Pagination derived values
+  const totalPages = Math.max(1, Math.ceil(groupedBuildings.length / BUILDINGS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const pagedBuildings = groupedBuildings.slice(
+    (safePage - 1) * BUILDINGS_PER_PAGE,
+    safePage * BUILDINGS_PER_PAGE
+  );
+
+  // Reset trang về 1 khi filter/search thay đổi
+ const handleFilterChange = (setter) => (e) => {
+  setter(e.target.value);
+  setCurrentPage(1);
+};
+
   return (
     <div className="phonghoc-management-container">
       {/* Page Header Toolbar */}
@@ -289,10 +307,10 @@ export default function PhongHocManagement() {
               type="text"
               placeholder="Tìm kiếm theo mã phòng, tên phòng, tòa nhà, loại phòng..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
             />
             {searchQuery && (
-              <button className="clear-search-btn" onClick={() => setSearchQuery('')}>
+              <button className="clear-search-btn" onClick={() => { setSearchQuery(''); setCurrentPage(1); }}>
                 <X size={14} />
               </button>
             )}
@@ -304,7 +322,7 @@ export default function PhongHocManagement() {
               className="modal-input"
               style={{ fontSize: '0.85rem', width: 'auto' }}
               value={selectedToaNhaFilter}
-              onChange={(e) => setSelectedToaNhaFilter(e.target.value)}
+              onChange={handleFilterChange(setSelectedToaNhaFilter)}
             >
               <option value="ALL">Tất cả tòa nhà ({toaNhaList.length})</option>
               {toaNhaList.map(tn => (
@@ -319,7 +337,7 @@ export default function PhongHocManagement() {
               className="modal-input"
               style={{ fontSize: '0.85rem', width: 'auto' }}
               value={selectedLoaiPhongFilter}
-              onChange={(e) => setSelectedLoaiPhongFilter(e.target.value)}
+              onChange={handleFilterChange(setSelectedLoaiPhongFilter)}
             >
               <option value="ALL">Tất cả loại phòng</option>
               {loaiPhongOptions.map(lp => (
@@ -332,7 +350,7 @@ export default function PhongHocManagement() {
               className="modal-input"
               style={{ fontSize: '0.85rem', width: 'auto' }}
               value={selectedTrangThaiFilter}
-              onChange={(e) => setSelectedTrangThaiFilter(e.target.value)}
+              onChange={handleFilterChange(setSelectedTrangThaiFilter)}
             >
               <option value="ALL">Tất cả trạng thái</option>
               <option value="Ready">Sẵn sàng (Ready)</option>
@@ -373,15 +391,63 @@ export default function PhongHocManagement() {
                 </p>
               </div>
             ) : (
-              groupedBuildings.map((building) => (
-                <BuildingSection
-                  key={building.buildingCode}
-                  building={building}
-                  onEditRoom={handleOpenEditModal}
-                  onDeleteRoom={handleOpenDeleteModal}
-                  onToggleStatus={handleToggleStatus}
-                />
-              ))
+              <>
+                {pagedBuildings.map((building) => (
+                  <BuildingSection
+                    key={building.buildingCode}
+                    building={building}
+                    onEditRoom={handleOpenEditModal}
+                    onDeleteRoom={handleOpenDeleteModal}
+                    onToggleStatus={handleToggleStatus}
+                  />
+                ))}
+
+                {/* Pagination Bar */}
+                {totalPages > 1 && (
+                  <div className="ph-pagination">
+                    <div className="ph-pagination-info">
+                      Trang <strong>{safePage}</strong> / <strong>{totalPages}</strong>
+                      <span className="ph-pagination-sep">·</span>
+                      Hiển thị <strong>{pagedBuildings.length}</strong> / <strong>{groupedBuildings.length}</strong> tòa
+                    </div>
+                    <div className="ph-pagination-controls">
+                      <button
+                        className="ph-page-btn"
+                        onClick={() => setCurrentPage(1)}
+                        disabled={safePage === 1}
+                        title="Trang đầu"
+                      >«</button>
+                      <button
+                        className="ph-page-btn"
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={safePage === 1}
+                        title="Trang trước"
+                      >‹</button>
+
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                        <button
+                          key={page}
+                          className={`ph-page-btn${safePage === page ? ' active' : ''}`}
+                          onClick={() => setCurrentPage(page)}
+                        >{page}</button>
+                      ))}
+
+                      <button
+                        className="ph-page-btn"
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={safePage === totalPages}
+                        title="Trang sau"
+                      >›</button>
+                      <button
+                        className="ph-page-btn"
+                        onClick={() => setCurrentPage(totalPages)}
+                        disabled={safePage === totalPages}
+                        title="Trang cuối"
+                      >»</button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         ) : (

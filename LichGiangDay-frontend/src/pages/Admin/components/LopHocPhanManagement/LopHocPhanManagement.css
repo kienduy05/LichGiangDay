@@ -1,0 +1,218 @@
+/* LopHocPhanManagement.css — Main Styles */
+
+.lhp-management-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ===== FILTER BAR ===== */
+.lhp-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--admin-border);
+  flex-wrap: wrap;
+}
+
+.lhp-filter-select {
+  min-width: 180px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-bg);
+  color: var(--admin-text-main);
+  font-size: 0.86rem;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.18s;
+}
+
+.lhp-filter-select:focus {
+  border-color: var(--primary);
+}
+
+/* ===== STATUS BADGES ===== */
+.lhp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.lhp-badge.assigned {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.lhp-badge.unassigned {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.lhp-badge.loaihoc {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.lhp-badge.bomon {
+  background: #f5f3ff;
+  color: #7c3aed;
+}
+
+.lhp-badge.khoa {
+  background: #fdf4ff;
+  color: #a855f7;
+}
+
+.lhp-badge.count {
+  background: #f0fdf4;
+  color: #16a34a;
+  font-size: 0.72rem;
+}
+
+/* ===== CARD LIST ===== */
+.lhp-card-list {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 20px;
+  gap: 10px;
+}
+
+.lhp-card-item {
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  background: var(--admin-bg);
+  overflow: hidden;
+  transition: box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.lhp-card-item:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+  border-color: #cbd5e1;
+}
+
+/* ── Card Header ── */
+.lhp-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--admin-border);
+  background: var(--admin-card-bg);
+  gap: 8px;
+}
+
+.lhp-card-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.lhp-card-ma {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--admin-primary);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.lhp-card-tenmon {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--admin-text-main);
+}
+
+.lhp-card-badges {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.lhp-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+/* ── Card Body (clickable fields) ── */
+.lhp-card-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  cursor: pointer;
+  padding: 6px 0;
+}
+
+.lhp-card-body:hover {
+  background: #f8fafc;
+}
+
+.lhp-card-field {
+  display: flex;
+  align-items: baseline;
+  gap: 0;
+  padding: 4px 16px;
+}
+
+.lhp-field-label {
+  width: 80px;
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--admin-text-sub);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.lhp-field-value {
+  font-size: 0.86rem;
+  color: var(--admin-text-main);
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.lhp-field-value.muted {
+  color: var(--admin-text-sub);
+  font-weight: 400;
+}
+
+/* ===== ASSIGN GV BUTTON ===== */
+.lhp-assign-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--admin-border);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.lhp-assign-btn:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+.lhp-assign-btn.unassign {
+  background: #fff7ed;
+  color: #ea580c;
+  border-color: #fed7aa;
+}
+
+.lhp-assign-btn.unassign:hover {
+  background: #ffedd5;
+}

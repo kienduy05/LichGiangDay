@@ -1,0 +1,398 @@
+/* LopHocPhanComponents.css — Sub-component styles (Detail, Modals, Import/Export) */
+
+/* ===== DETAIL VIEW ===== */
+.lhp-detail-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.lhp-detail-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-bg);
+  color: var(--admin-text-sub);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.lhp-detail-back-btn:hover {
+  background: #f1f5f9;
+  color: var(--admin-text-main);
+}
+
+.lhp-detail-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--admin-text-main);
+}
+
+.lhp-detail-subtitle {
+  font-size: 0.82rem;
+  color: var(--admin-text-sub);
+  margin-top: 3px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ===== INFO GRID (detail) ===== */
+.lhp-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  padding: 12px 20px;
+}
+
+.lhp-info-item {
+  padding: 8px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.lhp-info-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--admin-text-sub);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 3px;
+}
+
+.lhp-info-value {
+  font-size: 0.9rem;
+  color: var(--admin-text-main);
+  font-weight: 500;
+}
+
+/* ===== SECTION HEADER ===== */
+.lhp-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px 10px;
+  border-top: 1px solid var(--admin-border);
+}
+
+.lhp-section-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--admin-text-main);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lhp-section-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.lhp-section-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-bg);
+  color: var(--admin-text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+
+.lhp-section-btn:hover {
+  background: #f1f5f9;
+  color: var(--admin-text-main);
+}
+
+.lhp-section-btn.primary {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+}
+
+.lhp-section-btn.primary:hover {
+  background: #dbeafe;
+}
+
+.lhp-section-btn.danger {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+.lhp-section-btn.danger:hover {
+  background: #fee2e2;
+}
+
+/* ===== IMPORT/EXPORT BAR ===== */
+.lhp-import-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+}
+
+.lhp-import-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  border: 1px solid var(--admin-border);
+}
+
+.lhp-import-btn.upload {
+  background: #ecfdf5;
+  color: #059669;
+  border-color: #a7f3d0;
+}
+
+.lhp-import-btn.upload:hover {
+  background: #d1fae5;
+}
+
+.lhp-import-btn.download {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+}
+
+.lhp-import-btn.download:hover {
+  background: #dbeafe;
+}
+
+/* ===== IMPORT RESULT ===== */
+.lhp-import-result {
+  padding: 16px 20px;
+  border-radius: 10px;
+  margin: 8px 0;
+}
+
+.lhp-import-result.success {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+}
+
+.lhp-import-result.error-list {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+.lhp-import-result h4 {
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+}
+
+.lhp-import-result ul {
+  font-size: 0.82rem;
+  color: #dc2626;
+  list-style: disc;
+  padding-left: 20px;
+}
+
+/* ===== STUDENT CLASS PICKER MODAL ===== */
+.lhp-picker-list {
+  max-height: 340px;
+  overflow-y: auto;
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  margin: 8px 0;
+}
+
+.lhp-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.lhp-picker-item:last-child {
+  border-bottom: none;
+}
+
+.lhp-picker-item:hover {
+  background: #f8fafc;
+}
+
+.lhp-picker-item.selected {
+  background: #eff6ff;
+}
+
+.lhp-picker-item.already {
+  background: #f0fdf4;
+  cursor: default;
+  opacity: 0.6;
+}
+
+.lhp-picker-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: #2563eb;
+  flex-shrink: 0;
+}
+
+.lhp-picker-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--admin-text-main);
+}
+
+.lhp-picker-sub {
+  font-size: 0.78rem;
+  color: var(--admin-text-sub);
+}
+
+/* ===== MODAL WIDER ===== */
+.modal-card.wide {
+  max-width: 560px;
+}
+
+/* ===== DELETE MODAL ===== */
+.delete-icon-wrapper {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #fef2f2;
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.delete-modal-title {
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--admin-text-main);
+  margin-bottom: 10px;
+}
+
+.delete-modal-desc {
+  text-align: center;
+  font-size: 0.88rem;
+  color: var(--admin-text-sub);
+  margin-bottom: 16px;
+  line-height: 1.55;
+}
+
+.btn-delete {
+  padding: 11px 24px;
+  border-radius: 10px;
+  background: #ef4444;
+  border: none;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.btn-delete:hover {
+  background: #dc2626;
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+}
+
+/* ===== ALERT BANNER WARNING ===== */
+.alert-banner.warning {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #c2410c;
+}
+
+/* ===== STATUS BADGE ===== */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.status-badge.active {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.status-badge.inactive {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+/* ===== TABLE UTILITY ===== */
+.table-loading-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--admin-text-sub);
+  font-size: 0.9rem;
+}
+
+.table-empty-cell {
+  text-align: center;
+  color: var(--admin-text-sub);
+  font-size: 0.88rem;
+  padding: 30px 20px;
+}
+
+/* ===== ROLE BADGE ===== */
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.role-badge.primary {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+/* ===== FORM ROW ===== */
+.lhp-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+@media (max-width: 600px) {
+  .lhp-form-row {
+    grid-template-columns: 1fr;
+  }
+  .lhp-card-body {
+    grid-template-columns: 1fr;
+  }
+  .lhp-info-grid {
+    grid-template-columns: 1fr;
+  }
+}

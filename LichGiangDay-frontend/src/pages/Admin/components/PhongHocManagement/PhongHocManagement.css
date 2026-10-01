@@ -17,3 +17,96 @@
   flex-direction: column;
   gap: 24px;
 }
+
+/* ===== Pagination (Sơ đồ phòng học) ===== */
+.ph-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 14px 20px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 0 0 12px 12px;
+}
+
+.ph-pagination-info {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.ph-pagination-info strong {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.ph-pagination-sep {
+  margin: 0 8px;
+  color: #cbd5e1;
+}
+
+.ph-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ph-page-btn {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #475569;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s,
+    box-shadow 0.15s, transform 0.1s;
+}
+
+.ph-page-btn:hover:not(:disabled):not(.active) {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #93c5fd;
+}
+
+.ph-page-btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.ph-page-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+}
+
+.ph-page-btn.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
+  cursor: default;
+}
+
+.ph-page-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #f1f5f9;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .ph-pagination {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+}
