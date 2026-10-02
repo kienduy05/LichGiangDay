@@ -1,89 +1,178 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../../../context/AuthContext';
 import {
-  Users, School, BookMarked, Plus, Search, X, RefreshCw,
-  AlertCircle, Loader2, Edit2, Trash2, ShieldAlert, CheckCircle2
+  Users, School, BookMarked, Plus, AlertCircle,
+  ShieldAlert, Loader2
 } from 'lucide-react';
 import {
   apiGetLopSinhVienList,
+  apiGetLopSinhVienChiTiet,
   apiCreateLopSinhVien,
   apiUpdateLopSinhVien,
   apiDeleteLopSinhVien,
   apiGetKhoaList
 } from '../../../../utils/api';
+import LopSinhVienTreeView from './LopSinhVienTreeView';
+import LopSinhVienFilterBar from './LopSinhVienFilterBar';
+import LopSinhVienTable from './LopSinhVienTable';
+import LopSinhVienDetailView from './LopSinhVienDetailView';
+import LopSinhVienFormModal from './LopSinhVienFormModal';
 import './LopSinhVienManagement.css';
+import './LopSinhVienComponents.css';
 
 export default function LopSinhVienManagement() {
   const { hasPermission } = useAuth();
 
-  // ── Danh sách ──
+  // ─── View mode: 'list' | 'detail' ───
+  const [view, setView] = useState('list');
+  const [detailData, setDetailData] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  // ─── Danh mục Khoa ───
+  const [khoaList, setKhoaList] = useState([]);
+
+  // ─── Dữ liệu đầy đủ (TreeView counts & KPI stats) ───
+  const [allLsvList, setAllLsvList] = useState([]);
+
+  // ─── Dữ liệu hiển thị trong bảng ───
   const [lsvList, setLsvList] = useState([]);
   const [lsvLoading, setLsvLoading] = useState(false);
   const [lsvError, setLsvError] = useState('');
 
-  // ── Dropdown Khoa ──
-  const [khoaList, setKhoaList] = useState([]);
-
-  // ── Bộ lọc ──
-  const [filterKhoa, setFilterKhoa] = useState('');
+  // ─── Bộ lọc & Tree selection ───
+  const [selectedKhoaId, setSelectedKhoaId] = useState('');
+  const [selectedLsvId, setSelectedLsvId] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // ── Modal Thêm / Sửa ──
+  // ─── Modal Thêm / Sửa ───
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create');
-  const [formData, setFormData] = useState({ maLopSinhVien: '', tenLopSinhVien: '', maKhoa: '' });
+  const [formData, setFormData] = useState({
+    maLopSinhVien: '',
+    tenLopSinhVien: '',
+    maKhoa: ''
+  });
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
 
-  // ── Modal Xóa ──
+  // ─── Modal Xóa ───
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingLSV, setDeletingLSV] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState('');
 
   // ─────────────────────────────────────────────────────────────
-  // FETCH
+  // 1. TẢI DANH MỤC BAN ĐẦU (Khoa & Toàn bộ Lớp cho TreeView)
   // ─────────────────────────────────────────────────────────────
-  const fetchList = useCallback(async () => {
+  const fetchMetadata = async () => {
+    try {
+      const [khoas, allLsvs] = await Promise.all([
+        apiGetKhoaList().catch(() => []),
+        apiGetLopSinhVienList().catch(() => [])
+      ]);
+      setKhoaList(khoas || []);
+      setAllLsvList(allLsvs || []);
+    } catch (err) {
+      console.error('Lỗi khi tải dữ liệu lớp sinh viên:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchMetadata();
+  }, []);
+
+  // ─────────────────────────────────────────────────────────────
+  // 2. FETCH DANH SÁCH LỚP SINH VIÊN THEO FILTER
+  // ─────────────────────────────────────────────────────────────
+  const fetchFilteredList = useCallback(async () => {
     setLsvLoading(true);
     setLsvError('');
     try {
-      const data = await apiGetLopSinhVienList({ maKhoa: filterKhoa, search: searchQuery });
-      setLsvList(data || []);
+      const data = await apiGetLopSinhVienList({
+        maKhoa: selectedKhoaId,
+        search: searchQuery
+      });
+
+      let results = data || [];
+      if (selectedLsvId) {
+        results = results.filter(l => l.MaLopSinhVien === selectedLsvId);
+      }
+
+      setLsvList(results);
     } catch (err) {
       setLsvError(err.message || 'Không thể tải danh sách lớp sinh viên.');
     } finally {
       setLsvLoading(false);
     }
-  }, [filterKhoa, searchQuery]);
+  }, [selectedKhoaId, selectedLsvId, searchQuery]);
 
-  const fetchKhoaList = async () => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchFilteredList();
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [fetchFilteredList]);
+
+  const handleRefresh = async () => {
+    await fetchMetadata();
+    await fetchFilteredList();
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // 3. TREEVIEW HANDLERS (1 CẤP LÀ KHOA)
+  // ─────────────────────────────────────────────────────────────
+  const handleSelectKhoa = (maKhoa) => {
+    setSelectedKhoaId(maKhoa);
+    setSelectedLsvId('');
+    setView('list');
+  };
+
+  const handleSelectLsv = (maLopSinhVien) => {
+    setSelectedLsvId(maLopSinhVien);
+    setView('list');
+  };
+
+  const handleClearAllFilters = () => {
+    setSelectedKhoaId('');
+    setSelectedLsvId('');
+    setSearchQuery('');
+    setView('list');
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // 4. DETAIL VIEW HANDLERS
+  // ─────────────────────────────────────────────────────────────
+  const handleViewDetail = async (item) => {
+    setDetailLoading(true);
+    setView('detail');
     try {
-      const data = await apiGetKhoaList();
-      setKhoaList(data || []);
+      const data = await apiGetLopSinhVienChiTiet(item.MaLopSinhVien);
+      setDetailData(data);
     } catch {
-      setKhoaList([]);
+      setDetailData({ lopSinhVien: item, lopHocPhanList: [] });
+    } finally {
+      setDetailLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchList();
-    fetchKhoaList();
-  }, []);
-
-  useEffect(() => {
-    const timer = setTimeout(() => fetchList(), 300);
-    return () => clearTimeout(timer);
-  }, [filterKhoa, searchQuery]);
+  const handleBackToList = () => {
+    setView('list');
+    setDetailData(null);
+  };
 
   // ─────────────────────────────────────────────────────────────
-  // MODAL THÊM / SỬA
+  // 5. THÊM / SỬA LỚP SINH VIÊN
   // ─────────────────────────────────────────────────────────────
   const handleOpenCreate = () => {
     setModalMode('create');
-    setFormData({ maLopSinhVien: '', tenLopSinhVien: '', maKhoa: filterKhoa || '' });
-    setFormError(''); setFormSuccess('');
+    setFormData({
+      maLopSinhVien: '',
+      tenLopSinhVien: '',
+      maKhoa: selectedKhoaId && selectedKhoaId !== '__NULL__' ? selectedKhoaId : ''
+    });
+    setFormError('');
+    setFormSuccess('');
     setIsModalOpen(true);
   };
 
@@ -92,24 +181,29 @@ export default function LopSinhVienManagement() {
     setFormData({
       maLopSinhVien: item.MaLopSinhVien,
       tenLopSinhVien: item.TenLopSinhVien,
-      maKhoa: item.MaKhoa
+      maKhoa: item.MaKhoa || ''
     });
-    setFormError(''); setFormSuccess('');
+    setFormError('');
+    setFormSuccess('');
     setIsModalOpen(true);
   };
 
-  const handleSaveSubmit = async (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
-    setFormError(''); setFormSuccess('');
+    setFormError('');
+    setFormSuccess('');
 
     if (modalMode === 'create' && !formData.maLopSinhVien.trim()) {
-      setFormError('Vui lòng nhập Mã lớp sinh viên.'); return;
+      setFormError('Vui lòng nhập Mã lớp sinh viên.');
+      return;
     }
     if (!formData.tenLopSinhVien.trim()) {
-      setFormError('Vui lòng nhập Tên lớp sinh viên.'); return;
+      setFormError('Vui lòng nhập Tên lớp sinh viên.');
+      return;
     }
     if (!formData.maKhoa) {
-      setFormError('Vui lòng chọn Khoa quản lý.'); return;
+      setFormError('Vui lòng chọn Khoa quản lý.');
+      return;
     }
 
     setFormLoading(true);
@@ -124,8 +218,18 @@ export default function LopSinhVienManagement() {
         });
         setFormSuccess('Cập nhật lớp sinh viên thành công!');
       }
-      await fetchList();
-      setTimeout(() => { setIsModalOpen(false); setFormSuccess(''); }, 900);
+
+      await handleRefresh();
+
+      if (view === 'detail' && detailData?.lopSinhVien?.MaLopSinhVien === formData.maLopSinhVien) {
+        const updatedDetail = await apiGetLopSinhVienChiTiet(formData.maLopSinhVien);
+        setDetailData(updatedDetail);
+      }
+
+      setTimeout(() => {
+        setIsModalOpen(false);
+        setFormSuccess('');
+      }, 900);
     } catch (err) {
       setFormError(err.message || 'Thao tác thất bại.');
     } finally {
@@ -134,7 +238,7 @@ export default function LopSinhVienManagement() {
   };
 
   // ─────────────────────────────────────────────────────────────
-  // XÓA
+  // 6. XÓA LỚP SINH VIÊN
   // ─────────────────────────────────────────────────────────────
   const handleOpenDelete = (item) => {
     setDeletingLSV(item);
@@ -148,9 +252,13 @@ export default function LopSinhVienManagement() {
     setDeleteError('');
     try {
       await apiDeleteLopSinhVien(deletingLSV.MaLopSinhVien);
-      await fetchList();
+      await handleRefresh();
       setIsDeleteModalOpen(false);
       setDeletingLSV(null);
+      if (view === 'detail' && detailData?.lopSinhVien?.MaLopSinhVien === deletingLSV.MaLopSinhVien) {
+        setView('list');
+        setDetailData(null);
+      }
     } catch (err) {
       setDeleteError(err.message || 'Không thể xóa lớp sinh viên.');
     } finally {
@@ -158,41 +266,46 @@ export default function LopSinhVienManagement() {
     }
   };
 
-  // ── Stats ──
-  const tongLopHP = lsvList.reduce((s, l) => s + (l.SoLopHocPhan || 0), 0);
-  const soKhoa = new Set(lsvList.map(l => l.MaKhoa)).size;
+  // ─────────────────────────────────────────────────────────────
+  // 7. KPI STATS
+  // ─────────────────────────────────────────────────────────────
+  const tongLopHP = allLsvList.reduce((s, l) => s + (l.SoLopHocPhan || 0), 0);
+  const soKhoa = new Set(allLsvList.map(l => l.MaKhoa).filter(Boolean)).size;
 
-  // ════════════════════════════════════════════════
-  // RENDER
-  // ════════════════════════════════════════════════
+  const selectedLsvInfo = selectedLsvId
+    ? allLsvList.find(l => l.MaLopSinhVien === selectedLsvId)
+    : null;
+
   return (
     <div className="lsv-management-container">
-
       {/* Page Header */}
       <div className="page-header-toolbar">
         <div>
           <h2 className="page-title">Quản Lý Lớp Sinh Viên</h2>
-          <p className="page-subtitle">Danh sách lớp sinh viên và số lớp học phần đang tham gia</p>
+          <p className="page-subtitle">
+            Danh sách lớp sinh viên, khoa trực thuộc và tình hình tham gia các lớp học phần
+          </p>
         </div>
         {hasPermission('LopSinhVien', 'CanCreate') && (
-          <button className="btn-primary-add" onClick={handleOpenCreate}>
+          <button type="button" className="btn-primary-add" onClick={handleOpenCreate}>
             <Plus size={18} />
             <span>Thêm Lớp sinh viên</span>
           </button>
         )}
       </div>
 
-      {/* KPI Stats */}
-      <div className="admin-stats-grid" style={{ marginBottom: '20px' }}>
+      {/* KPI Stats Grid */}
+      <div className="admin-stats-grid" style={{ marginBottom: '16px' }}>
         <div className="admin-stat-item">
           <div className="admin-stat-icon-bg" style={{ background: '#eff6ff', color: '#2563eb' }}>
             <Users size={24} />
           </div>
           <div>
-            <div className="admin-stat-number">{lsvList.length}</div>
+            <div className="admin-stat-number">{allLsvList.length}</div>
             <div className="admin-stat-text">Tổng lớp sinh viên</div>
           </div>
         </div>
+
         <div className="admin-stat-item">
           <div className="admin-stat-icon-bg" style={{ background: '#ecfdf5', color: '#059669' }}>
             <School size={24} />
@@ -202,6 +315,7 @@ export default function LopSinhVienManagement() {
             <div className="admin-stat-text">Khoa có lớp</div>
           </div>
         </div>
+
         <div className="admin-stat-item">
           <div className="admin-stat-icon-bg" style={{ background: '#fff7ed', color: '#ea580c' }}>
             <BookMarked size={24} />
@@ -213,226 +327,137 @@ export default function LopSinhVienManagement() {
         </div>
       </div>
 
-      {/* Data Card */}
-      <div className="admin-card">
+      {/* Main 2-Column Split Layout: TreeView (Left) + Content (Right) */}
+      <div className="lsv-page-layout">
+        {/* 1. LEFT PANEL: TreeView 1 cấp là Khoa */}
+        <LopSinhVienTreeView
+          khoaList={khoaList}
+          lsvList={allLsvList}
+          selectedKhoaId={selectedKhoaId}
+          selectedLsvId={selectedLsvId}
+          onSelectKhoa={handleSelectKhoa}
+          onSelectLsv={handleSelectLsv}
+        />
 
-        {/* Filter + Search */}
-        <div className="lsv-filter-bar">
-          <select
-            className="lsv-filter-select"
-            value={filterKhoa}
-            onChange={e => setFilterKhoa(e.target.value)}
-          >
-            <option value="">— Tất cả các Khoa —</option>
-            {khoaList.map(k => (
-              <option key={k.MaKhoa} value={k.MaKhoa}>{k.TenKhoa} ({k.MaKhoa})</option>
-            ))}
-          </select>
-
-          <div className="search-box" style={{ flex: 1, minWidth: '180px' }}>
-            <Search size={18} className="search-icon" />
-            <input
-              type="text"
-              placeholder="Tìm theo mã lớp, tên lớp..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+        {/* 2. RIGHT PANEL: Content Area */}
+        <main className="lsv-main-content">
+          {view === 'detail' ? (
+            <LopSinhVienDetailView
+              detailData={detailData}
+              loading={detailLoading}
+              onBack={handleBackToList}
+              onEdit={handleOpenEdit}
+              hasPermission={hasPermission}
             />
-            {searchQuery && (
-              <button className="clear-search-btn" onClick={() => setSearchQuery('')}><X size={14} /></button>
-            )}
-          </div>
+          ) : (
+            <div className="admin-card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Filter & Context Bar */}
+              <LopSinhVienFilterBar
+                khoaList={khoaList}
+                filterKhoa={selectedKhoaId}
+                setFilterKhoa={setSelectedKhoaId}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                onRefresh={handleRefresh}
+                loading={lsvLoading}
+                totalCount={lsvList.length}
+                selectedLsvInfo={selectedLsvInfo}
+                onClearSelection={handleClearAllFilters}
+              />
 
-          <button className="btn-refresh" title="Tải lại" onClick={fetchList}>
-            <RefreshCw size={16} className={lsvLoading ? 'animate-spin' : ''} />
-          </button>
-        </div>
-
-        {/* Error Banner */}
-        {lsvError && (
-          <div className="alert-banner error" style={{ margin: '0 20px 16px' }}>
-            <AlertCircle size={18} /><span>{lsvError}</span>
-          </div>
-        )}
-
-        {/* Card List */}
-        {lsvLoading ? (
-          <div className="table-loading-cell" style={{ padding: '40px 0' }}>
-            <Loader2 size={24} className="animate-spin" />
-            <span>Đang tải danh sách lớp sinh viên...</span>
-          </div>
-        ) : lsvList.length === 0 ? (
-          <div className="table-empty-cell" style={{ padding: '40px 0' }}>
-            {searchQuery || filterKhoa
-              ? 'Không tìm thấy lớp sinh viên nào phù hợp.'
-              : 'Chưa có lớp sinh viên nào trong hệ thống.'}
-          </div>
-        ) : (
-          <div className="lsv-card-list">
-            {lsvList.map(item => (
-              <div key={item.MaLopSinhVien} className="lsv-card-item">
-
-                {/* Header: Tên + badge + actions */}
-                <div className="lsv-card-header">
-                  <div className="lsv-card-header-left">
-                    <span className="lsv-card-name">{item.TenLopSinhVien}</span>
-                    <span className={`lsv-lhp-badge ${item.SoLopHocPhan === 0 ? 'zero' : ''}`}>
-                      <BookMarked size={11} />
-                      {item.SoLopHocPhan > 0
-                        ? `${item.SoLopHocPhan} lớp HP`
-                        : 'Chưa có lớp HP'}
-                    </span>
-                  </div>
-                  <div className="lsv-card-actions" onClick={e => e.stopPropagation()}>
-                    {hasPermission('LopSinhVien', 'CanUpdate') && (
-                      <button className="action-btn edit" title="Sửa thông tin" onClick={() => handleOpenEdit(item)}>
-                        <Edit2 size={15} />
-                      </button>
-                    )}
-                    {hasPermission('LopSinhVien', 'CanDelete') && (
-                      <button className="action-btn delete" title="Xóa lớp sinh viên" onClick={() => handleOpenDelete(item)}>
-                        <Trash2 size={15} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Fields dọc */}
-                <div className="lsv-card-fields">
-                  <div className="lsv-card-field">
-                    <span className="lsv-field-label">Mã lớp</span>
-                    <span className="lsv-field-value">{item.MaLopSinhVien}</span>
-                  </div>
-                  <div className="lsv-card-field">
-                    <span className="lsv-field-label">Tên lớp</span>
-                    <span className="lsv-field-value">{item.TenLopSinhVien}</span>
-                  </div>
-                  <div className="lsv-card-field">
-                    <span className="lsv-field-label">Khoa</span>
-                    <span className="lsv-khoa-badge">
-                      <School size={11} />
-                      {item.TenKhoa} ({item.MaKhoa})
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+              {/* Data Table */}
+              <LopSinhVienTable
+                lsvList={lsvList}
+                loading={lsvLoading}
+                error={lsvError}
+                selectedLsvId={selectedLsvId}
+                onViewDetail={handleViewDetail}
+                onEdit={handleOpenEdit}
+                onDelete={handleOpenDelete}
+                hasPermission={hasPermission}
+              />
+            </div>
+          )}
+        </main>
       </div>
 
-      {/* ══════════ MODAL: Thêm / Sửa ══════════ */}
-      {isModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-card">
-            <div className="modal-header">
-              <h3 className="modal-title">
-                {modalMode === 'create' ? 'Thêm Lớp Sinh Viên Mới' : 'Cập Nhật Lớp Sinh Viên'}
-              </h3>
-              <button onClick={() => setIsModalOpen(false)} className="modal-close-btn"><X size={20} /></button>
-            </div>
+      {/* ══════════ MODAL: Thêm / Sửa Lớp Sinh Viên ══════════ */}
+      <LopSinhVienFormModal
+        isOpen={isModalOpen}
+        mode={modalMode}
+        formData={formData}
+        setFormData={setFormData}
+        khoaList={khoaList}
+        onClose={() => {
+          setIsModalOpen(false);
+          setFormSuccess('');
+          setFormError('');
+        }}
+        onSubmit={handleFormSubmit}
+        loading={formLoading}
+        error={formError}
+        success={formSuccess}
+      />
 
-            {formSuccess && <div className="alert-banner success"><CheckCircle2 size={18} /><span>{formSuccess}</span></div>}
-            {formError && <div className="alert-banner error"><AlertCircle size={18} /><span>{formError}</span></div>}
-
-            <form onSubmit={handleSaveSubmit}>
-              {/* Mã lớp */}
-              <div className="modal-form-group">
-                <label className="modal-label">Mã Lớp Sinh Viên <span style={{ color: '#ef4444' }}>*</span></label>
-                <input
-                  type="text" className="modal-input"
-                  placeholder="VD: CNPM62A, KTMT63B..."
-                  value={formData.maLopSinhVien}
-                  onChange={e => setFormData({ ...formData, maLopSinhVien: e.target.value })}
-                  disabled={modalMode === 'edit'}
-                  style={modalMode === 'edit' ? { background: '#f1f5f9', color: '#64748b', cursor: 'not-allowed' } : {}}
-                  required
-                />
-                {modalMode === 'create' && (
-                  <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-sub)', marginTop: '4px', display: 'block' }}>
-                    Mã sẽ được viết hoa tự động. Không thể thay đổi sau khi tạo.
-                  </span>
-                )}
-              </div>
-
-              {/* Tên lớp */}
-              <div className="modal-form-group">
-                <label className="modal-label">Tên Lớp Sinh Viên <span style={{ color: '#ef4444' }}>*</span></label>
-                <input
-                  type="text" className="modal-input"
-                  placeholder="VD: Lớp Công nghệ phần mềm K62A"
-                  value={formData.tenLopSinhVien}
-                  onChange={e => setFormData({ ...formData, tenLopSinhVien: e.target.value })}
-                  required
-                />
-              </div>
-
-              {/* Khoa (bắt buộc) */}
-              <div className="modal-form-group">
-                <label className="modal-label">Khoa Quản Lý <span style={{ color: '#ef4444' }}>*</span></label>
-                <select
-                  className="modal-input"
-                  value={formData.maKhoa}
-                  onChange={e => setFormData({ ...formData, maKhoa: e.target.value })}
-                  required
-                >
-                  <option value="">— Chọn khoa —</option>
-                  {khoaList.map(k => (
-                    <option key={k.MaKhoa} value={k.MaKhoa}>{k.TenKhoa} ({k.MaKhoa})</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="modal-footer">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="btn-cancel">Hủy</button>
-                <button type="submit" className="btn-save" disabled={formLoading}>
-                  {formLoading
-                    ? <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Loader2 size={16} className="animate-spin" /> Đang lưu...</span>
-                    : modalMode === 'create' ? 'Thêm Lớp Sinh Viên' : 'Lưu Thay Đổi'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ══════════ MODAL: Xóa ══════════ */}
+      {/* ══════════ MODAL: Xóa Lớp Sinh Viên ══════════ */}
       {isDeleteModalOpen && deletingLSV && (
-        <div className="modal-overlay">
+        <div className="modal-overlay" style={{ zIndex: 1000 }}>
           <div className="modal-card modal-delete-card">
-            <div className="delete-icon-wrapper"><ShieldAlert size={32} /></div>
+            <div className="delete-icon-wrapper">
+              <ShieldAlert size={32} />
+            </div>
             <h3 className="delete-modal-title">Xác Nhận Xóa Lớp Sinh Viên</h3>
             <p className="delete-modal-desc">
               Bạn có chắc muốn xóa lớp sinh viên{' '}
               <b style={{ color: 'var(--admin-text-main)' }}>
                 {deletingLSV.TenLopSinhVien} ({deletingLSV.MaLopSinhVien})
-              </b> không?
+              </b>{' '}
+              không?
             </p>
-            {deletingLSV.SoLopHocPhan > 0 && (
-              <div className="alert-banner error" style={{ margin: '0 0 12px', fontSize: '0.84rem' }}>
+
+            {(deletingLSV.SoLopHocPhan || 0) > 0 && (
+              <div className="alert-banner error" style={{ textAlign: 'left', marginBottom: '16px', fontSize: '0.84rem' }}>
                 <AlertCircle size={16} />
                 <span>
-                  Lớp này đang tham gia <b>{deletingLSV.SoLopHocPhan}</b> lớp học phần. Không thể xóa.
+                  Lớp sinh viên này hiện đang tham gia <b>{deletingLSV.SoLopHocPhan}</b> lớp học phần. Không thể xóa nhằm đảm bảo toàn vẹn dữ liệu.
                 </span>
               </div>
             )}
+
             {deleteError && (
-              <div className="alert-banner error" style={{ margin: '0 0 12px' }}>
-                <AlertCircle size={16} /><span>{deleteError}</span>
+              <div className="alert-banner error" style={{ textAlign: 'left', marginBottom: '16px' }}>
+                <AlertCircle size={18} />
+                <span>{deleteError}</span>
               </div>
             )}
+
             <div className="modal-footer" style={{ justifyContent: 'center' }}>
-              <button onClick={() => { setIsDeleteModalOpen(false); setDeleteError(''); }} className="btn-cancel">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDeleteModalOpen(false);
+                  setDeleteError('');
+                }}
+                className="btn-cancel"
+                disabled={deleteLoading}
+              >
                 Hủy
               </button>
-              {deletingLSV.SoLopHocPhan === 0 && (
+
+              {(deletingLSV.SoLopHocPhan || 0) === 0 && (
                 <button
+                  type="button"
                   onClick={handleConfirmDelete}
-                  className="btn-delete-confirm"
+                  className="btn-delete"
                   disabled={deleteLoading}
                 >
-                  {deleteLoading
-                    ? <><Loader2 size={16} className="animate-spin" /> Đang xóa...</>
-                    : 'Xác nhận Xóa'}
+                  {deleteLoading ? (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Loader2 size={16} className="animate-spin" /> Đang xóa...
+                    </span>
+                  ) : (
+                    'Xác Nhận Xóa'
+                  )}
                 </button>
               )}
             </div>

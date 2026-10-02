@@ -189,6 +189,7 @@ export default function ThoiKhoaBieuGrid({
                                 if (onScheduleClick) {
                                   onScheduleClick({
                                     MaLopHocPhan: item.MaLopHocPhan,
+                                    TenLopHocPhan: item.TenLopHocPhan,
                                     TenMonHoc: item.TenMonHoc,
                                     SoTinChi: item.SoTinChi,
                                     LoaiHoc: item.LoaiHoc,
@@ -202,8 +203,8 @@ export default function ThoiKhoaBieuGrid({
                               title={`Bấm để chỉnh sửa lịch lớp ${item.MaLopHocPhan}`}
                             >
                               <div className="card-top-row">
-                                <span className="card-course-name" title={item.TenMonHoc}>
-                                  {item.TenMonHoc}
+                                <span className="card-course-name" title={item.TenLopHocPhan || item.TenMonHoc}>
+                                  {item.TenLopHocPhan || item.TenMonHoc}
                                 </span>
                                 <span className="card-type-tag">{item.LoaiHoc}</span>
                               </div>

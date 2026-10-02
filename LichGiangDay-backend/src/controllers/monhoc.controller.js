@@ -2,11 +2,11 @@ const MonHocService = require('../services/monhoc.service');
 
 class MonHocController {
 
-  // 1. Lấy danh sách Môn học (lọc: ?maBoMon=...&search=...)
+  // 1. Lấy danh sách Môn học (lọc: ?maKhoa=...&maBoMon=...&search=...)
   getAll = async (req, res, next) => {
     try {
-      const { maBoMon, search } = req.query;
-      const list = await MonHocService.getAll({ maBoMon, search });
+      const { maKhoa, maBoMon, search } = req.query;
+      const list = await MonHocService.getAll({ maKhoa, maBoMon, search });
       return res.status(200).json({
         status: 'success',
         code: 200,

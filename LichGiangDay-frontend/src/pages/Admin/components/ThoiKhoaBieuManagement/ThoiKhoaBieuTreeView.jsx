@@ -246,11 +246,30 @@ export default function ThoiKhoaBieuTreeView({
 
                                       <div className="lhp-item-info">
                                         <div className="lhp-item-title-row">
-                                          <span className="lhp-item-name" title={lhp.TenMonHoc}>
-                                            {lhp.TenMonHoc || lhp.MaMonHoc}
+                                          <span
+                                            className="lhp-item-name"
+                                            title={lhp.TenLopHocPhan || lhp.TenMonHoc || lhp.MaLopHocPhan}
+                                          >
+                                            {lhp.TenLopHocPhan || lhp.TenMonHoc || lhp.MaMonHoc}
                                           </span>
-                                          <span className="lhp-item-code">{lhp.MaLopHocPhan}</span>
+                                          <span className="lhp-item-code" title={lhp.MaLopHocPhan}>{lhp.MaLopHocPhan}</span>
                                         </div>
+                                        {lhp.TenMonHoc && lhp.TenLopHocPhan && lhp.TenLopHocPhan !== lhp.TenMonHoc && (
+                                          <div
+                                            className="lhp-item-subject-row"
+                                            style={{
+                                              fontSize: '0.72rem',
+                                              color: '#64748b',
+                                              overflow: 'hidden',
+                                              textOverflow: 'ellipsis',
+                                              whiteSpace: 'nowrap',
+                                              marginTop: '1px'
+                                            }}
+                                            title={lhp.TenMonHoc}
+                                          >
+                                            {lhp.TenMonHoc}
+                                          </div>
+                                        )}
                                         <div className="lhp-item-sub-row">
                                           <span className={`lhp-schedule-pill ${hasSchedule ? 'scheduled' : 'unscheduled'}`}>
                                             {scheduleSummary}

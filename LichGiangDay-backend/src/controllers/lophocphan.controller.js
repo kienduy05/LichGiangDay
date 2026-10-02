@@ -8,7 +8,7 @@ class LopHocPhanController {
   // ================================================================
   getAll = async (req, res) => {
     try {
-      const { maHocKy, maBoMon, maMonHoc, loaiHoc, search } = req.query;
+      const { maHocKy, maKhoa, maBoMon, maMonHoc, loaiHoc, search } = req.query;
 
       if (!maHocKy || !maHocKy.trim()) {
         return res.status(400).json({
@@ -18,7 +18,7 @@ class LopHocPhanController {
       }
 
       const list = await LopHocPhanService.getAll({
-        maHocKy, maBoMon, maMonHoc, loaiHoc, search
+        maHocKy, maKhoa, maBoMon, maMonHoc, loaiHoc, search
       });
 
       return res.status(200).json({

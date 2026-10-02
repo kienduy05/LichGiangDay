@@ -7,7 +7,7 @@ class GiangVienService {
    * Hỗ trợ lọc: maBoMon, trangThai, search (HoTen / Email / MaGiangVien)
    * LEFT JOIN BoMon → TenBoMon; LEFT JOIN Users → biết có tài khoản không
    */
-  static getAll = async ({ maBoMon = '', trangThai = '', search = '' } = {}) => {
+  static getAll = async ({ maKhoa = '', maBoMon = '', trangThai = '', search = '' } = {}) => {
     let sql = `
       SELECT
         gv.MaGiangVien,
@@ -17,14 +17,25 @@ class GiangVienService {
         gv.MaBoMon,
         gv.TrangThai,
         bm.TenBoMon,
+        bm.MaKhoa,
+        k.TenKhoa,
         CASE WHEN gv.UserId IS NOT NULL THEN 1 ELSE 0 END AS DaLienKetTaiKhoan
       FROM GiangVien gv
       LEFT JOIN BoMon bm ON gv.MaBoMon = bm.MaBoMon
+      LEFT JOIN Khoa k   ON bm.MaKhoa   = k.MaKhoa
       LEFT JOIN Users u  ON gv.UserId   = u.UserId
     `;
 
     const params = [];
     const conditions = [];
+
+    // Lọc theo MaKhoa:
+    if (maKhoa === '__NULL__') {
+      conditions.push('bm.MaKhoa IS NULL');
+    } else if (maKhoa && maKhoa.trim() !== '') {
+      conditions.push('bm.MaKhoa = ?');
+      params.push(maKhoa.trim());
+    }
 
     // Lọc theo MaBoMon:
     //   - '' hoặc undefined → tất cả
@@ -52,7 +63,7 @@ class GiangVienService {
       sql += ' WHERE ' + conditions.join(' AND ');
     }
 
-    sql += ' ORDER BY gv.MaBoMon ASC, gv.HoTen ASC';
+    sql += ' ORDER BY bm.MaKhoa ASC, gv.MaBoMon ASC, gv.HoTen ASC';
 
     const [rows] = await db.query(sql, params);
     return rows;

@@ -49,6 +49,26 @@ class LopSinhVienController {
     }
   };
 
+  // 2.1 Xem chi tiết Lớp sinh viên: danh sách LopHocPhan tham gia
+  getChiTiet = async (req, res, next) => {
+    try {
+      const { maLopSinhVien } = req.params;
+      const data = await LopSinhVienService.getChiTiet(maLopSinhVien);
+      return res.status(200).json({
+        status: 'success',
+        code: 200,
+        message: 'Lấy chi tiết lớp sinh viên thành công.',
+        metadata: data
+      });
+    } catch (error) {
+      return res.status(500).json({
+        status: 'error',
+        code: 500,
+        message: error.message || 'Lỗi server khi lấy chi tiết lớp sinh viên.'
+      });
+    }
+  };
+
   // 3. Tạo mới Lớp sinh viên
   create = async (req, res, next) => {
     try {

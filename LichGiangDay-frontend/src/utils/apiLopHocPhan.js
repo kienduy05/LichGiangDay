@@ -8,9 +8,10 @@ import { getAuthHeaders } from './api';
 // ==========================================
 
 /** 1. Danh sách LHP (bắt buộc maHocKy) */
-export const apiGetLopHocPhanList = async ({ maHocKy, maBoMon = '', maMonHoc = '', loaiHoc = '', search = '' } = {}) => {
+export const apiGetLopHocPhanList = async ({ maHocKy, maKhoa = '', maBoMon = '', maMonHoc = '', loaiHoc = '', search = '' } = {}) => {
   const params = new URLSearchParams();
   if (maHocKy) params.append('maHocKy', maHocKy);
+  if (maKhoa) params.append('maKhoa', maKhoa);
   if (maBoMon) params.append('maBoMon', maBoMon);
   if (maMonHoc) params.append('maMonHoc', maMonHoc);
   if (loaiHoc) params.append('loaiHoc', loaiHoc);

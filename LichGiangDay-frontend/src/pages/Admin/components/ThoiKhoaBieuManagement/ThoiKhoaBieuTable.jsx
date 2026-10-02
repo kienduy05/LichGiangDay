@@ -63,9 +63,16 @@ export default function ThoiKhoaBieuTable({
                 {/* 2. Lớp học phần */}
                 <td>
                   <div className="lhp-cell-title">
-                    <span className="lhp-course-name">{lhp.TenMonHoc || lhp.MaMonHoc}</span>
+                    <span className="lhp-course-name" title={lhp.TenLopHocPhan || lhp.TenMonHoc || lhp.MaMonHoc}>
+                      {lhp.TenLopHocPhan || lhp.TenMonHoc || lhp.MaMonHoc}
+                    </span>
+                    {lhp.TenMonHoc && (
+                      <span className="lhp-subject-sub" style={{ fontSize: '0.8rem', color: 'var(--admin-text-sub)' }}>
+                        {lhp.TenMonHoc} {lhp.MaMonHoc ? `(${lhp.MaMonHoc})` : ''}
+                      </span>
+                    )}
                     <div className="lhp-cell-subtags">
-                      <span className="code-pill">{lhp.MaLopHocPhan}</span>
+                      <span className="code-pill font-mono">{lhp.MaLopHocPhan}</span>
                       <span className="credit-pill">{lhp.SoTinChi || 3} TC</span>
                       <span className={`type-pill ${lhp.LoaiHoc?.toLowerCase()}`}>{lhp.LoaiHoc || 'LT'}</span>
                     </div>

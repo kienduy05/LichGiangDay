@@ -2,11 +2,11 @@ const GiangVienService = require('../services/giangvien.service');
 
 class GiangVienController {
 
-  // 1. Lấy danh sách Giảng viên (lọc: maBoMon, trangThai, search)
+  // 1. Lấy danh sách Giảng viên (lọc: maKhoa, maBoMon, trangThai, search)
   getAll = async (req, res, next) => {
     try {
-      const { maBoMon, trangThai, search } = req.query;
-      const list = await GiangVienService.getAll({ maBoMon, trangThai, search });
+      const { maKhoa, maBoMon, trangThai, search } = req.query;
+      const list = await GiangVienService.getAll({ maKhoa, maBoMon, trangThai, search });
       return res.status(200).json({
         status: 'success',
         code: 200,
