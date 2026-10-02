@@ -1378,46 +1378,265 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
 - **Kết quả hiển thị (UI Response)**:
   - Tiết học bị xóa khỏi CSDL và biến mất khỏi bảng danh sách.
 
-## PHÂN HỆ: QUẢN LÝ LỚP HỌC PHẦN (LopHocPhan) — Phạm vi: chỉ dữ liệu nền
+### 1.11. Chức năng 11: Quản lý Lớp học phần (`LopHocPhan`)
 
-Không bao gồm: xếp lịch (ThoiKhoaBieu), sinh buổi học (BuoiHoc), bộ môn xác nhận lịch. Ba phần này để dành cho module "Thời Khóa Biểu" làm sau.
+- **Bảng dữ liệu tác động trong CSDL**: **`LopHocPhan`** (`MaLopHocPhan`, `TenLopHocPhan`, `MaMonHoc`, `MaHocKy`, `LoaiHoc`, `SiSoDuKien`, `SiSoDangKy`, `TrangThaiPhanCong`, `MaGiangVien`, `MaBoMon`, `KhoaHoc`, `NgayBatDau`, `NgayKetThuc`, `SoTuan`).
+- **Bảng liên quan (Ràng buộc FK)**:
+  - `MonHoc` (`LopHocPhan.MaMonHoc` $\rightarrow$ `MonHoc.MaMonHoc`).
+  - `HocKy` (`LopHocPhan.MaHocKy` $\rightarrow$ `HocKy.MaHocKy`).
+  - `BoMon` (`LopHocPhan.MaBoMon` $\rightarrow$ `BoMon.MaBoMon`).
+  - `GiangVien` (`LopHocPhan.MaGiangVien` $\rightarrow$ `GiangVien.MaGiangVien`).
+  - `KhoaSinhVien` (`LopHocPhan.KhoaHoc` $\rightarrow$ `KhoaSinhVien.MaKhoaSinhVien`).
+  - `LopHocPhan_LopSinhVien` (`LopHocPhan_LopSinhVien.MaLopHocPhan` $\rightarrow$ `LopHocPhan.MaLopHocPhan`).
+  - `ThoiKhoaBieu` (`ThoiKhoaBieu.MaLopHocPhan` $\rightarrow$ `LopHocPhan.MaLopHocPhan`).
+  - `BuoiHoc` (`BuoiHoc.MaLopHocPhan` $\rightarrow$ `LopHocPhan.MaLopHocPhan`).
+- **Resource ID kiểm tra quyền (`checkPermission`)**: `'LopHocPhan'` (`CanRead`, `CanCreate`, `CanUpdate`, `CanDelete`).
 
-Bảng tác động chính: LopHocPhan, LopHocPhan_LopSinhVien
-Bảng cha (bắt buộc có trước): MonHoc, HocKy, BoMon
-Bảng cha (không bắt buộc): GiangVien, KhoaSinhVien, LopSinhVien
-ResourceId dùng cho checkPermission: 'LopHocPhan'
+> 📌 **CHÚ THÍCH CÁC TRƯỜNG DỮ LIỆU ĐẶC THÙ TRONG CSDL (`LopHocPhan`)**:
+>
+> - **Cột `TrangThaiPhanCong`**: Gồm `'Unassigned'` (Chưa phân công giảng viên - mặc định khi tạo mới), `'Assigned'` (Đã phân công giảng viên), `'Confirmed'` (Đã xác nhận), `'Completed'` (Hoàn thành), `'Cancelled'` (Hủy).
+> - **Cột `LoaiHoc`**: Mặc định là `'LT'` (Lý thuyết), `'BT'` (Bài tập), `'TH'` (Thực hành), `'BTL'` (Bài tập lớn).
+> - **Cột `MaGiangVien`**: Cho phép `NULL` ở bước tạo lớp học phần và xếp thời khóa biểu; được phân công sau bởi Bộ môn.
 
-Vì chưa đụng tới ThoiKhoaBieu, cột NgayBatDau/NgayKetThuc/SoTuan của LopHocPhan (vốn NOT NULL) phải nhập tay ở module này, không tự tính từ giai đoạn lịch như bản trước (vì giai đoạn lịch chưa tồn tại). Validate khoảng ngày nằm trong Học kỳ vẫn áp dụng, chỉ khác là áp dụng ngay lúc nhập tay thay vì tính tự động.
+#### 1.11.1. Tìm kiếm, Lọc & Hiển thị Danh sách Lớp học phần
 
-1. Lọc & Hiển thị danh sách
-   Chọn Học kỳ (bắt buộc), lọc thêm theo Bộ môn, Môn học, Giảng viên, Trạng thái phân công, hoặc tìm theo mã/tên.
-   Backend LEFT JOIN MonHoc, GiangVien, BoMon, KhoaSinhVien; đếm số LopSinhVien ghép.
-   Hiển thị: Mã LHP, Tên môn, Loại học, Sĩ số DK/ĐK, Giảng viên (hoặc "Chưa phân công"), khoảng ngày, badge trạng thái phân công. Chưa có cột "số giai đoạn lịch" vì module đó chưa làm.
-2. Thêm mới thủ công
-   Nhập TenLopHocPhan, chọn MaMonHoc, MaHocKy, LoaiHoc (theo whitelist mở, tối thiểu LT/BT/TH/BTL), MaBoMon, SiSoDuKien (không bắt buộc), KhoaHoc (không bắt buộc), và nhập tay NgayBatDau/NgayKetThuc/SoTuan.
-   Validate: các trường NOT NULL không trống; khóa ngoại tồn tại; NgayBatDau < NgayKetThuc; khoảng ngày nằm trong HocKy đã chọn.
-   MaLopHocPhan tự sinh theo quy tắc MaMonHoc + "." + mã nhóm (người dùng nhập mã nhóm, ví dụ QT01.BT1), check trùng.
-   MaGiangVien để trống, TrangThaiPhanCong mặc định 'Unassigned'.
-3. Cập nhật thông tin cơ bản
-   Sửa TenLopHocPhan, SiSoDuKien, SiSoDangKy, LoaiHoc, MaBoMon, KhoaHoc, NgayBatDau, NgayKetThuc, SoTuan. MaLopHocPhan, MaMonHoc, MaHocKy khóa cứng.
-   Validate lại toàn bộ như mục 2, bao gồm validate ngày nằm trong Học kỳ.
-   Lưu ý cho tương lai: khi module Thời Khóa Biểu được làm, các trường ngày này sẽ chuyển sang tự tính từ giai đoạn lịch (không cho sửa tay nữa) — cần nhớ điều chỉnh lại validate ở đây khi tới lúc đó.
-4. Gắn / Gỡ lớp sinh viên ghép
-   Chọn một hoặc nhiều LopSinhVien (gợi ý theo KhoaHoc của lớp học phần), thêm/xóa dòng trong LopHocPhan_LopSinhVien.
-5. Phân công / Đổi Giảng viên
-   Chọn giảng viên Active, ưu tiên đúng MaBoMon.
-   Vì chưa có ThoiKhoaBieu, bỏ bước kiểm tra trùng lịch ở giai đoạn này (sẽ bổ sung khi module Thời Khóa Biểu ra đời).
-   UPDATE MaGiangVien, chuyển TrangThaiPhanCong sang 'Assigned'. Cho phép gán lại NULL để bỏ phân công.
-6. Xem chi tiết
-   Hiển thị thông tin cơ bản và danh sách lớp sinh viên ghép. Không có tab "Lịch học" ở giai đoạn này.
-7. Xóa
-   Vì chưa có BuoiHoc/ThoiKhoaBieu, điều kiện chặn xóa rút gọn còn: kiểm tra DangKyDayBu.MaLopHocPhan (nếu module đó đã chạy) — nhưng thực tế giai đoạn này gần như luôn xóa được vì chưa có gì vận hành phía sau.
-   Nếu qua được → xóa LopHocPhan_LopSinhVien rồi xóa LopHocPhan trong 1 transaction.
-8. Import từ Excel (chỉ dữ liệu nền)
-   Vẫn theo đúng luồng TepNhap + ChiTietNhap, chọn Bộ môn + Học kỳ trước khi upload.
-   Chỉ đọc các cột: Mã học phần, Số TC (đối chiếu, không ghi), Lớp môn tín chỉ, Số SV DK, Số SV ĐK, Kiểu học, Giảng viên, Khóa, Tên các lớp ghép.
-   Bỏ qua hoàn toàn các cột: Thời gian, Số tuần, và toàn bộ khối Thứ 2 → Chủ Nhật (Tiết học/Phòng học) — các cột này vẫn được lưu nguyên vào ChiTietNhap (vì bảng đó có sẵn cột KhoangThoiGianGoc, SoTuanGoc, LichHocHangTuanGoc) để giữ lại dữ liệu gốc, dùng sau khi làm module Thời Khóa Biểu, nhưng không tạo ThoiKhoaBieu ngay bây giờ.
-   Vì bỏ cột Thời gian, NgayBatDau/NgayKetThuc/SoTuan của LopHocPhan tạm thời gán bằng đúng khoảng ngày của Học kỳ đã chọn khi import (giá trị placeholder hợp lệ), Admin có thể sửa tay lại sau nếu cần qua chức năng 3.
-   Vẫn giữ quy tắc gộp dòng: "Lớp môn tín chỉ" có giá trị → 1 lớp mới; cả 2 cột đều trống → bỏ qua dòng đó luôn ở giai đoạn này (vì dòng đó chỉ có ý nghĩa bổ sung giai đoạn lịch, mà lịch chưa làm).
-9. Export ra Excel (chỉ dữ liệu nền)
-   Xuất các cột tương ứng đã import ở mục 8 (không có cột Thời gian/Số tuần/Thứ-Tiết-Phòng), dùng để đối chiếu dữ liệu nền đã nhập.
+- **Thao tác người dùng (User Action)**:
+  - Truy cập menu `Dữ liệu nền` $\rightarrow$ `Quản lý Lớp học phần`.
+  - Chọn Bộ lọc: **Học kỳ** (`MaHocKy` - bắt buộc), **Khoa / Bộ môn** (`MaBoMon`), **Môn học** (`MaMonHoc`), **Trạng thái phân công** (`TrangThaiPhanCong`), hoặc tìm kiếm từ khóa theo Mã/Tên LHP.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Gửi request `GET /v1/api/lophocphan?maHocKy=...&maBoMon=...`.
+  - Backend kiểm tra quyền `CanRead` trên Resource `LopHocPhan`.
+  - Backend thực hiện truy vấn `LEFT JOIN MonHoc`, `LEFT JOIN BoMon`, `LEFT JOIN GiangVien`, `LEFT JOIN KhoaSinhVien` và đếm số lượng lớp sinh viên ghép:
+    ```sql
+    SELECT
+      lhp.MaLopHocPhan,
+      lhp.TenLopHocPhan,
+      lhp.MaMonHoc,
+      mh.TenMonHoc,
+      lhp.MaHocKy,
+      lhp.LoaiHoc,
+      lhp.SiSoDuKien,
+      lhp.SiSoDangKy,
+      lhp.TrangThaiPhanCong,
+      lhp.MaGiangVien,
+      gv.HoTen AS TenGiangVien,
+      lhp.MaBoMon,
+      bm.TenBoMon,
+      lhp.KhoaHoc,
+      lhp.NgayBatDau,
+      lhp.NgayKetThuc,
+      lhp.SoTuan,
+      COUNT(DISTINCT lhl.MaLopSinhVien) AS SoLopGhep
+    FROM LopHocPhan lhp
+    LEFT JOIN MonHoc mh ON lhp.MaMonHoc = mh.MaMonHoc
+    LEFT JOIN BoMon bm ON lhp.MaBoMon = bm.MaBoMon
+    LEFT JOIN GiangVien gv ON lhp.MaGiangVien = gv.MaGiangVien
+    LEFT JOIN LopHocPhan_LopSinhVien lhl ON lhp.MaLopHocPhan = lhl.MaLopHocPhan
+    WHERE lhp.MaHocKy = ?
+    GROUP BY lhp.MaLopHocPhan
+    ORDER BY lhp.MaBoMon ASC, lhp.MaLopHocPhan ASC;
+    ```
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Không làm thay đổi CSDL** (`SELECT` Read-only).
+- **Kết quả hiển thị (UI Response)**:
+  - Bảng danh sách gồm: Mã LHP, Tên môn học, Loại học, Sĩ số DK/ĐK, Giảng viên (hoặc _"Chưa phân công"_), Khoảng thời gian học, Badge trạng thái phân công.
+
+#### 1.11.2. Thêm mới Lớp học phần
+
+- **Thao tác người dùng (User Action)**:
+  - Bấm nút **"Thêm Lớp Học Phần"**.
+  - Nhập: Tên LHP, Chọn Môn học, Học kỳ, Bộ môn quản lý, Loại học, Sĩ số dự kiến, Niên khóa, Ngày bắt đầu, Ngày kết thúc, Số tuần.
+  - Nhấn **"Lưu Lớp Học Phần"**.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Kiểm tra quyền `CanCreate` trên Resource `LopHocPhan`.
+  - **Validation 1**: `TenLopHocPhan`, `MaMonHoc`, `MaHocKy`, `MaBoMon`, `NgayBatDau`, `NgayKetThuc` không được để trống.
+  - **Validation 2**: `NgayBatDau < NgayKetThuc` và nằm trọn vẹn trong khoảng ngày của `HocKy` đã chọn.
+  - **Validation 3**: Mã LHP tự sinh chuẩn hóa theo định dạng môn học và nhóm, kiểm tra trùng lặp khóa chính `MaLopHocPhan`.
+  - Tự động gán `TrangThaiPhanCong = 'Unassigned'` và `MaGiangVien = NULL`.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Tạo mới 1 dòng bản ghi trong bảng `LopHocPhan`**:
+    ```sql
+    INSERT INTO LopHocPhan (MaLopHocPhan, TenLopHocPhan, MaMonHoc, MaHocKy, LoaiHoc, SiSoDuKien, SiSoDangKy, TrangThaiPhanCong, MaGiangVien, MaBoMon, KhoaHoc, NgayBatDau, NgayKetThuc, SoTuan)
+    VALUES (?, ?, ?, ?, ?, ?, 0, 'Unassigned', NULL, ?, ?, ?, ?, ?);
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Đóng Modal, tải lại danh sách với lớp học phần mới ở trạng thái _"Unassigned"_.
+
+#### 1.11.3. Cập nhật Thông tin Lớp học phần
+
+- **Thao tác người dùng (User Action)**:
+  - Bấm icon **"Sửa"** tại dòng lớp học phần.
+  - Sửa: Tên LHP, Sĩ số dự kiến/đăng ký, Loại học, Bộ môn, Khóa sinh viên, Ngày bắt đầu/kết thúc, Số tuần.
+  - Nhấn **"Lưu Thay Đổi"**.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Kiểm tra quyền `CanUpdate` trên Resource `LopHocPhan`.
+  - Khóa cố định: `MaLopHocPhan`, `MaMonHoc`, `MaHocKy`.
+  - Validation khoảng ngày hợp lệ trong Học kỳ.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Cập nhật thông tin trong bảng `LopHocPhan`**:
+    ```sql
+    UPDATE LopHocPhan
+    SET TenLopHocPhan = ?, LoaiHoc = ?, SiSoDuKien = ?, SiSoDangKy = ?, MaBoMon = ?, KhoaHoc = ?, NgayBatDau = ?, NgayKetThuc = ?, SoTuan = ?
+    WHERE MaLopHocPhan = ?;
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Thông báo thành công, làm mới bảng dữ liệu.
+
+#### 1.11.4. Gắn / Gỡ Lớp sinh viên ghép (`LopHocPhan_LopSinhVien`)
+
+- **Thao tác người dùng (User Action)**:
+  - Bấm nút **"Lớp sinh viên ghép"** trên dòng lớp học phần.
+  - Chọn một hoặc nhiều Lớp sinh viên tham gia lớp học phần này $\rightarrow$ Nhấn **"Cập nhật"**.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Kiểm tra quyền `CanUpdate` trên Resource `LopHocPhan`.
+  - Đồng bộ danh sách `MaLopSinhVien` trong bảng `LopHocPhan_LopSinhVien` theo giao dịch Transaction.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Xóa các lớp ghép cũ và chèn danh sách lớp ghép mới**:
+    ```sql
+    DELETE FROM LopHocPhan_LopSinhVien WHERE MaLopHocPhan = ?;
+    INSERT INTO LopHocPhan_LopSinhVien (MaLopHocPhan, MaLopSinhVien) VALUES (?, ?);
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Cập nhật số lượng lớp sinh viên ghép trên bảng danh sách.
+
+#### 1.11.5. Xóa Lớp học phần (Kiểm tra Ràng buộc toàn vẹn)
+
+- **Thao tác người dùng (User Action)**:
+  - Bấm icon **"Xóa"** tại dòng lớp học phần, xác nhận xóa.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Kiểm tra quyền `CanDelete` trên Resource `LopHocPhan`.
+  - Kiểm tra ràng buộc `BuoiHoc`: nếu đã sinh các buổi học điểm danh thực tế $\rightarrow$ Chặn xóa.
+  - Tự động xóa liên kết `ThoiKhoaBieu` và `LopHocPhan_LopSinhVien` trong cùng 1 Transaction trước khi xóa LHP.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Xóa bản ghi khỏi `ThoiKhoaBieu`, `LopHocPhan_LopSinhVien` và `LopHocPhan`**.
+- **Kết quả hiển thị (UI Response)**:
+  - Lớp học phần bị xóa và biến mất khỏi bảng danh sách.
+
+---
+
+## 2. PHÂN HỆ 2: PHÂN HỆ THỜI KHÓA BIỂU & XẾP LỊCH HỌC
+
+Phân hệ **Thời khóa biểu** (Course Scheduling) cho phép người quản lý đào tạo (Admin / Phòng Đào tạo) thiết lập thời gian học (Thứ trong tuần, Tiết học) và phân bổ phòng học vật lý cho từng Lớp học phần. Phân hệ này được thiết kế với cơ chế kiểm tra xung đột thời gian thực, hỗ trợ hiển thị dạng Cây phân cấp (TreeView) và Lưới phòng học trực quan (Room Grid Picker).
+
+---
+
+### 2.1. Chức năng 1: Xếp Thời khóa biểu cho Lớp học phần (`ThoiKhoaBieu`)
+
+- **Bảng dữ liệu tác động trong CSDL**: **`ThoiKhoaBieu`** (`MaThoiKhoaBieu`, `MaLopHocPhan`, `ThuTrongTuan`, `MaTiet`, `MaPhong`, `NgayBatDau`, `NgayKetThuc`).
+- **Bảng liên quan (Ràng buộc FK)**:
+  - `LopHocPhan` (`ThoiKhoaBieu.MaLopHocPhan` $\rightarrow$ `LopHocPhan.MaLopHocPhan`).
+  - `TietHoc` (`ThoiKhoaBieu.MaTiet` $\rightarrow$ `TietHoc.MaTiet`).
+  - `PhongHoc` (`ThoiKhoaBieu.MaPhong` $\rightarrow$ `PhongHoc.MaPhong`).
+  - `LopHocPhan_LopSinhVien` (kiểm tra trùng lịch học sinh viên).
+- **Resource ID kiểm tra quyền (`checkPermission`)**: `'ThoiKhoaBieu'` (`CanRead`, `CanCreate`, `CanUpdate`, `CanDelete`).
+
+> 📌 **CHÚ THÍCH ĐẶC THÙ NGHIỆP VỤ (`ThoiKhoaBieu`)**:
+>
+> - **Cột `ThuTrongTuan`**: Lưu giá trị số nguyên từ `2` đến `8` (2: Thứ Hai, 3: Thứ Ba, ..., 7: Thứ Bảy, 8: Chủ Nhật).
+> - **Mối quan hệ 1 - N giữa Lớp học phần và Thời khóa biểu**: Một Lớp học phần có thể học nhiều buổi/tuần (ví dụ Thứ 2, Thứ 4, Thứ 6). Mỗi buổi học sẽ tương ứng với 1 dòng bản ghi trong bảng `ThoiKhoaBieu` có cùng `MaLopHocPhan` nhưng khác `ThuTrongTuan` (hoặc khác `MaTiet`, `MaPhong`).
+> - **Tách biệt phân công Giảng viên**: Ở bước xếp thời khóa biểu, giảng viên được giữ nguyên ở trạng thái `Unassigned` để Bộ môn thực hiện phân công sau.
+
+#### 2.1.1. Điều hướng theo Cây Phân cấp (TreeView Navigation)
+
+- **Thao tác người dùng (User Action)**:
+  - Người dùng truy cập phân hệ `Thời khóa biểu` $\rightarrow$ Chọn Học kỳ.
+  - Cột bên trái hiển thị TreeView 2 cấp: **Khoa $\rightarrow$ Bộ môn $\rightarrow$ Lớp học phần**.
+  - Lọc nhanh theo 3 trạng thái:
+    - **Tất cả lớp học phần**
+    - **Đã xếp lịch** (Hiển thị chấm xanh lá 🟢)
+    - **Chưa xếp lịch** (Hiển thị chấm cam 🟠)
+  - Nhấp chọn một Khoa, Bộ môn hoặc bấm trực tiếp vào Lớp học phần để xem và thao tác.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Gửi request `GET /v1/api/thoikhoabieu/treeview?maHocKy=...`.
+  - Backend thực hiện gom nhóm dữ liệu Khoa $\rightarrow$ Bộ môn $\rightarrow$ Lớp học phần, đồng thời đếm số buổi lịch học đã có trong bảng `ThoiKhoaBieu` để gắn cờ `daXepLich: true/false`.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Không làm thay đổi CSDL** (`SELECT` Read-only).
+- **Kết quả hiển thị (UI Response)**:
+  - Hiển thị cây phân cấp trực quan với số lượng thống kê lớp đã xếp / chưa xếp lịch theo từng đơn vị.
+
+#### 2.1.2. Xem Thời khóa biểu theo Chế độ Bảng & Lưới Ma trận (Table & Matrix Grid)
+
+- **Thao tác người dùng (User Action)**:
+  - Chuyển đổi giữa 2 tab xem: **Danh sách bảng** (Table View) và **Lưới ma trận** (Weekly Matrix Grid: Thứ 2-Chủ Nhật $\times$ Tiết 1-5).
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Request `GET /v1/api/thoikhoabieu?maHocKy=...&maBoMon=...` hoặc `GET /v1/api/thoikhoabieu/matrix-grid?maHocKy=...`.
+  - Backend trả về danh sách lịch học kèm đầy đủ thông tin Tên môn học, Loại học, Phòng học, Tiết học và Tên các lớp sinh viên ghép.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Không làm thay đổi CSDL** (`SELECT` Read-only).
+- **Kết quả hiển thị (UI Response)**:
+  - Chế độ Bảng hiển thị các thẻ chip lịch học sinh động (ví dụ: `T2 [Tiết 1-3] @ A1-101`).
+  - Chế độ Lưới hiển thị các thẻ lịch học đặt chính xác vào ô giao điểm Thứ $\times$ Ca học tương ứng.
+
+#### 2.1.3. Lưới Chọn Phòng học Trực quan (Room Grid Picker)
+
+- **Thao tác người dùng (User Action)**:
+  - Khi mở Modal Xếp lịch cho một lớp học phần và chọn Thứ (`ThuTrongTuan`), Tiết học (`MaTiet`), người dùng bấm chọn Phòng học.
+  - Giao diện mở ra **Lưới chọn phòng học**:
+    - Nhóm các phòng theo từng Tòa nhà (Tab Tòa A1, Tòa A2, Tòa B...).
+    - Ô phòng **Trống / Khả dụng** hiển thị nổi bật, có thể nhấp chọn.
+    - Ô phòng **Đang bận / Trùng lịch** hoặc **Đang bảo trì** (`Maintenance`) bị làm mờ (dimmed/disabled), có huy hiệu thông báo lý do bận và tên lớp đang chiếm chỗ.
+    - Cảnh báo sức chứa nếu `SucChua < SiSoDuKien`.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Client gửi request `GET /v1/api/thoikhoabieu/room-status?thu=...&maTiet=...&ngayBatDau=...&ngayKetThuc=...&excludeLop=...`.
+  - Backend thực hiện kiểm tra trạng thái toàn bộ phòng học trong bảng `PhongHoc`:
+    1. Kiểm tra cột `PhongHoc.TrangThai = 'Maintenance'` $\rightarrow$ Báo phòng bảo trì.
+    2. Truy vấn bảng `ThoiKhoaBieu` xem có lịch học nào khác diễn ra cùng `ThuTrongTuan`, `MaTiet`, và có khoảng ngày `[NgayBatDau, NgayKetThuc]` giao nhau $\rightarrow$ Báo phòng bận kèm tên môn học và lớp đang sử dụng.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Không làm thay đổi CSDL** (`SELECT` Read-only).
+- **Kết quả hiển thị (UI Response)**:
+  - Lưới phòng học phản ánh chính xác 100% tình trạng thời gian thực, ngăn chặn hoàn toàn việc chọn nhầm phòng bận.
+
+#### 2.1.4. Thiết lập & Lưu Lịch học Nhiều Buổi trong Tuần (Multi-session Scheduling)
+
+- **Thao tác người dùng (User Action)**:
+  - Tại Modal Xếp lịch, người dùng có thể:
+    - Bấm nút chọn nhanh các mẫu: **Thứ 2, 4, 6**, **Thứ 3, 5**, hoặc **Thứ 7, CN**.
+    - Tùy ý bấm **"+ Thêm buổi học trong tuần"** để cấu hình linh hoạt từng buổi (chọn Thứ, Ca học, và Phòng học độc lập).
+    - Tùy chỉnh ngày áp dụng cho từng buổi hoặc áp dụng chung từ ngày khai giảng lớp học phần.
+  - Nhấn nút **"Lưu Thời Khóa Biểu"**.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Client gửi request `POST /v1/api/thoikhoabieu/save-schedules` với payload gồm danh sách các buổi học:
+    ```json
+    {
+      "maLopHocPhan": "INT1001.01",
+      "schedules": [
+        { "thuTrongTuan": 2, "maTiet": 1, "maPhong": "A1-101", "ngayBatDau": "2026-09-01", "ngayKetThuc": "2026-12-15" },
+        { "thuTrongTuan": 4, "maTiet": 1, "maPhong": "A1-101", "ngayBatDau": "2026-09-01", "ngayKetThuc": "2026-12-15" },
+        { "thuTrongTuan": 6, "maTiet": 1, "maPhong": "A1-102", "ngayBatDau": "2026-09-01", "ngayKetThuc": "2026-12-15" }
+      ]
+    }
+    ```
+  - Backend thực hiện kiểm tra xung đột đa chiều (Conflict Checking Engine):
+    1. **Xung đột nội bộ (Internal Conflict)**: Kiểm tra các mục trong payload không được trùng cặp `(thuTrongTuan, maTiet)`.
+    2. **Xung đột Phòng học (Room Conflict)**: Không phòng nào được gán cho 2 lớp khác nhau trong cùng khung thời gian giao nhau.
+    3. **Xung đột Lớp sinh viên ghép (Student Group Conflict)**: Kiểm tra các Lớp sinh viên (`LopSinhVien`) cùng tham gia LHP này không bị trùng lịch học ở một LHP khác cùng ca.
+  - Nếu phát hiện xung đột $\rightarrow$ Rollback và trả HTTP 409 Conflict kèm danh sách chi tiết lỗi.
+  - Nếu hợp lệ $\rightarrow$ Mở Transaction CSDL:
+    - Xóa toàn bộ lịch cũ của lớp học phần: `DELETE FROM ThoiKhoaBieu WHERE MaLopHocPhan = ?`.
+    - Chèn danh sách các dòng lịch mới vào `ThoiKhoaBieu`.
+    - Cập nhật `LopHocPhan.NgayBatDau`, `NgayKetThuc`, `SoTuan` đồng bộ theo khung lịch mới.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Tạo mới / Cập nhật N bản ghi trong bảng `ThoiKhoaBieu` tương ứng với N buổi học/tuần**:
+    ```sql
+    INSERT INTO ThoiKhoaBieu (MaLopHocPhan, ThuTrongTuan, MaTiet, MaPhong, NgayBatDau, NgayKetThuc)
+    VALUES (?, ?, ?, ?, ?, ?);
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Đóng Modal, hiển thị toast thông báo _"Lưu thời khóa biểu thành công!"_, chấm tròn của lớp trên TreeView lập tức chuyển sang màu Xanh lá 🟢 (**Đã xếp lịch**).
+
+#### 2.1.5. Xóa Toàn bộ / Xóa Từng Buổi Thời khóa biểu
+
+- **Thao tác người dùng (User Action)**:
+  - Tại Modal Xếp lịch, bấm nút xóa từng dòng buổi học hoặc bấm nút **"Xóa tất cả lịch"** để hủy toàn bộ phân lịch của lớp.
+- **Nghiệp vụ xử lý (Business Logic)**:
+  - Gửi request `DELETE /v1/api/thoikhoabieu/lophocphan/:maLopHocPhan` (xóa tất cả) hoặc `DELETE /v1/api/thoikhoabieu/:maThoiKhoaBieu` (xóa 1 buổi).
+  - Kiểm tra quyền `CanDelete` trên Resource `ThoiKhoaBieu`.
+  - Thực hiện xóa các dòng bản ghi trong `ThoiKhoaBieu`.
+- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
+  - **Xóa các dòng bản ghi tương ứng khỏi bảng `ThoiKhoaBieu`**:
+    ```sql
+    DELETE FROM ThoiKhoaBieu WHERE MaLopHocPhan = ?;
+    ```
+- **Kết quả hiển thị (UI Response)**:
+  - Làm mới dữ liệu bảng và TreeView, trạng thái lớp chuyển về chấm cam 🟠 (**Chưa xếp lịch**).
+

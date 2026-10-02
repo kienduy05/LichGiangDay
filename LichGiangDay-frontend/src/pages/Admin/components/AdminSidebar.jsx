@@ -113,15 +113,19 @@ export default function AdminSidebar({ activeTab, setActiveTab }) {
           <span>Tiết học & Ca học</span>
         </div>
 
-        <div className="admin-nav-section">Lịch & Thời Khóa Biểu</div>
-        <div className="admin-nav-item">
-          <Calendar size={18} />
-          <span>Thời Khóa Biểu</span>
-        </div>
-        <div className="admin-nav-item">
-          <Clock size={18} />
-          <span>Yêu Cầu Nghỉ & Dạy Bù</span>
-        </div>
+        {(hasPermission('ThoiKhoaBieu', 'CanRead') || hasPermission('LopHocPhan', 'CanRead')) && (
+          <>
+            <div className="admin-nav-section">Lịch & Thời Khóa Biểu</div>
+            <div
+              className={`admin-nav-item ${activeTab === 'thoikhoabieu' ? 'active' : ''}`}
+              onClick={() => setActiveTab('thoikhoabieu')}
+            >
+              <Calendar size={18} />
+              <span>Thời Khóa Biểu</span>
+            </div>
+          </>
+        )}
+
 
         {/* Cấu Hình Hệ Thống */}
         {(hasPermission('Roles', 'CanRead') || hasPermission('Users', 'CanRead') || hasPermission('RolePermissions', 'CanRead')) && (
