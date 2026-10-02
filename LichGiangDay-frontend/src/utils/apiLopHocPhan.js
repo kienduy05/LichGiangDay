@@ -119,3 +119,57 @@ export const apiExportLopHocPhan = async (maHocKy, maBoMon = '') => {
   }
   return response.blob();
 };
+
+/** 8. Phân công / Đổi / Gỡ giảng viên */
+export const apiAssignGiangVien = async (maLopHocPhan, maGiangVien) => {
+  const response = await fetch(`${API_BASE_URL}/lophocphan/${encodeURIComponent(maLopHocPhan)}/giangvien`, {
+    method: 'PUT', headers: getAuthHeaders(),
+    body: JSON.stringify({ maGiangVien })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Phân công giảng viên thất bại.');
+  return data;
+};
+
+/** 9. Lấy danh sách lớp sinh viên đã ghép */
+export const apiGetLopSinhVienGhep = async (maLopHocPhan) => {
+  const response = await fetch(`${API_BASE_URL}/lophocphan/${encodeURIComponent(maLopHocPhan)}/lopsinhvien`, {
+    method: 'GET', headers: getAuthHeaders()
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Lấy danh sách lớp sinh viên ghép thất bại.');
+  return data.metadata;
+};
+
+/** 10. Gợi ý lớp sinh viên để gắn */
+export const apiGetSuggestedLopSinhVien = async (maLopHocPhan) => {
+  const response = await fetch(`${API_BASE_URL}/lophocphan/${encodeURIComponent(maLopHocPhan)}/lopsinhvien/suggested`, {
+    method: 'GET', headers: getAuthHeaders()
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Lấy gợi ý lớp sinh viên thất bại.');
+  return data.metadata;
+};
+
+/** 11. Gắn lớp sinh viên */
+export const apiAttachLopSinhVien = async (maLopHocPhan, dsLopSinhVien) => {
+  const response = await fetch(`${API_BASE_URL}/lophocphan/${encodeURIComponent(maLopHocPhan)}/lopsinhvien`, {
+    method: 'POST', headers: getAuthHeaders(),
+    body: JSON.stringify({ dsLopSinhVien })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Gắn lớp sinh viên thất bại.');
+  return data;
+};
+
+/** 12. Gỡ lớp sinh viên */
+export const apiDetachLopSinhVien = async (maLopHocPhan, dsLopSinhVien) => {
+  const response = await fetch(`${API_BASE_URL}/lophocphan/${encodeURIComponent(maLopHocPhan)}/lopsinhvien`, {
+    method: 'DELETE', headers: getAuthHeaders(),
+    body: JSON.stringify({ dsLopSinhVien })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Gỡ lớp sinh viên thất bại.');
+  return data;
+};
+
