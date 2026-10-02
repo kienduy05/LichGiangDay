@@ -13,11 +13,78 @@ export default function LopHocPhanFormModal({
   onClose,
   formLoading,
   formError,
+  setFormError,
   formSuccess,
 }) {
   if (!isOpen) return null;
 
   const isEdit = mode === "edit";
+
+  const clearErr = () => {
+    if (setFormError) setFormError("");
+  };
+
+  const handleMonHocChange = (e) => {
+    clearErr();
+    const selectedMaMonHoc = e.target.value;
+    const mh = monHocList.find((m) => m.MaMonHoc === selectedMaMonHoc);
+    setFormData((prev) => ({
+      ...prev,
+      maMonHoc: selectedMaMonHoc,
+      maBoMon: mh?.MaBoMon || prev.maBoMon,
+      tenLopHocPhan: prev.tenLopHocPhan || (mh ? mh.TenMonHoc : "")
+    }));
+  };
+
+  const handleHocKyChange = (e) => {
+    clearErr();
+    const selectedHk = e.target.value;
+    const hk = hocKyList.find((h) => h.MaHocKy === selectedHk);
+    const nbd = hk?.NgayBatDau ? String(hk.NgayBatDau).split("T")[0] : "";
+    const nkt = hk?.NgayKetThuc ? String(hk.NgayKetThuc).split("T")[0] : "";
+    const st =
+      nbd && nkt && new Date(nkt) >= new Date(nbd)
+        ? Math.ceil((new Date(nkt) - new Date(nbd)) / (7 * 24 * 60 * 60 * 1000))
+        : "";
+
+    setFormData((prev) => ({
+      ...prev,
+      maHocKy: selectedHk,
+      ngayBatDau: nbd || prev.ngayBatDau,
+      ngayKetThuc: nkt || prev.ngayKetThuc,
+      soTuan: st || prev.soTuan
+    }));
+  };
+
+  const handleNgayBatDauChange = (e) => {
+    clearErr();
+    const nbd = e.target.value;
+    const nkt = formData.ngayKetThuc;
+    const st =
+      nbd && nkt && new Date(nkt) >= new Date(nbd)
+        ? Math.ceil((new Date(nkt) - new Date(nbd)) / (7 * 24 * 60 * 60 * 1000))
+        : formData.soTuan;
+    setFormData((prev) => ({
+      ...prev,
+      ngayBatDau: nbd,
+      soTuan: st
+    }));
+  };
+
+  const handleNgayKetThucChange = (e) => {
+    clearErr();
+    const nkt = e.target.value;
+    const nbd = formData.ngayBatDau;
+    const st =
+      nbd && nkt && new Date(nkt) >= new Date(nbd)
+        ? Math.ceil((new Date(nkt) - new Date(nbd)) / (7 * 24 * 60 * 60 * 1000))
+        : formData.soTuan;
+    setFormData((prev) => ({
+      ...prev,
+      ngayKetThuc: nkt,
+      soTuan: st
+    }));
+  };
 
   return (
     <div className="modal-overlay">
@@ -38,14 +105,25 @@ export default function LopHocPhanFormModal({
           </div>
         )}
         {formError && (
-          <div className="alert-banner error">
-            <AlertCircle size={18} />
-            <span>{formError}</span>
+          <div className="alert-banner error" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <AlertCircle size={18} />
+              <span>{formError}</span>
+            </div>
+            {setFormError && (
+              <button
+                type="button"
+                onClick={() => setFormError("")}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', padding: 0, display: 'flex' }}
+                title="Đóng thông báo"
+              >
+                <X size={16} />
+              </button>
+            )}
           </div>
         )}
 
         <form onSubmit={onSubmit}>
-          
           {/* Row 1: Môn học + Mã lớp học phần */}
           <div className="lhp-form-row">
             {!isEdit && (
@@ -56,9 +134,7 @@ export default function LopHocPhanFormModal({
                 <select
                   className="modal-input"
                   value={formData.maMonHoc}
-                  onChange={(e) =>
-                    setFormData({ ...formData, maMonHoc: e.target.value })
-                  }
+                  onChange={handleMonHocChange}
                   required
                 >
                   <option value="">— Chọn môn học —</option>
@@ -84,7 +160,15 @@ export default function LopHocPhanFormModal({
                 }
                 required
                 disabled={isEdit}
-                style={isEdit ? { background: "#f1f5f9", color: "#64748b", cursor: "not-allowed" } : undefined}
+                style={
+                  isEdit
+                    ? {
+                        background: "#f1f5f9",
+                        color: "#64748b",
+                        cursor: "not-allowed",
+                      }
+                    : undefined
+                }
               />
             </div>
           </div>
@@ -95,7 +179,7 @@ export default function LopHocPhanFormModal({
             <input
               type="text"
               className="modal-input"
-              placeholder="VD: Giải tích 1 — Nhóm LT1"
+              placeholder="VD: An ninh mạng - 1-25 (QT01)"
               value={formData.tenLopHocPhan}
               onChange={(e) =>
                 setFormData({ ...formData, tenLopHocPhan: e.target.value })
@@ -113,9 +197,7 @@ export default function LopHocPhanFormModal({
                 <select
                   className="modal-input"
                   value={formData.maHocKy}
-                  onChange={(e) =>
-                    setFormData({ ...formData, maHocKy: e.target.value })
-                  }
+                  onChange={handleHocKyChange}
                   required
                 >
                   <option value="">— Chọn Học kỳ —</option>
@@ -225,14 +307,12 @@ export default function LopHocPhanFormModal({
                 type="number"
                 className="modal-input"
                 min="0"
-                max={formData.siSoDuKien !== '' ? formData.siSoDuKien : undefined}
                 placeholder="VD: 55"
                 value={formData.siSoDangKy ?? ""}
-                onChange={(e) => setFormData({ ...formData, siSoDangKy: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, siSoDangKy: e.target.value })
+                }
               />
-              <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-sub)' }}>
-                Không được lớn hơn sinh viên dự kiến
-              </span>
             </div>
           </div>
 
@@ -246,9 +326,7 @@ export default function LopHocPhanFormModal({
                 type="date"
                 className="modal-input"
                 value={formData.ngayBatDau}
-                onChange={(e) =>
-                  setFormData({ ...formData, ngayBatDau: e.target.value })
-                }
+                onChange={handleNgayBatDauChange}
                 required
               />
             </div>
@@ -260,9 +338,7 @@ export default function LopHocPhanFormModal({
                 type="date"
                 className="modal-input"
                 value={formData.ngayKetThuc}
-                onChange={(e) =>
-                  setFormData({ ...formData, ngayKetThuc: e.target.value })
-                }
+                onChange={handleNgayKetThucChange}
                 required
               />
             </div>
