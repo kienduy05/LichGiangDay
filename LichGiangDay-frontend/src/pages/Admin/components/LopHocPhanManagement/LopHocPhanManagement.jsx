@@ -20,8 +20,18 @@ import LopHocPhanImportExport from './LopHocPhanImportExport';
 import './LopHocPhanManagement.css';
 import './LopHocPhanComponents.css';
 const EMPTY_FORM = {
-  maLopHocPhan: '', maMonHoc: '', maHocKy: '', loaiHoc: '',
-  maBoMon: '', siSoDuKien: '', siSoDangKy: '', khoaHoc: ''
+  maLopHocPhan: '',
+  tenLopHocPhan: '',
+  maMonHoc: '',
+  maHocKy: '',
+  loaiHoc: '',
+  maBoMon: '',
+  siSoDuKien: '',
+  siSoDangKy: '',
+  khoaHoc: '',
+  ngayBatDau: '',
+  ngayKetThuc: '',
+  soTuan: ''
 };
 export default function LopHocPhanManagement() {
   const { hasPermission } = useAuth();
@@ -123,66 +133,123 @@ export default function LopHocPhanManagement() {
   // MODAL: CREATE / EDIT
   // ═══════════════════════════════════════════════
   const handleOpenCreate = () => {
-  setFormMode('create');
-  setFormData({
-    ...EMPTY_FORM,
-    maHocKy: filterHocKy || '',
-    maBoMon: filterBoMon || '',
-    siSoDangKy: 0
-  });
-  setFormError(''); setFormSuccess('');
-  setIsFormOpen(true);
-};
+    setFormMode('create');
+    const selectedHk = hocKyList.find(hk => hk.MaHocKy === filterHocKy);
+    const nbd = selectedHk?.NgayBatDau ? String(selectedHk.NgayBatDau).split('T')[0] : '';
+    const nkt = selectedHk?.NgayKetThuc ? String(selectedHk.NgayKetThuc).split('T')[0] : '';
+    const st = nbd && nkt ? Math.ceil((new Date(nkt) - new Date(nbd)) / (7 * 24 * 60 * 60 * 1000)) : '';
+
+    setFormData({
+      ...EMPTY_FORM,
+      maHocKy: filterHocKy || '',
+      maBoMon: filterBoMon || '',
+      ngayBatDau: nbd,
+      ngayKetThuc: nkt,
+      soTuan: st || '',
+      siSoDangKy: 0
+    });
+    setFormError('');
+    setFormSuccess('');
+    setIsFormOpen(true);
+  };
 
   const handleOpenEdit = (item) => {
     setFormMode('edit');
     setFormData({
-  ...EMPTY_FORM,
-  maLopHocPhan: item.MaLopHocPhan,
-  maMonHoc: item.MaMonHoc,
-  maHocKy: item.MaHocKy,
-  loaiHoc: item.LoaiHoc,
-  maBoMon: item.MaBoMon || '',
-  siSoDuKien: item.SiSoDuKien ?? '',
-  siSoDangKy: item.SiSoDangKy ?? '',
-  khoaHoc: item.KhoaHoc || ''
-});
-    setFormError(''); setFormSuccess('');
+      ...EMPTY_FORM,
+      maLopHocPhan: item.MaLopHocPhan || '',
+      tenLopHocPhan: item.TenLopHocPhan || '',
+      maMonHoc: item.MaMonHoc || '',
+      maHocKy: item.MaHocKy || '',
+      loaiHoc: item.LoaiHoc || '',
+      maBoMon: item.MaBoMon || '',
+      siSoDuKien: item.SiSoDuKien ?? '',
+      siSoDangKy: item.SiSoDangKy ?? '',
+      khoaHoc: item.KhoaHoc || '',
+      ngayBatDau: item.NgayBatDau ? String(item.NgayBatDau).split('T')[0] : '',
+      ngayKetThuc: item.NgayKetThuc ? String(item.NgayKetThuc).split('T')[0] : '',
+      soTuan: item.SoTuan ?? ''
+    });
+    setFormError('');
+    setFormSuccess('');
     setIsFormOpen(true);
   };
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    setFormError(''); setFormSuccess('');
+    setFormError('');
+    setFormSuccess('');
+
+    if (!formData.maLopHocPhan?.trim()) {
+      setFormError('Mã lớp học phần không được để trống.');
+      return;
+    }
+    if (!formData.maMonHoc) {
+      setFormError('Vui lòng chọn Môn học.');
+      return;
+    }
+    if (!formData.maHocKy) {
+      setFormError('Vui lòng chọn Học kỳ.');
+      return;
+    }
+    if (!formData.loaiHoc) {
+      setFormError('Vui lòng chọn Loại học.');
+      return;
+    }
+    if (!formData.maBoMon) {
+      setFormError('Vui lòng chọn Bộ môn.');
+      return;
+    }
+
+    if (formData.ngayBatDau && formData.ngayKetThuc && new Date(formData.ngayKetThuc) < new Date(formData.ngayBatDau)) {
+      setFormError('Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.');
+      return;
+    }
+
+    const dk = formData.siSoDuKien === '' || formData.siSoDuKien === null ? null : Number(formData.siSoDuKien);
+    const dky = formData.siSoDangKy === '' || formData.siSoDangKy === null ? 0 : Number(formData.siSoDangKy);
+
     setFormLoading(true);
-    const dk = formData.siSoDuKien === '' ? null : Number(formData.siSoDuKien);
-  const dky = formData.siSoDangKy === '' ? 0 : Number(formData.siSoDangKy);
-  if (dk !== null && dky > dk) {
-    setFormError(`Sinh viên đăng ký (${dky}) không được lớn hơn sinh viên dự kiến (${dk}).`);
-    return;
-  }
     try {
       if (formMode === 'create') {
-  await apiCreateLopHocPhan({
-    ...formData,
-    maLopHocPhan: formData.maLopHocPhan.trim()
-  });
-  setFormSuccess('Thêm lớp học phần thành công!');
-} 
-      else {
-        await apiUpdateLopHocPhan(formData.maLopHocPhan, {
+        await apiCreateLopHocPhan({
+          maLopHocPhan: formData.maLopHocPhan.trim(),
+          tenLopHocPhan: formData.tenLopHocPhan?.trim() || null,
+          maMonHoc: formData.maMonHoc,
+          maHocKy: formData.maHocKy,
           loaiHoc: formData.loaiHoc,
-          siSoDuKien: formData.siSoDuKien,
-          siSoDangKy: formData.siSoDangKy,
-          khoaHoc: formData.khoaHoc
+          maBoMon: formData.maBoMon,
+          siSoDuKien: dk,
+          siSoDangKy: dky,
+          khoaHoc: formData.khoaHoc || null,
+          ngayBatDau: formData.ngayBatDau || undefined,
+          ngayKetThuc: formData.ngayKetThuc || undefined,
+          soTuan: formData.soTuan ? Number(formData.soTuan) : undefined
+        });
+        setFormSuccess('Thêm lớp học phần thành công!');
+      } else {
+        await apiUpdateLopHocPhan(formData.maLopHocPhan, {
+          tenLopHocPhan: formData.tenLopHocPhan?.trim() || null,
+          loaiHoc: formData.loaiHoc,
+          siSoDuKien: dk,
+          siSoDangKy: dky,
+          khoaHoc: formData.khoaHoc || null,
+          ngayBatDau: formData.ngayBatDau || undefined,
+          ngayKetThuc: formData.ngayKetThuc || undefined,
+          soTuan: formData.soTuan ? Number(formData.soTuan) : undefined
         });
         setFormSuccess('Cập nhật thành công!');
       }
       await fetchList();
-      setTimeout(() => { setIsFormOpen(false); setFormSuccess(''); }, 1000);
+      setTimeout(() => {
+        setIsFormOpen(false);
+        setFormSuccess('');
+      }, 800);
     } catch (err) {
       setFormError(err.message || 'Thao tác thất bại.');
-    } finally { setFormLoading(false); }
+    } finally {
+      setFormLoading(false);
+    }
   };
 
   // ═══════════════════════════════════════════════
@@ -399,6 +466,7 @@ export default function LopHocPhanManagement() {
         onClose={() => setIsFormOpen(false)}
         formLoading={formLoading}
         formError={formError}
+        setFormError={setFormError}
         formSuccess={formSuccess}
       />
 
