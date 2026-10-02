@@ -63,9 +63,9 @@ export default function LopHocPhanDetailView({
                 <div className="lhp-info-value">{lopHocPhan?.SiSoDuKien ?? '—'} / {lopHocPhan?.SiSoDangKy ?? '—'}</div>
               </div>
               <div className="lhp-info-item">
-                <div className="lhp-info-label">Giảng viên</div>
+                {/*<div className="lhp-info-label">Giảng viên</div>*/}
                 <div className="lhp-info-value" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {lopHocPhan?.TenGiangVien || <span style={{ color: 'var(--admin-text-sub)' }}>Chưa phân công</span>}
+                  {/*{lopHocPhan?.TenGiangVien || <span style={{ color: 'var(--admin-text-sub)' }}>Chưa phân công</span>}*/}
                   {hasPermission('LopHocPhan', 'CanUpdate') && (
                     <button
                       className={`lhp-assign-btn ${lopHocPhan?.MaGiangVien ? 'unassign' : ''}`}
@@ -84,10 +84,10 @@ export default function LopHocPhanDetailView({
                   {formatDate(lopHocPhan?.NgayBatDau)} → {formatDate(lopHocPhan?.NgayKetThuc)} ({lopHocPhan?.SoTuan} tuần)
                 </div>
               </div>
-              <div className="lhp-info-item">
+              {/* <div className="lhp-info-item">
                 <div className="lhp-info-label">Số tín chỉ</div>
                 <div className="lhp-info-value">{lopHocPhan?.SoTinChi ?? '—'}</div>
-              </div>
+              </div> */}
             </div>
 
             {/* Lớp sinh viên ghép */}

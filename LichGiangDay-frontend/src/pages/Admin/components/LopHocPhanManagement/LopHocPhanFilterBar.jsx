@@ -1,12 +1,11 @@
 import { Search, X, RefreshCw } from 'lucide-react';
 
 export default function LopHocPhanFilterBar({
-  hocKyList, boMonList, monHocList, giangVienList,
+  hocKyList, boMonList, monHocList,
   filterHocKy, setFilterHocKy,
   filterBoMon, setFilterBoMon,
   filterMonHoc, setFilterMonHoc,
-  filterGiangVien, setFilterGiangVien,
-  filterTrangThai, setFilterTrangThai,
+  filterLoaiHoc, setFilterLoaiHoc,
   searchQuery, setSearchQuery,
   loading, onRefresh
 }) {
@@ -30,11 +29,21 @@ export default function LopHocPhanFilterBar({
         ))}
       </select>
 
-      {/* Trạng thái phân công */}
-      <select className="lhp-filter-select" style={{ minWidth: '170px' }} value={filterTrangThai} onChange={e => setFilterTrangThai(e.target.value)}>
-        <option value="">— Trạng thái PC —</option>
-        <option value="Assigned">✓ Đã phân công</option>
-        <option value="Unassigned">✕ Chưa phân công</option>
+      {/* Môn học */}
+      <select className="lhp-filter-select" style={{ minWidth: '160px' }} value={filterMonHoc} onChange={e => setFilterMonHoc(e.target.value)}>
+        <option value="">— Tất cả Môn học —</option>
+        {monHocList.map(mh => (
+          <option key={mh.MaMonHoc} value={mh.MaMonHoc}>{mh.TenMonHoc}</option>
+        ))}
+      </select>
+
+      {/* Kiểu học */}
+      <select className="lhp-filter-select" style={{ minWidth: '130px' }} value={filterLoaiHoc} onChange={e => setFilterLoaiHoc(e.target.value)}>
+        <option value="">— Kiểu học —</option>
+        <option value="LT">LT — Lý thuyết</option>
+        <option value="BT">BT — Bài tập</option>
+        <option value="TH">TH — Thực hành</option>
+        <option value="BTL">BTL — Bài tập lớn</option>
       </select>
 
       {/* Search */}

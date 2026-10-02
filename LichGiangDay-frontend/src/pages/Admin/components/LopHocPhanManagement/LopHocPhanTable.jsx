@@ -17,9 +17,7 @@ export default function LopHocPhanTable({
               <span className="lhp-card-tenmon">{item.TenMonHoc || item.MaMonHoc}</span>
               <div className="lhp-card-badges">
                 <span className="lhp-badge loaihoc">{item.LoaiHoc}</span>
-                <span className={`lhp-badge ${item.TrangThaiPhanCong === 'Assigned' ? 'assigned' : 'unassigned'}`}>
-                  {item.TrangThaiPhanCong === 'Assigned' ? '✓ Đã PC' : '✕ Chưa PC'}
-                </span>
+                
                 {item.SoLopSinhVienGhep > 0 && (
                   <span className="lhp-badge count">
                     <Users size={11} /> {item.SoLopSinhVienGhep} lớp ghép
@@ -28,16 +26,7 @@ export default function LopHocPhanTable({
               </div>
             </div>
             <div className="lhp-card-actions" onClick={e => e.stopPropagation()}>
-              {hasPermission('LopHocPhan', 'CanUpdate') && (
-                <button
-                  className={`lhp-assign-btn ${item.MaGiangVien ? 'unassign' : ''}`}
-                  title={item.MaGiangVien ? 'Đổi / Gỡ GV' : 'Phân công GV'}
-                  onClick={() => onAssign(item)}
-                >
-                  <UserCheck size={13} />
-                  {item.MaGiangVien ? 'Đổi GV' : 'Phân công'}
-                </button>
-              )}
+              {hasPermission('LopHocPhan', 'CanUpdate') }
               {hasPermission('LopHocPhan', 'CanUpdate') && (
                 <button className="action-btn edit" title="Sửa" onClick={() => onEdit(item)}>
                   <Edit2 size={15} />
@@ -57,12 +46,7 @@ export default function LopHocPhanTable({
               <span className="lhp-field-label">Tên LHP</span>
               <span className="lhp-field-value">{item.TenLopHocPhan || '—'}</span>
             </div>
-            <div className="lhp-card-field">
-              <span className="lhp-field-label">Giảng viên</span>
-              <span className={`lhp-field-value ${!item.TenGiangVien ? 'muted' : ''}`}>
-                {item.TenGiangVien || 'Chưa phân công'}
-              </span>
-            </div>
+            
             <div className="lhp-card-field">
               <span className="lhp-field-label">Sĩ số</span>
               <span className="lhp-field-value">

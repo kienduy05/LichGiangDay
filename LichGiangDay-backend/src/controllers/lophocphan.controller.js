@@ -8,7 +8,7 @@ class LopHocPhanController {
   // ================================================================
   getAll = async (req, res) => {
     try {
-      const { maHocKy, maBoMon, maMonHoc, maGiangVien, trangThaiPhanCong, search } = req.query;
+      const { maHocKy, maBoMon, maMonHoc, loaiHoc, search } = req.query;
 
       if (!maHocKy || !maHocKy.trim()) {
         return res.status(400).json({
@@ -18,7 +18,7 @@ class LopHocPhanController {
       }
 
       const list = await LopHocPhanService.getAll({
-        maHocKy, maBoMon, maMonHoc, maGiangVien, trangThaiPhanCong, search
+        maHocKy, maBoMon, maMonHoc, loaiHoc, search
       });
 
       return res.status(200).json({
@@ -61,7 +61,7 @@ class LopHocPhanController {
   };
 
   // ================================================================
-  // 6. Chi tiết LHP + danh sách lớp SV ghép
+  // 4. Chi tiết LHP — chỉ thông tin cơ bản
   // ================================================================
   getChiTiet = async (req, res) => {
     try {
@@ -83,31 +83,34 @@ class LopHocPhanController {
 
   // ================================================================
   // 2. Tạo mới LHP thủ công
+  //    Body: { maLopHocPhan, maMonHoc, maHocKy, loaiHoc, maBoMon,
+  //            siSoDuKien?, siSoDangKy?, khoaHoc? }
   // ================================================================
   create = async (req, res) => {
     try {
       const {
-        maMonHoc, maNhom, tenLopHocPhan, maHocKy, loaiHoc,
-        maBoMon, siSoDuKien, khoaHoc, ngayBatDau, ngayKetThuc, soTuan
+        maLopHocPhan, tenLopHocPhan, maMonHoc, maHocKy, loaiHoc,
+      maBoMon, siSoDuKien, siSoDangKy, khoaHoc,
+      ngayBatDau, ngayKetThuc, soTuan
       } = req.body;
 
-      // Quick validation ở controller
+      if (!maLopHocPhan || !maLopHocPhan.trim()) {
+        return res.status(400).json({
+          status: 'error', code: 400,
+          message: 'Mã lớp môn tín chỉ không được để trống.'
+        });
+      }
       if (!maMonHoc || !maMonHoc.trim()) {
         return res.status(400).json({
           status: 'error', code: 400,
           message: 'Mã môn học không được để trống.'
         });
       }
-      if (!maNhom || !maNhom.trim()) {
-        return res.status(400).json({
-          status: 'error', code: 400,
-          message: 'Mã nhóm (VD: BT1, LT01) không được để trống.'
-        });
-      }
 
       const result = await LopHocPhanService.create({
-        maMonHoc, maNhom, tenLopHocPhan, maHocKy, loaiHoc,
-        maBoMon, siSoDuKien, khoaHoc, ngayBatDau, ngayKetThuc, soTuan
+        maLopHocPhan, tenLopHocPhan, maMonHoc, maHocKy, loaiHoc,
+      maBoMon, siSoDuKien, siSoDangKy, khoaHoc,
+      ngayBatDau, ngayKetThuc, soTuan
       });
 
       return res.status(201).json({
@@ -125,18 +128,17 @@ class LopHocPhanController {
 
   // ================================================================
   // 3. Cập nhật thông tin cơ bản
+  //    Body: { loaiHoc, siSoDuKien?, siSoDangKy?, khoaHoc? }
   // ================================================================
   update = async (req, res) => {
     try {
       const { maLopHocPhan } = req.params;
-      const {
-        tenLopHocPhan, siSoDuKien, siSoDangKy, loaiHoc,
-        maBoMon, khoaHoc, ngayBatDau, ngayKetThuc, soTuan
-      } = req.body;
+      const { tenLopHocPhan, loaiHoc, siSoDuKien, siSoDangKy, khoaHoc,
+      ngayBatDau, ngayKetThuc, soTuan } = req.body;
 
       const result = await LopHocPhanService.update(maLopHocPhan, {
-        tenLopHocPhan, siSoDuKien, siSoDangKy, loaiHoc,
-        maBoMon, khoaHoc, ngayBatDau, ngayKetThuc, soTuan
+        tenLopHocPhan,  loaiHoc, siSoDuKien, siSoDangKy, khoaHoc,
+      ngayBatDau, ngayKetThuc, soTuan
       });
 
       return res.status(200).json({
@@ -154,7 +156,7 @@ class LopHocPhanController {
   };
 
   // ================================================================
-  // 4a. Lấy danh sách lớp SV đã ghép
+  // 4a. Lấy danh sách lớp SV đã ghép (giữ stub cho module sau)
   // ================================================================
   getLopSinhVienGhep = async (req, res) => {
     try {
@@ -175,13 +177,12 @@ class LopHocPhanController {
   };
 
   // ================================================================
-  // 4b. Gắn lớp SV
+  // 4b. Gắn lớp SV (giữ stub)
   // ================================================================
   attachLopSinhVien = async (req, res) => {
     try {
       const { maLopHocPhan } = req.params;
       const { dsLopSinhVien } = req.body;
-
       const result = await LopHocPhanService.attachLopSinhVien(maLopHocPhan, dsLopSinhVien);
       return res.status(200).json({
         status: 'success', code: 200,
@@ -198,13 +199,12 @@ class LopHocPhanController {
   };
 
   // ================================================================
-  // 4c. Gỡ lớp SV
+  // 4c. Gỡ lớp SV (giữ stub)
   // ================================================================
   detachLopSinhVien = async (req, res) => {
     try {
       const { maLopHocPhan } = req.params;
       const { dsLopSinhVien } = req.body;
-
       const result = await LopHocPhanService.detachLopSinhVien(maLopHocPhan, dsLopSinhVien);
       return res.status(200).json({
         status: 'success', code: 200,
@@ -221,7 +221,7 @@ class LopHocPhanController {
   };
 
   // ================================================================
-  // Gợi ý lớp SV để gắn
+  // Gợi ý lớp SV (giữ stub)
   // ================================================================
   getSuggestedLopSinhVien = async (req, res) => {
     try {
@@ -242,15 +242,13 @@ class LopHocPhanController {
   };
 
   // ================================================================
-  // 5. Phân công / Đổi / Gỡ giảng viên
+  // 5. Phân công GV (giữ stub cho module sau)
   // ================================================================
   assignGiangVien = async (req, res) => {
     try {
       const { maLopHocPhan } = req.params;
       const { maGiangVien } = req.body;
-
       const result = await LopHocPhanService.assignGiangVien(maLopHocPhan, maGiangVien);
-
       let message = 'Phân công giảng viên thành công.';
       if (!maGiangVien || maGiangVien.trim() === '') {
         message = 'Đã gỡ phân công giảng viên.';
@@ -258,23 +256,15 @@ class LopHocPhanController {
       if (result.warnBoMonKhac) {
         message += ' ⚠️ Giảng viên không thuộc cùng bộ môn với lớp học phần.';
       }
-
-      return res.status(200).json({
-        status: 'success', code: 200,
-        message,
-        metadata: result
-      });
+      return res.status(200).json({ status: 'success', code: 200, message, metadata: result });
     } catch (error) {
       const statusCode = error.message.includes('Không tìm thấy') ? 404 : 400;
-      return res.status(statusCode).json({
-        status: 'error', code: statusCode,
-        message: error.message
-      });
+      return res.status(statusCode).json({ status: 'error', code: statusCode, message: error.message });
     }
   };
 
   // ================================================================
-  // 7. Xóa LHP
+  // 5. Xóa LHP
   // ================================================================
   deleteLopHocPhan = async (req, res) => {
     try {
@@ -295,7 +285,7 @@ class LopHocPhanController {
   };
 
   // ================================================================
-  // 8. Import từ Excel
+  // 6. Import từ Excel (dữ liệu nền 6 cột)
   // ================================================================
   importExcel = async (req, res) => {
     try {
@@ -352,7 +342,7 @@ class LopHocPhanController {
   };
 
   // ================================================================
-  // 9. Export ra Excel (chỉ dữ liệu nền)
+  // 7. Export ra Excel — chỉ 6 cột dữ liệu nền
   // ================================================================
   exportExcel = async (req, res) => {
     try {
@@ -360,21 +350,14 @@ class LopHocPhanController {
 
       const data = await LopHocPhanService.getExportData({ maHocKy, maBoMon });
 
-      // Tạo workbook
+      // Tạo workbook — 6 cột nghiệp vụ
       const exportRows = data.map(row => ({
+        'Mã lớp môn tín chỉ': row.MaLopHocPhan,
         'Mã học phần': row.MaMonHoc,
-        'Tên môn học': row.TenMonHoc,
-        'Số TC': row.SoTinChi,
-        'Lớp môn tín chỉ': row.MaLopHocPhan,
-        'Tên lớp HP': row.TenLopHocPhan || '',
         'Kiểu học': row.LoaiHoc,
-        'Số SV DK': row.SiSoDuKien || '',
-        'Số SV ĐK': row.SiSoDangKy || '',
-        'Giảng viên': row.TenGiangVien || 'Chưa phân công',
-        'Khóa': row.KhoaHoc || '',
-        'Bộ môn': row.TenBoMon || '',
-        'Trạng thái': row.TrangThaiPhanCong,
-        'Tên các lớp ghép': row.TenCacLopGhep || ''
+        'SV dự kiến': row.SiSoDuKien || '',
+        'SV đăng ký': row.SiSoDangKy || '',
+        'Khóa': row.KhoaHoc || ''
       }));
 
       const workbook = XLSX.utils.book_new();
@@ -382,19 +365,12 @@ class LopHocPhanController {
 
       // Đặt độ rộng cột
       worksheet['!cols'] = [
-        { wch: 12 }, // Mã học phần
-        { wch: 30 }, // Tên môn học
-        { wch: 6 },  // Số TC
-        { wch: 20 }, // Lớp môn tín chỉ
-        { wch: 25 }, // Tên lớp HP
-        { wch: 8 },  // Kiểu học
-        { wch: 10 }, // Số SV DK
-        { wch: 10 }, // Số SV ĐK
-        { wch: 25 }, // Giảng viên
-        { wch: 8 },  // Khóa
-        { wch: 15 }, // Bộ môn
-        { wch: 15 }, // Trạng thái
-        { wch: 30 }, // Tên các lớp ghép
+        { wch: 35 }, // Mã lớp môn tín chỉ
+        { wch: 15 }, // Mã học phần
+        { wch: 10 }, // Kiểu học
+        { wch: 12 }, // SV dự kiến
+        { wch: 12 }, // SV đăng ký
+        { wch: 10 }, // Khóa
       ];
 
       XLSX.utils.book_append_sheet(workbook, worksheet, 'LopHocPhan');
@@ -402,7 +378,7 @@ class LopHocPhanController {
       const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
 
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', `attachment; filename=LopHocPhan_${maHocKy || 'all'}.xlsx`);
+      res.setHeader('Content-Disposition', `attachment; filename=LopHocPhan_${maHocKy || 'all'}_${maBoMon || 'all'}.xlsx`);
       return res.send(buffer);
     } catch (error) {
       return res.status(400).json({
