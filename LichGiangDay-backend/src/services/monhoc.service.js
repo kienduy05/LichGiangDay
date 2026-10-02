@@ -7,7 +7,7 @@ class MonHocService {
    * Hỗ trợ lọc: maBoMon, search (MaMonHoc / TenMonHoc)
    * LEFT JOIN BoMon để hiển thị TenBoMon
    */
-  static getAll = async ({ maBoMon = '', search = '' } = {}) => {
+  static getAll = async ({ maKhoa = '', maBoMon = '', search = '' } = {}) => {
     let sql = `
       SELECT
         mh.MaMonHoc,
@@ -16,16 +16,28 @@ class MonHocService {
         mh.MaBoMon,
         mh.LoaiMonHoc,
         bm.TenBoMon,
+        bm.MaKhoa,
+        k.TenKhoa,
         COUNT(DISTINCT lhp.MaLopHocPhan) AS SoLopHocPhan
       FROM MonHoc mh
-      LEFT JOIN BoMon bm    ON mh.MaBoMon      = bm.MaBoMon
-      LEFT JOIN LopHocPhan lhp ON mh.MaMonHoc  = lhp.MaMonHoc
+      LEFT JOIN BoMon bm       ON mh.MaBoMon     = bm.MaBoMon
+      LEFT JOIN Khoa k         ON bm.MaKhoa      = k.MaKhoa
+      LEFT JOIN LopHocPhan lhp ON mh.MaMonHoc    = lhp.MaMonHoc
     `;
 
     const params = [];
     const conditions = [];
 
-    if (maBoMon && maBoMon.trim() !== '') {
+    if (maKhoa === '__NULL__') {
+      conditions.push('bm.MaKhoa IS NULL');
+    } else if (maKhoa && maKhoa.trim() !== '') {
+      conditions.push('bm.MaKhoa = ?');
+      params.push(maKhoa.trim());
+    }
+
+    if (maBoMon === '__NULL__') {
+      conditions.push('mh.MaBoMon IS NULL');
+    } else if (maBoMon && maBoMon.trim() !== '') {
       conditions.push('mh.MaBoMon = ?');
       params.push(maBoMon.trim());
     }
@@ -41,8 +53,8 @@ class MonHocService {
     }
 
     sql += `
-      GROUP BY mh.MaMonHoc, mh.TenMonHoc, mh.SoTinChi, mh.MaBoMon, mh.LoaiMonHoc, bm.TenBoMon
-      ORDER BY mh.MaBoMon ASC, mh.MaMonHoc ASC
+      GROUP BY mh.MaMonHoc, mh.TenMonHoc, mh.SoTinChi, mh.MaBoMon, mh.LoaiMonHoc, bm.TenBoMon, bm.MaKhoa, k.TenKhoa
+      ORDER BY bm.MaKhoa ASC, mh.MaBoMon ASC, mh.MaMonHoc ASC
     `;
 
     const [rows] = await db.query(sql, params);
@@ -60,9 +72,12 @@ class MonHocService {
         mh.SoTinChi,
         mh.MaBoMon,
         mh.LoaiMonHoc,
-        bm.TenBoMon
+        bm.TenBoMon,
+        bm.MaKhoa,
+        k.TenKhoa
       FROM MonHoc mh
       LEFT JOIN BoMon bm ON mh.MaBoMon = bm.MaBoMon
+      LEFT JOIN Khoa k   ON bm.MaKhoa   = k.MaKhoa
       WHERE mh.MaMonHoc = ?
       LIMIT 1
     `, [maMonHoc]);

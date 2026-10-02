@@ -1,50 +1,8 @@
 /* ==========================================================================
-   LỚP HỌC PHẦN MANAGEMENT & TREEVIEW STYLES
+   GIẢNG VIÊN MANAGEMENT & TREEVIEW STYLES
    ========================================================================== */
 
-/* Semester Selection Bar */
-.lhp-semester-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--admin-card-bg, #ffffff);
-  border: 1px solid var(--admin-card-border, #e2e8f0);
-  border-radius: 12px;
-  padding: 12px 18px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.lhp-semester-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: var(--admin-text-main, #0f172a);
-}
-
-.lhp-semester-select {
-  padding: 8px 14px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  border: 1.5px solid #3b82f6;
-  border-radius: 8px;
-  background: #eff6ff;
-  color: #1d4ed8;
-  outline: none;
-  cursor: pointer;
-  min-width: 240px;
-  transition: all 0.2s ease;
-}
-
-.lhp-semester-select:focus {
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-}
-
-.lhp-page-layout {
+.gv-page-layout {
   display: flex;
   gap: 20px;
   align-items: flex-start;
@@ -52,10 +10,10 @@
 }
 
 /* ==========================================================================
-   TREEVIEW SIDEBAR (LEFT) - KHOA -> BỘ MÔN -> MÔN HỌC
+   TREEVIEW SIDEBAR (LEFT)
    ========================================================================== */
 
-.lhp-treeview-sidebar {
+.gv-treeview-sidebar {
   width: 320px;
   min-width: 300px;
   max-width: 340px;
@@ -72,20 +30,20 @@
   flex-shrink: 0;
 }
 
-.lhp-treeview-header {
+.gv-treeview-header {
   padding: 14px 16px;
   border-bottom: 1px solid var(--admin-card-border, #e2e8f0);
   background: var(--admin-header-bg, #fafbfc);
 }
 
-.lhp-treeview-title-row {
+.gv-treeview-title-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 10px;
 }
 
-.lhp-treeview-title {
+.gv-treeview-title {
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--admin-text-main, #0f172a);
@@ -94,13 +52,13 @@
   gap: 8px;
 }
 
-.lhp-tree-actions {
+.gv-tree-actions {
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
-.lhp-tree-action-btn {
+.gv-tree-action-btn {
   background: none;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
@@ -113,19 +71,20 @@
   transition: all 0.15s ease;
 }
 
-.lhp-tree-action-btn:hover {
+.gv-tree-action-btn:hover {
   background: #f1f5f9;
   color: #1e293b;
   border-color: #cbd5e1;
 }
 
-.lhp-tree-search-box {
+.gv-tree-search-box {
   position: relative;
   display: flex;
   align-items: center;
+  margin-bottom: 10px;
 }
 
-.lhp-tree-search-box input {
+.gv-tree-search-box input {
   width: 100%;
   padding: 7px 10px 7px 32px;
   font-size: 0.84rem;
@@ -137,19 +96,19 @@
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.lhp-tree-search-box input:focus {
+.gv-tree-search-box input:focus {
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 
-.lhp-tree-search-icon {
+.gv-tree-search-icon {
   position: absolute;
   left: 10px;
   color: #94a3b8;
   pointer-events: none;
 }
 
-.lhp-tree-clear-btn {
+.gv-tree-clear-btn {
   position: absolute;
   right: 8px;
   background: none;
@@ -161,28 +120,57 @@
   align-items: center;
 }
 
-.lhp-tree-clear-btn:hover {
+.gv-tree-clear-btn:hover {
   color: #475569;
 }
 
+/* Status tabs in treeview */
+.gv-tree-status-tabs {
+  display: flex;
+  background: #f1f5f9;
+  padding: 3px;
+  border-radius: 8px;
+  gap: 2px;
+}
+
+.gv-tree-status-tab {
+  flex: 1;
+  border: none;
+  background: none;
+  padding: 5px 6px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #64748b;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.gv-tree-status-tab.active {
+  background: #ffffff;
+  color: #2563eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
 /* TreeView Body */
-.lhp-treeview-body {
+.gv-treeview-body {
   padding: 10px 8px;
   overflow-y: auto;
   flex: 1;
 }
 
-.lhp-treeview-body::-webkit-scrollbar {
+.gv-treeview-body::-webkit-scrollbar {
   width: 5px;
 }
 
-.lhp-treeview-body::-webkit-scrollbar-thumb {
+.gv-treeview-body::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 4px;
 }
 
 /* Tree Nodes */
-.lhp-tree-node {
+.gv-tree-node {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -194,17 +182,17 @@
   margin-bottom: 2px;
 }
 
-.lhp-tree-node:hover {
+.gv-tree-node:hover {
   background: #f8fafc;
 }
 
-.lhp-tree-node.active {
+.gv-tree-node.active {
   background: #eff6ff;
   color: #2563eb;
   font-weight: 600;
 }
 
-.lhp-tree-node-label {
+.gv-tree-node-label {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -212,7 +200,7 @@
   flex: 1;
 }
 
-.lhp-tree-expand-btn {
+.gv-tree-expand-btn {
   background: none;
   border: none;
   padding: 2px;
@@ -225,28 +213,28 @@
   transition: all 0.15s ease;
 }
 
-.lhp-tree-expand-btn:hover {
+.gv-tree-expand-btn:hover {
   color: #1e293b;
   background: #e2e8f0;
 }
 
-.lhp-tree-node-icon {
+.gv-tree-node-icon {
   flex-shrink: 0;
 }
 
-.lhp-tree-node-icon.root { color: #3b82f6; }
-.lhp-tree-node-icon.khoa { color: #8b5cf6; }
-.lhp-tree-node-icon.bomon { color: #0ea5e9; }
-.lhp-tree-node-icon.monhoc { color: #10b981; }
+.gv-tree-node-icon.root { color: #3b82f6; }
+.gv-tree-node-icon.khoa { color: #8b5cf6; }
+.gv-tree-node-icon.bomon { color: #0ea5e9; }
+.gv-tree-node-icon.gv { color: #10b981; }
 
-.lhp-tree-node-text {
+.gv-tree-node-text {
   font-size: 0.86rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.lhp-tree-node-badge {
+.gv-tree-node-badge {
   font-size: 0.72rem;
   font-weight: 600;
   padding: 2px 7px;
@@ -256,22 +244,27 @@
   flex-shrink: 0;
 }
 
-.lhp-tree-node.active .lhp-tree-node-badge {
+.gv-tree-node.active .gv-tree-node-badge {
   background: #dbeafe;
   color: #1d4ed8;
 }
 
-.lhp-tree-node.level-1 {
+.gv-tree-node.level-1 {
   padding-left: 10px;
 }
 
-.lhp-tree-node.level-2 {
+.gv-tree-node.level-2 {
   padding-left: 26px;
   font-size: 0.83rem;
 }
 
-/* Subject item in tree (level 3) */
-.lhp-tree-mh-item {
+.gv-tree-node.level-3 {
+  padding-left: 44px;
+  font-size: 0.81rem;
+}
+
+/* Lecturer item in tree */
+.gv-tree-gv-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -282,16 +275,16 @@
   margin-bottom: 1px;
 }
 
-.lhp-tree-mh-item:hover {
+.gv-tree-gv-item:hover {
   background: #f8fafc;
 }
 
-.lhp-tree-mh-item.active {
+.gv-tree-gv-item.active {
   background: #eff6ff;
   border-left: 3px solid #2563eb;
 }
 
-.lhp-tree-mh-info {
+.gv-tree-gv-info {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -299,19 +292,21 @@
   flex: 1;
 }
 
-.lhp-tree-mh-icon-wrap {
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  background: #e0f2fe;
-  color: #0284c7;
+.gv-tree-gv-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #e0e7ff;
+  color: #4338ca;
+  font-size: 0.68rem;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
-.lhp-tree-mh-name {
+.gv-tree-gv-name {
   font-size: 0.82rem;
   font-weight: 500;
   color: var(--admin-text-main, #1e293b);
@@ -320,7 +315,7 @@
   white-space: nowrap;
 }
 
-.lhp-tree-mh-code {
+.gv-tree-gv-code {
   font-size: 0.7rem;
   font-family: monospace;
   color: #64748b;
@@ -330,22 +325,21 @@
   flex-shrink: 0;
 }
 
-.lhp-tree-count-pill {
-  font-size: 0.68rem;
-  font-weight: 700;
-  color: #2563eb;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  padding: 1px 6px;
-  border-radius: 10px;
+.gv-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
   flex-shrink: 0;
 }
+
+.gv-status-dot.active { background: #10b981; }
+.gv-status-dot.inactive { background: #cbd5e1; }
 
 /* ==========================================================================
    MAIN CONTENT AREA (RIGHT)
    ========================================================================== */
 
-.lhp-main-content {
+.gv-main-content {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -354,7 +348,7 @@
 }
 
 /* Breadcrumb / Active Context Bar */
-.lhp-context-bar {
+.gv-context-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -365,7 +359,7 @@
   font-size: 0.85rem;
 }
 
-.lhp-breadcrumb {
+.gv-breadcrumb {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -373,12 +367,12 @@
   flex-wrap: wrap;
 }
 
-.lhp-breadcrumb-item {
+.gv-breadcrumb-item {
   color: var(--admin-text-main, #0f172a);
   font-weight: 600;
 }
 
-.lhp-breadcrumb-clear {
+.gv-breadcrumb-clear {
   margin-left: 8px;
   font-size: 0.76rem;
   color: #ef4444;
@@ -390,58 +384,127 @@
   transition: all 0.15s ease;
 }
 
-.lhp-breadcrumb-clear:hover {
+.gv-breadcrumb-clear:hover {
   background: #fee2e2;
 }
 
 /* Table Enhancements */
-.lhp-name-cell {
+.gv-avatar-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gv-avatar-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+  color: #3730a3;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.gv-name-title {
+  font-weight: 600;
+  color: var(--admin-text-main, #0f172a);
+  font-size: 0.9rem;
+}
+
+.gv-code-pill {
+  font-family: monospace;
+  font-size: 0.74rem;
+  color: #475569;
+  background: #f1f5f9;
+  padding: 1px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-top: 2px;
+}
+
+.gv-dept-cell {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.lhp-code-pill {
-  font-family: monospace;
-  font-size: 0.76rem;
-  font-weight: 700;
-  color: #1d4ed8;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  padding: 2px 6px;
-  border-radius: 4px;
-  display: inline-block;
-}
-
-.lhp-name-text {
+.gv-dept-bomon {
   font-weight: 600;
-  color: var(--admin-text-main, #0f172a);
+  color: var(--admin-text-main, #1e293b);
   font-size: 0.88rem;
 }
 
-.lhp-dept-cell {
+.gv-dept-khoa {
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.gv-contact-cell {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
+  font-size: 0.82rem;
+  color: #475569;
 }
 
-.lhp-dept-bomon {
+.gv-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gv-contact-item svg {
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+/* Status switch button */
+.gv-toggle-status-btn {
+  background: none;
+  border: 1px solid #e2e8f0;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.78rem;
   font-weight: 600;
-  color: var(--admin-text-main, #1e293b);
-  font-size: 0.86rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
 }
 
-.lhp-dept-khoa {
-  font-size: 0.76rem;
+.gv-toggle-status-btn.active {
+  background: #f0fdf4;
+  color: #16a34a;
+  border-color: #bbf7d0;
+}
+
+.gv-toggle-status-btn.active:hover {
+  background: #dcfce7;
+}
+
+.gv-toggle-status-btn.inactive {
+  background: #f8fafc;
+  color: #94a3b8;
+  border-color: #e2e8f0;
+}
+
+.gv-toggle-status-btn.inactive:hover {
+  background: #f1f5f9;
   color: #64748b;
 }
 
 /* Responsive breakpoint */
 @media (max-width: 1024px) {
-  .lhp-page-layout {
+  .gv-page-layout {
     flex-direction: column;
   }
-  .lhp-treeview-sidebar {
+  .gv-treeview-sidebar {
     width: 100%;
     max-width: 100%;
     position: static;

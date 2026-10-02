@@ -1,50 +1,8 @@
 /* ==========================================================================
-   LỚP HỌC PHẦN MANAGEMENT & TREEVIEW STYLES
+   LỚP SINH VIÊN MANAGEMENT & TREEVIEW STYLES
    ========================================================================== */
 
-/* Semester Selection Bar */
-.lhp-semester-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--admin-card-bg, #ffffff);
-  border: 1px solid var(--admin-card-border, #e2e8f0);
-  border-radius: 12px;
-  padding: 12px 18px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.lhp-semester-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: var(--admin-text-main, #0f172a);
-}
-
-.lhp-semester-select {
-  padding: 8px 14px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  border: 1.5px solid #3b82f6;
-  border-radius: 8px;
-  background: #eff6ff;
-  color: #1d4ed8;
-  outline: none;
-  cursor: pointer;
-  min-width: 240px;
-  transition: all 0.2s ease;
-}
-
-.lhp-semester-select:focus {
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-}
-
-.lhp-page-layout {
+.lsv-page-layout {
   display: flex;
   gap: 20px;
   align-items: flex-start;
@@ -52,10 +10,10 @@
 }
 
 /* ==========================================================================
-   TREEVIEW SIDEBAR (LEFT) - KHOA -> BỘ MÔN -> MÔN HỌC
+   TREEVIEW SIDEBAR (LEFT) - 1 CẤP LÀ KHOA
    ========================================================================== */
 
-.lhp-treeview-sidebar {
+.lsv-treeview-sidebar {
   width: 320px;
   min-width: 300px;
   max-width: 340px;
@@ -72,20 +30,20 @@
   flex-shrink: 0;
 }
 
-.lhp-treeview-header {
+.lsv-treeview-header {
   padding: 14px 16px;
   border-bottom: 1px solid var(--admin-card-border, #e2e8f0);
   background: var(--admin-header-bg, #fafbfc);
 }
 
-.lhp-treeview-title-row {
+.lsv-treeview-title-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 10px;
 }
 
-.lhp-treeview-title {
+.lsv-treeview-title {
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--admin-text-main, #0f172a);
@@ -94,13 +52,13 @@
   gap: 8px;
 }
 
-.lhp-tree-actions {
+.lsv-tree-actions {
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
-.lhp-tree-action-btn {
+.lsv-tree-action-btn {
   background: none;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
@@ -113,19 +71,19 @@
   transition: all 0.15s ease;
 }
 
-.lhp-tree-action-btn:hover {
+.lsv-tree-action-btn:hover {
   background: #f1f5f9;
   color: #1e293b;
   border-color: #cbd5e1;
 }
 
-.lhp-tree-search-box {
+.lsv-tree-search-box {
   position: relative;
   display: flex;
   align-items: center;
 }
 
-.lhp-tree-search-box input {
+.lsv-tree-search-box input {
   width: 100%;
   padding: 7px 10px 7px 32px;
   font-size: 0.84rem;
@@ -137,19 +95,19 @@
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.lhp-tree-search-box input:focus {
+.lsv-tree-search-box input:focus {
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 
-.lhp-tree-search-icon {
+.lsv-tree-search-icon {
   position: absolute;
   left: 10px;
   color: #94a3b8;
   pointer-events: none;
 }
 
-.lhp-tree-clear-btn {
+.lsv-tree-clear-btn {
   position: absolute;
   right: 8px;
   background: none;
@@ -161,28 +119,28 @@
   align-items: center;
 }
 
-.lhp-tree-clear-btn:hover {
+.lsv-tree-clear-btn:hover {
   color: #475569;
 }
 
 /* TreeView Body */
-.lhp-treeview-body {
+.lsv-treeview-body {
   padding: 10px 8px;
   overflow-y: auto;
   flex: 1;
 }
 
-.lhp-treeview-body::-webkit-scrollbar {
+.lsv-treeview-body::-webkit-scrollbar {
   width: 5px;
 }
 
-.lhp-treeview-body::-webkit-scrollbar-thumb {
+.lsv-treeview-body::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 4px;
 }
 
 /* Tree Nodes */
-.lhp-tree-node {
+.lsv-tree-node {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -194,17 +152,17 @@
   margin-bottom: 2px;
 }
 
-.lhp-tree-node:hover {
+.lsv-tree-node:hover {
   background: #f8fafc;
 }
 
-.lhp-tree-node.active {
+.lsv-tree-node.active {
   background: #eff6ff;
   color: #2563eb;
   font-weight: 600;
 }
 
-.lhp-tree-node-label {
+.lsv-tree-node-label {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -212,7 +170,7 @@
   flex: 1;
 }
 
-.lhp-tree-expand-btn {
+.lsv-tree-expand-btn {
   background: none;
   border: none;
   padding: 2px;
@@ -225,28 +183,27 @@
   transition: all 0.15s ease;
 }
 
-.lhp-tree-expand-btn:hover {
+.lsv-tree-expand-btn:hover {
   color: #1e293b;
   background: #e2e8f0;
 }
 
-.lhp-tree-node-icon {
+.lsv-tree-node-icon {
   flex-shrink: 0;
 }
 
-.lhp-tree-node-icon.root { color: #3b82f6; }
-.lhp-tree-node-icon.khoa { color: #8b5cf6; }
-.lhp-tree-node-icon.bomon { color: #0ea5e9; }
-.lhp-tree-node-icon.monhoc { color: #10b981; }
+.lsv-tree-node-icon.root { color: #3b82f6; }
+.lsv-tree-node-icon.khoa { color: #8b5cf6; }
+.lsv-tree-node-icon.class { color: #0284c7; }
 
-.lhp-tree-node-text {
+.lsv-tree-node-text {
   font-size: 0.86rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.lhp-tree-node-badge {
+.lsv-tree-node-badge {
   font-size: 0.72rem;
   font-weight: 600;
   padding: 2px 7px;
@@ -256,42 +213,37 @@
   flex-shrink: 0;
 }
 
-.lhp-tree-node.active .lhp-tree-node-badge {
+.lsv-tree-node.active .lsv-tree-node-badge {
   background: #dbeafe;
   color: #1d4ed8;
 }
 
-.lhp-tree-node.level-1 {
+.lsv-tree-node.level-1 {
   padding-left: 10px;
 }
 
-.lhp-tree-node.level-2 {
-  padding-left: 26px;
-  font-size: 0.83rem;
-}
-
-/* Subject item in tree (level 3) */
-.lhp-tree-mh-item {
+/* Class item inside Khoa */
+.lsv-tree-class-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 10px 6px 44px;
+  padding: 6px 10px 6px 36px;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s ease;
   margin-bottom: 1px;
 }
 
-.lhp-tree-mh-item:hover {
+.lsv-tree-class-item:hover {
   background: #f8fafc;
 }
 
-.lhp-tree-mh-item.active {
+.lsv-tree-class-item.active {
   background: #eff6ff;
   border-left: 3px solid #2563eb;
 }
 
-.lhp-tree-mh-info {
+.lsv-tree-class-info {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -299,7 +251,7 @@
   flex: 1;
 }
 
-.lhp-tree-mh-icon-wrap {
+.lsv-tree-class-icon-wrap {
   width: 22px;
   height: 22px;
   border-radius: 6px;
@@ -311,7 +263,7 @@
   flex-shrink: 0;
 }
 
-.lhp-tree-mh-name {
+.lsv-tree-class-name {
   font-size: 0.82rem;
   font-weight: 500;
   color: var(--admin-text-main, #1e293b);
@@ -320,7 +272,7 @@
   white-space: nowrap;
 }
 
-.lhp-tree-mh-code {
+.lsv-tree-class-code {
   font-size: 0.7rem;
   font-family: monospace;
   color: #64748b;
@@ -330,13 +282,13 @@
   flex-shrink: 0;
 }
 
-.lhp-tree-count-pill {
+.lsv-tree-lhp-pill {
   font-size: 0.68rem;
   font-weight: 700;
   color: #2563eb;
   background: #eff6ff;
   border: 1px solid #bfdbfe;
-  padding: 1px 6px;
+  padding: 1px 5px;
   border-radius: 10px;
   flex-shrink: 0;
 }
@@ -345,7 +297,7 @@
    MAIN CONTENT AREA (RIGHT)
    ========================================================================== */
 
-.lhp-main-content {
+.lsv-main-content {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -354,7 +306,7 @@
 }
 
 /* Breadcrumb / Active Context Bar */
-.lhp-context-bar {
+.lsv-context-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -365,7 +317,7 @@
   font-size: 0.85rem;
 }
 
-.lhp-breadcrumb {
+.lsv-breadcrumb {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -373,12 +325,12 @@
   flex-wrap: wrap;
 }
 
-.lhp-breadcrumb-item {
+.lsv-breadcrumb-item {
   color: var(--admin-text-main, #0f172a);
   font-weight: 600;
 }
 
-.lhp-breadcrumb-clear {
+.lsv-breadcrumb-clear {
   margin-left: 8px;
   font-size: 0.76rem;
   color: #ef4444;
@@ -390,58 +342,88 @@
   transition: all 0.15s ease;
 }
 
-.lhp-breadcrumb-clear:hover {
+.lsv-breadcrumb-clear:hover {
   background: #fee2e2;
 }
 
 /* Table Enhancements */
-.lhp-name-cell {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.lhp-code-pill {
-  font-family: monospace;
-  font-size: 0.76rem;
-  font-weight: 700;
+.lsv-icon-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
   color: #1d4ed8;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  padding: 2px 6px;
-  border-radius: 4px;
-  display: inline-block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-.lhp-name-text {
+.lsv-name-title {
   font-weight: 600;
   color: var(--admin-text-main, #0f172a);
-  font-size: 0.88rem;
+  font-size: 0.9rem;
 }
 
-.lhp-dept-cell {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.lsv-code-pill {
+  font-family: monospace;
+  font-size: 0.74rem;
+  color: #475569;
+  background: #f1f5f9;
+  padding: 1px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-top: 2px;
 }
 
-.lhp-dept-bomon {
+.lsv-khoa-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-weight: 600;
-  color: var(--admin-text-main, #1e293b);
-  font-size: 0.86rem;
+  font-size: 0.82rem;
+  color: #6b21a8;
+  background: #faf5ff;
+  border: 1px solid #e9d5ff;
+  padding: 3px 8px;
+  border-radius: 6px;
 }
 
-.lhp-dept-khoa {
-  font-size: 0.76rem;
-  color: #64748b;
+.lsv-classes-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 2px 8px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lsv-classes-badge:hover {
+  background: #dbeafe;
+}
+
+.lsv-classes-badge.empty {
+  color: #94a3b8;
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  cursor: default;
 }
 
 /* Responsive breakpoint */
 @media (max-width: 1024px) {
-  .lhp-page-layout {
+  .lsv-page-layout {
     flex-direction: column;
   }
-  .lhp-treeview-sidebar {
+  .lsv-treeview-sidebar {
     width: 100%;
     max-width: 100%;
     position: static;

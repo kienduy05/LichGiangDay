@@ -9,6 +9,9 @@ router.use(authentication);
 // GET /v1/api/lopsinhvien                       — Danh sách (lọc ?maKhoa=...&search=...)
 router.get('/', checkPermission('LopSinhVien', 'CanRead'), lopSinhVienController.getAll);
 
+// GET /v1/api/lopsinhvien/:maLopSinhVien/chitiet — Chi tiết kèm danh sách lớp học phần tham gia
+router.get('/:maLopSinhVien/chitiet', checkPermission('LopSinhVien', 'CanRead'), lopSinhVienController.getChiTiet);
+
 // GET /v1/api/lopsinhvien/:maLopSinhVien        — Thông tin 1 lớp
 router.get('/:maLopSinhVien', checkPermission('LopSinhVien', 'CanRead'), lopSinhVienController.getById);
 

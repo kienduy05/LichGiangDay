@@ -575,8 +575,9 @@ export const apiDeleteBoMon = async (maBoMon) => {
 // GIANGVIEN (GIẢNG VIÊN) API SERVICES
 // ==========================================
 
-export const apiGetGiangVienList = async ({ maBoMon = '', trangThai = '', search = '' } = {}) => {
+export const apiGetGiangVienList = async ({ maKhoa = '', maBoMon = '', trangThai = '', search = '' } = {}) => {
   const params = new URLSearchParams();
+  if (maKhoa) params.append('maKhoa', maKhoa);
   if (maBoMon) params.append('maBoMon', maBoMon);
   if (trangThai) params.append('trangThai', trangThai);
   if (search) params.append('search', search);
@@ -645,8 +646,9 @@ export const apiDeleteGiangVien = async (maGiangVien) => {
 // MONHOC (MÔN HỌC) API SERVICES
 // ==========================================
 
-export const apiGetMonHocList = async ({ maBoMon = '', search = '' } = {}) => {
+export const apiGetMonHocList = async ({ maKhoa = '', maBoMon = '', search = '' } = {}) => {
   const params = new URLSearchParams();
+  if (maKhoa) params.append('maKhoa', maKhoa);
   if (maBoMon) params.append('maBoMon', maBoMon);
   if (search) params.append('search', search);
   const url = `${API_BASE_URL}/monhoc${params.toString() ? '?' + params.toString() : ''}`;
@@ -710,6 +712,16 @@ export const apiGetLopSinhVienList = async ({ maKhoa = '', search = '' } = {}) =
   const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() });
   const data = await response.json();
   if (!response.ok) throw new Error(data.message || 'Lấy danh sách lớp sinh viên thất bại.');
+  return data.metadata;
+};
+
+export const apiGetLopSinhVienChiTiet = async (maLopSinhVien) => {
+  const response = await fetch(`${API_BASE_URL}/lopsinhvien/${encodeURIComponent(maLopSinhVien)}/chitiet`, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Lấy chi tiết lớp sinh viên thất bại.');
   return data.metadata;
 };
 

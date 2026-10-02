@@ -1,68 +1,135 @@
-import { Search, X, RefreshCw } from 'lucide-react';
+import React from 'react';
+import { Search, X, RefreshCw, Layers, School, Network, BookOpen, Filter } from 'lucide-react';
+import './LopHocPhanComponents.css';
 
 export default function LopHocPhanFilterBar({
-  hocKyList, boMonList, monHocList,
-  filterHocKy, setFilterHocKy,
-  filterBoMon, setFilterBoMon,
-  filterMonHoc, setFilterMonHoc,
-  filterLoaiHoc, setFilterLoaiHoc,
-  searchQuery, setSearchQuery,
-  loading, onRefresh
+  khoaList = [],
+  boMonList = [],
+  monHocList = [],
+  selectedKhoaId = '',
+  selectedBoMonId = '',
+  selectedMonHocId = '',
+  filterLoaiHoc = '',
+  setFilterLoaiHoc,
+  searchQuery = '',
+  setSearchQuery,
+  onRefresh,
+  loading = false,
+  totalCount = 0,
+  onClearSelection
 }) {
+  const hasFilter = !!selectedKhoaId || !!selectedBoMonId || !!selectedMonHocId || !!filterLoaiHoc || !!searchQuery;
+
+  const currentKhoaObj = khoaList.find(k => k.MaKhoa === selectedKhoaId);
+  const currentBoMonObj = boMonList.find(b => b.MaBoMon === selectedBoMonId);
+  const currentMonHocObj = monHocList.find(m => m.MaMonHoc === selectedMonHocId);
+
   return (
-    <div className="lhp-filter-bar">
-      {/* Học kỳ (bắt buộc) */}
-      <select className="lhp-filter-select" value={filterHocKy} onChange={e => setFilterHocKy(e.target.value)}>
-        <option value="">— Chọn Học kỳ —</option>
-        {hocKyList.map(hk => (
-          <option key={hk.MaHocKy} value={hk.MaHocKy}>
-            {hk.TenHocKy} {hk.NamHoc ? `(${hk.NamHoc})` : ''}
-          </option>
-        ))}
-      </select>
+    <div className="lhp-filter-wrapper" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      {/* 1. Context Breadcrumb */}
+      <div className="lhp-context-bar">
+        <div className="lhp-breadcrumb">
+          <Layers size={15} style={{ color: '#3b82f6' }} />
+          <span>Phạm vi hiển thị:</span>
 
-      {/* Bộ môn */}
-      <select className="lhp-filter-select" style={{ minWidth: '160px' }} value={filterBoMon} onChange={e => setFilterBoMon(e.target.value)}>
-        <option value="">— Tất cả Bộ môn —</option>
-        {boMonList.map(bm => (
-          <option key={bm.MaBoMon} value={bm.MaBoMon}>{bm.TenBoMon}</option>
-        ))}
-      </select>
+          {!selectedKhoaId && !selectedBoMonId && !selectedMonHocId ? (
+            <span className="lhp-breadcrumb-item">Tất cả lớp học phần</span>
+          ) : (
+            <>
+              {selectedKhoaId && (
+                <>
+                  <span style={{ color: '#cbd5e1' }}>/</span>
+                  <span className="lhp-breadcrumb-item">
+                    <School size={13} style={{ display: 'inline', marginRight: '4px', verticalAlign: '-1px', color: '#8b5cf6' }} />
+                    {selectedKhoaId === '__NULL__' ? 'Chưa phân Khoa' : (currentKhoaObj?.TenKhoa || selectedKhoaId)}
+                  </span>
+                </>
+              )}
+              {selectedBoMonId && (
+                <>
+                  <span style={{ color: '#cbd5e1' }}>/</span>
+                  <span className="lhp-breadcrumb-item">
+                    <Network size={13} style={{ display: 'inline', marginRight: '4px', verticalAlign: '-1px', color: '#0ea5e9' }} />
+                    {selectedBoMonId === '__NULL__' ? 'Chưa phân bộ môn' : (currentBoMonObj?.TenBoMon || selectedBoMonId)}
+                  </span>
+                </>
+              )}
+              {selectedMonHocId && (
+                <>
+                  <span style={{ color: '#cbd5e1' }}>/</span>
+                  <span className="lhp-breadcrumb-item" style={{ color: '#2563eb' }}>
+                    <BookOpen size={13} style={{ display: 'inline', marginRight: '4px', verticalAlign: '-1px' }} />
+                    {currentMonHocObj?.TenMonHoc || selectedMonHocId}
+                  </span>
+                </>
+              )}
+            </>
+          )}
 
-      {/* Môn học */}
-      <select className="lhp-filter-select" style={{ minWidth: '160px' }} value={filterMonHoc} onChange={e => setFilterMonHoc(e.target.value)}>
-        <option value="">— Tất cả Môn học —</option>
-        {monHocList.map(mh => (
-          <option key={mh.MaMonHoc} value={mh.MaMonHoc}>{mh.TenMonHoc}</option>
-        ))}
-      </select>
+          <span style={{ color: '#94a3b8', fontSize: '0.8rem', marginLeft: '6px' }}>
+            ({totalCount} lớp HP)
+          </span>
+        </div>
 
-      {/* Kiểu học */}
-      <select className="lhp-filter-select" style={{ minWidth: '130px' }} value={filterLoaiHoc} onChange={e => setFilterLoaiHoc(e.target.value)}>
-        <option value="">— Kiểu học —</option>
-        <option value="LT">LT — Lý thuyết</option>
-        <option value="BT">BT — Bài tập</option>
-        <option value="TH">TH — Thực hành</option>
-        <option value="BTL">BTL — Bài tập lớn</option>
-      </select>
-
-      {/* Search */}
-      <div className="search-box" style={{ flex: 1, minWidth: '180px' }}>
-        <Search size={18} className="search-icon" />
-        <input
-          type="text"
-          placeholder="Tìm mã LHP, tên môn..."
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-        />
-        {searchQuery && (
-          <button className="clear-search-btn" onClick={() => setSearchQuery('')}><X size={14} /></button>
+        {hasFilter && (
+          <button
+            type="button"
+            className="lhp-breadcrumb-clear"
+            onClick={onClearSelection}
+            title="Xóa bộ lọc và hiển thị toàn bộ"
+          >
+            <X size={12} style={{ display: 'inline', marginRight: '3px', verticalAlign: '-1px' }} />
+            Xóa bộ lọc
+          </button>
         )}
       </div>
 
-      <button className="btn-refresh" title="Tải lại" onClick={onRefresh}>
-        <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-      </button>
+      {/* 2. Filter Controls Bar */}
+      <div className="lhp-filter-bar" style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+        {/* Lọc Kiểu học */}
+        <select
+          className="lhp-filter-select"
+          style={{ minWidth: '150px' }}
+          value={filterLoaiHoc}
+          onChange={(e) => setFilterLoaiHoc(e.target.value)}
+        >
+          <option value="">— Tất cả kiểu học —</option>
+          <option value="LT">LT — Lý thuyết</option>
+          <option value="BT">BT — Bài tập</option>
+          <option value="TH">TH — Thực hành</option>
+          <option value="BTL">BTL — Bài tập lớn</option>
+        </select>
+
+        {/* Search Input */}
+        <div className="search-box" style={{ flex: 1, minWidth: '220px' }}>
+          <Search size={16} className="search-icon" />
+          <input
+            type="text"
+            placeholder="Tìm theo mã LHP, tên lớp HP, tên môn..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              className="clear-search-btn"
+              onClick={() => setSearchQuery('')}
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        {/* Refresh Button */}
+        <button
+          type="button"
+          className="btn-refresh"
+          title="Tải lại danh sách"
+          onClick={onRefresh}
+        >
+          <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+        </button>
+      </div>
     </div>
   );
 }
