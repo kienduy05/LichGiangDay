@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../../../../context/AuthContext';
 import {
   Users, UserCheck, Link, Network, Plus, AlertCircle,
@@ -23,7 +23,13 @@ import './GiangVienManagement.css';
 import './GiangVienComponents.css';
 
 export default function GiangVienManagement() {
-  const { hasPermission } = useAuth();
+  const { user, hasPermission } = useAuth();
+
+  // ─── Phân quyền dữ liệu Bộ môn động theo tài khoản đăng nhập ───
+  const isBoMonRole = user?.role === 'BOMON';
+  const scopedBoMonId = useMemo(() => {
+    return isBoMonRole ? (user?.username || '') : '';
+  }, [isBoMonRole, user?.username]);
 
   // ─── View mode: 'list' | 'detail' ───
   const [view, setView] = useState('list');
@@ -45,7 +51,7 @@ export default function GiangVienManagement() {
 
   // ─── Bộ lọc & Tree selection ───
   const [selectedKhoaId, setSelectedKhoaId] = useState('');
-  const [selectedBoMonId, setSelectedBoMonId] = useState('');
+  const [selectedBoMonId, setSelectedBoMonId] = useState(scopedBoMonId);
   const [selectedGvId, setSelectedGvId] = useState('');
   const [filterTrangThai, setFilterTrangThai] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -58,7 +64,7 @@ export default function GiangVienManagement() {
     hoTen: '',
     email: '',
     soDienThoai: '',
-    maBoMon: ''
+    maBoMon: scopedBoMonId || ''
   });
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState('');
@@ -75,6 +81,13 @@ export default function GiangVienManagement() {
   const [warnToggle, setWarnToggle] = useState(null);
   const [toggleLoading, setToggleLoading] = useState(false);
 
+  // Cập nhật selectedBoMonId khi user thay đổi
+  useEffect(() => {
+    if (isBoMonRole && scopedBoMonId) {
+      setSelectedBoMonId(scopedBoMonId);
+    }
+  }, [isBoMonRole, scopedBoMonId]);
+
   // ─────────────────────────────────────────────────────────────
   // 1. TẢI DANH MỤC BAN ĐẦU (Khoa, Bộ môn, Toàn bộ GV cho tree)
   // ─────────────────────────────────────────────────────────────
@@ -83,11 +96,17 @@ export default function GiangVienManagement() {
       const [khoas, boMons, allGvs] = await Promise.all([
         apiGetKhoaList().catch(() => []),
         apiGetBoMonList().catch(() => []),
-        apiGetGiangVienList().catch(() => [])
+        apiGetGiangVienList(isBoMonRole && scopedBoMonId ? { maBoMon: scopedBoMonId } : {}).catch(() => [])
       ]);
       setKhoaList(khoas || []);
       setBoMonList(boMons || []);
-      setAllGvList(allGvs || []);
+      
+      // Nếu là role BOMON, chỉ lấy danh sách GV của bộ môn đó
+      let filteredAllGvs = allGvs || [];
+      if (isBoMonRole && scopedBoMonId) {
+        filteredAllGvs = filteredAllGvs.filter(gv => gv.MaBoMon === scopedBoMonId);
+      }
+      setAllGvList(filteredAllGvs);
     } catch (err) {
       console.error('Lỗi khi tải dữ liệu ban đầu:', err);
     }
@@ -95,7 +114,18 @@ export default function GiangVienManagement() {
 
   useEffect(() => {
     fetchMetadata();
-  }, []);
+  }, [isBoMonRole, scopedBoMonId]);
+
+  // ─── Tìm tên đầy đủ của Bộ môn đang thao tác ───
+  const departmentFullName = useMemo(() => {
+    if (!isBoMonRole || !scopedBoMonId) return '';
+    const foundInBm = boMonList.find(b => b.MaBoMon === scopedBoMonId);
+    if (foundInBm?.TenBoMon) return foundInBm.TenBoMon;
+    const foundInGv = allGvList.find(g => g.MaBoMon === scopedBoMonId);
+    if (foundInGv?.TenBoMon) return foundInGv.TenBoMon;
+    if (user?.fullName && !user.fullName.toLowerCase().includes('admin')) return user.fullName;
+    return scopedBoMonId;
+  }, [isBoMonRole, scopedBoMonId, boMonList, allGvList, user?.fullName]);
 
   // ─────────────────────────────────────────────────────────────
   // 2. FETCH DANH SÁCH GIẢNG VIÊN THEO FILTER
@@ -104,9 +134,10 @@ export default function GiangVienManagement() {
     setGvLoading(true);
     setGvError('');
     try {
+      const effectiveBoMon = isBoMonRole && scopedBoMonId ? scopedBoMonId : selectedBoMonId;
       const data = await apiGetGiangVienList({
         maKhoa: selectedKhoaId,
-        maBoMon: selectedBoMonId,
+        maBoMon: effectiveBoMon,
         trangThai: filterTrangThai,
         search: searchQuery
       });
@@ -123,7 +154,7 @@ export default function GiangVienManagement() {
     } finally {
       setGvLoading(false);
     }
-  }, [selectedKhoaId, selectedBoMonId, selectedGvId, filterTrangThai, searchQuery]);
+  }, [selectedKhoaId, selectedBoMonId, selectedGvId, filterTrangThai, searchQuery, isBoMonRole, scopedBoMonId]);
 
   // Debounce gọi API khi filter thay đổi
   useEffect(() => {
@@ -144,7 +175,7 @@ export default function GiangVienManagement() {
   // ─────────────────────────────────────────────────────────────
   const handleSelectKhoa = (maKhoa) => {
     setSelectedKhoaId(maKhoa);
-    setSelectedBoMonId('');
+    setSelectedBoMonId(isBoMonRole ? scopedBoMonId : '');
     setSelectedGvId('');
     setView('list');
   };
@@ -162,7 +193,7 @@ export default function GiangVienManagement() {
 
   const handleClearAllFilters = () => {
     setSelectedKhoaId('');
-    setSelectedBoMonId('');
+    setSelectedBoMonId(isBoMonRole ? scopedBoMonId : '');
     setSelectedGvId('');
     setFilterTrangThai('');
     setSearchQuery('');
@@ -202,12 +233,16 @@ export default function GiangVienManagement() {
   // ─────────────────────────────────────────────────────────────
   const handleOpenCreate = () => {
     setModalMode('create');
+    const defaultBm = isBoMonRole && scopedBoMonId
+      ? scopedBoMonId
+      : (selectedBoMonId && selectedBoMonId !== '__NULL__' ? selectedBoMonId : '');
+
     setFormData({
       maGiangVien: '',
       hoTen: '',
       email: '',
       soDienThoai: '',
-      maBoMon: selectedBoMonId && selectedBoMonId !== '__NULL__' ? selectedBoMonId : ''
+      maBoMon: defaultBm
     });
     setFormError('');
     setFormSuccess('');
@@ -222,7 +257,7 @@ export default function GiangVienManagement() {
       hoTen: item.HoTen,
       email: item.Email || '',
       soDienThoai: item.SoDienThoai || '',
-      maBoMon: item.MaBoMon || ''
+      maBoMon: isBoMonRole && scopedBoMonId ? scopedBoMonId : (item.MaBoMon || '')
     });
     setFormError('');
     setFormSuccess('');
@@ -245,17 +280,22 @@ export default function GiangVienManagement() {
       return;
     }
 
+    const payload = {
+      ...formData,
+      maBoMon: isBoMonRole && scopedBoMonId ? scopedBoMonId : formData.maBoMon
+    };
+
     setFormLoading(true);
     try {
       if (modalMode === 'create') {
-        await apiCreateGiangVien(formData);
+        await apiCreateGiangVien(payload);
         setFormSuccess('Thêm giảng viên mới thành công!');
       } else {
         const result = await apiUpdateGiangVien(formData.maGiangVien, {
           hoTen: formData.hoTen,
           email: formData.email,
           soDienThoai: formData.soDienThoai,
-          maBoMon: formData.maBoMon
+          maBoMon: payload.maBoMon
         });
         setFormSuccess('Cập nhật giảng viên thành công!');
         if (result?.warnLanhDao) {
@@ -357,7 +397,9 @@ export default function GiangVienManagement() {
         <div>
           <h2 className="page-title">Quản Lý Giảng Viên</h2>
           <p className="page-subtitle">
-            Hồ sơ đội ngũ giảng viên, cơ cấu phân cấp Khoa - Bộ môn và phân công chuyên môn
+            {isBoMonRole
+              ? `Hồ sơ đội ngũ giảng viên trực thuộc Bộ môn ${departmentFullName}`
+              : 'Hồ sơ đội ngũ giảng viên, cơ cấu phân cấp Khoa - Bộ môn và phân công chuyên môn'}
           </p>
         </div>
         {hasPermission('GiangVien', 'CanCreate') && (
@@ -376,7 +418,9 @@ export default function GiangVienManagement() {
           </div>
           <div>
             <div className="admin-stat-number">{allGvList.length}</div>
-            <div className="admin-stat-text">Tổng số giảng viên</div>
+            <div className="admin-stat-text">
+              {isBoMonRole ? `Giảng viên bộ môn ${departmentFullName}` : 'Tổng số giảng viên'}
+            </div>
           </div>
         </div>
 
@@ -400,15 +444,17 @@ export default function GiangVienManagement() {
           </div>
         </div>
 
-        <div className="admin-stat-item">
-          <div className="admin-stat-icon-bg" style={{ background: '#fff7ed', color: '#ea580c' }}>
-            <Network size={24} />
+        {!isBoMonRole && (
+          <div className="admin-stat-item">
+            <div className="admin-stat-icon-bg" style={{ background: '#fff7ed', color: '#ea580c' }}>
+              <Network size={24} />
+            </div>
+            <div>
+              <div className="admin-stat-number">{totalNoBoMon}</div>
+              <div className="admin-stat-text">Chưa phân bộ môn</div>
+            </div>
           </div>
-          <div>
-            <div className="admin-stat-number">{totalNoBoMon}</div>
-            <div className="admin-stat-text">Chưa phân bộ môn</div>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Main 2-Column Split Layout: TreeView (Left) + Content (Right) */}
@@ -426,6 +472,9 @@ export default function GiangVienManagement() {
           onSelectGv={handleSelectGv}
           filterTrangThai={filterTrangThai}
           setFilterTrangThai={setFilterTrangThai}
+          isBoMonRole={isBoMonRole}
+          scopedBoMonId={scopedBoMonId}
+          departmentFullName={departmentFullName}
         />
 
         {/* 2. RIGHT PANEL: Content Area (Filter Bar + Table / Detail View) */}
@@ -459,6 +508,9 @@ export default function GiangVienManagement() {
                 totalCount={gvList.length}
                 selectedGvInfo={selectedGvInfo}
                 onClearSelection={handleClearAllFilters}
+                isBoMonRole={isBoMonRole}
+                scopedBoMonId={scopedBoMonId}
+                departmentFullName={departmentFullName}
               />
 
               {/* Data Table */}
@@ -498,57 +550,76 @@ export default function GiangVienManagement() {
         error={formError}
         success={formSuccess}
         warning={formWarn}
+        isBoMonRole={isBoMonRole}
+        scopedBoMonId={scopedBoMonId}
       />
 
-      {/* ══════════ MODAL: Xóa Giảng Viên ══════════ */}
+      {/* ══════════ MODAL: Xác nhận Xóa Giảng Viên ══════════ */}
       {isDeleteModalOpen && deletingGV && (
         <div className="modal-overlay" style={{ zIndex: 1000 }}>
-          <div className="modal-card modal-delete-card">
-            <div className="delete-icon-wrapper">
-              <ShieldAlert size={32} />
+          <div className="modal-card" style={{ maxWidth: '480px' }}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '8px',
+                  background: '#fef2f2',
+                  color: '#ef4444',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <ShieldAlert size={18} />
+                </div>
+                <h3 className="modal-title" style={{ margin: 0 }}>Xác Nhận Xóa Giảng Viên</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setIsDeleteModalOpen(false); setDeletingGV(null); }}
+                className="modal-close-btn"
+              >
+                ×
+              </button>
             </div>
-            <h3 className="delete-modal-title">Xác Nhận Xóa Giảng Viên</h3>
-            <p className="delete-modal-desc">
-              Bạn có chắc muốn xóa giảng viên{' '}
-              <b style={{ color: 'var(--admin-text-main)' }}>
-                {deletingGV.HoTen} ({deletingGV.MaGiangVien})
-              </b>{' '}
-              không?
-            </p>
-            <div className="alert-banner warning" style={{ textAlign: 'left', marginBottom: '16px', fontSize: '0.83rem' }}>
-              <AlertCircle size={16} />
-              <span>
-                Hệ thống sẽ kiểm tra toàn bộ dữ liệu liên kết trước khi xóa. Nếu giảng viên đã từng có lớp học phần,
-                buổi học hoặc yêu cầu nghỉ, hệ thống sẽ từ chối xóa nhằm bảo toàn tính toàn vẹn dữ liệu. Hãy sử dụng tùy chọn "Tạm dừng" thay thế.
-              </span>
-            </div>
+
             {deleteError && (
-              <div className="alert-banner error" style={{ textAlign: 'left', marginBottom: '16px' }}>
+              <div className="alert-banner error" style={{ margin: '12px 0' }}>
                 <AlertCircle size={18} />
                 <span>{deleteError}</span>
               </div>
             )}
-            <div className="modal-footer" style={{ justifyContent: 'center' }}>
+
+            <div style={{ padding: '16px 0', fontSize: '0.9rem', color: '#334155', lineHeight: '1.6' }}>
+              Bạn có chắc chắn muốn xóa giảng viên{' '}
+              <strong style={{ color: '#0f172a' }}>{deletingGV.HoTen}</strong> (Mã:{' '}
+              <span className="gv-code-badge">{deletingGV.MaGiangVien}</span>)?
+              <div style={{ marginTop: '10px', padding: '10px 12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.82rem', color: '#64748b' }}>
+                ⚠️ Hệ thống sẽ kiểm tra toàn diện 7 bảng liên quan (Trưởng khoa, Trưởng bộ môn, Lớp học phần, Buổi học, Yêu cầu nghỉ, Dạy thay, Dạy bù) trước khi xóa.
+              </div>
+            </div>
+
+            <div className="modal-footer">
               <button
                 type="button"
-                onClick={() => setIsDeleteModalOpen(false)}
                 className="btn-cancel"
+                onClick={() => { setIsDeleteModalOpen(false); setDeletingGV(null); }}
                 disabled={deleteLoading}
               >
-                Hủy Bỏ
+                Hủy
               </button>
               <button
                 type="button"
+                className="btn-delete-confirm"
                 onClick={handleConfirmDelete}
-                className="btn-delete"
                 disabled={deleteLoading}
               >
                 {deleteLoading ? (
                   <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Loader2 size={16} className="animate-spin" /> Đang xóa...
+                    <Loader2 size={16} className="animate-spin" /> Đang kiểm tra & xóa...
                   </span>
                 ) : (
-                  'Xác Nhận Xóa'
+                  'Xóa Giảng Viên'
                 )}
               </button>
             </div>
@@ -556,19 +627,39 @@ export default function GiangVienManagement() {
         </div>
       )}
 
-      {/* ══════════ MODAL: Cảnh báo Toggle Trạng thái ══════════ */}
+      {/* ══════════ MODAL: Cảnh báo khi Toggle Trạng thái ══════════ */}
       {warnToggle && (
-        <div className="gv-warn-overlay" style={{ zIndex: 1000 }}>
-          <div className="gv-warn-card">
-            <div className="gv-warn-icon">
-              <AlertCircle size={26} />
+        <div className="modal-overlay" style={{ zIndex: 1000 }}>
+          <div className="modal-card" style={{ maxWidth: '460px' }}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '8px',
+                  background: '#fffbeb',
+                  color: '#f59e0b',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <AlertCircle size={18} />
+                </div>
+                <h3 className="modal-title" style={{ margin: 0 }}>Cảnh Báo Hoạt Động</h3>
+              </div>
+              <button type="button" onClick={() => setWarnToggle(null)} className="modal-close-btn">
+                ×
+              </button>
             </div>
-            <h3 className="gv-warn-title">Thông báo trạng thái công tác</h3>
-            <p className="gv-warn-desc">{warnToggle.message}</p>
-            <div className="modal-footer" style={{ justifyContent: 'center' }}>
+
+            <div style={{ padding: '16px 0', fontSize: '0.9rem', color: '#334155', lineHeight: '1.5' }}>
+              {warnToggle.message}
+            </div>
+
+            <div className="modal-footer">
               <button
                 type="button"
-                className="btn-save"
+                className="btn-cancel"
                 onClick={() => setWarnToggle(null)}
               >
                 Đã hiểu

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Users, School, Network, ChevronDown, ChevronRight,
   Search, X, UserCheck, ChevronsDownUp, ChevronsUpDown
@@ -16,11 +16,31 @@ export default function GiangVienTreeView({
   onSelectBoMon,
   onSelectGv,
   filterTrangThai = '',
-  setFilterTrangThai
+  setFilterTrangThai,
+  isBoMonRole = false,
+  scopedBoMonId = '',
+  departmentFullName = ''
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedKhoas, setExpandedKhoas] = useState({});
   const [expandedBoMons, setExpandedBoMons] = useState({});
+
+  // Nếu là role BOMON: tự động mở rộng Khoa & Bộ môn của tài khoản
+  useEffect(() => {
+    if (isBoMonRole && scopedBoMonId) {
+      setExpandedBoMons(prev => ({ ...prev, [scopedBoMonId]: true }));
+      const foundBm = boMonList.find(b => b.MaBoMon === scopedBoMonId);
+      if (foundBm?.MaKhoa) {
+        setExpandedKhoas(prev => ({ ...prev, [foundBm.MaKhoa]: true }));
+      } else {
+        // Tìm qua giangVienList nếu có
+        const foundGv = giangVienList.find(g => g.MaBoMon === scopedBoMonId);
+        if (foundGv?.MaKhoa) {
+          setExpandedKhoas(prev => ({ ...prev, [foundGv.MaKhoa]: true }));
+        }
+      }
+    }
+  }, [isBoMonRole, scopedBoMonId, boMonList, giangVienList]);
 
   // Toggle node expand/collapse
   const toggleKhoa = (maKhoa, e) => {
@@ -52,8 +72,75 @@ export default function GiangVienTreeView({
   const treeData = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
 
+    // 1. Phân quyền dữ liệu Bộ môn: nếu là role BOMON, chỉ lấy dữ liệu của scopedBoMonId
+    let effectiveBoMonList = boMonList;
+    let effectiveKhoaList = khoaList;
+
+    // Tự tổng hợp danh mục từ giangVienList nếu boMonList hoặc khoaList chưa kịp tải
+    if (effectiveBoMonList.length === 0 && giangVienList.length > 0) {
+      const bmMap = new Map();
+      giangVienList.forEach(g => {
+        if (g.MaBoMon && !bmMap.has(g.MaBoMon)) {
+          bmMap.set(g.MaBoMon, {
+            MaBoMon: g.MaBoMon,
+            TenBoMon: g.TenBoMon || g.MaBoMon,
+            MaKhoa: g.MaKhoa || 'CNTT'
+          });
+        }
+      });
+      effectiveBoMonList = Array.from(bmMap.values());
+    }
+
+    if (effectiveKhoaList.length === 0 && giangVienList.length > 0) {
+      const kMap = new Map();
+      giangVienList.forEach(g => {
+        if (g.MaKhoa && !kMap.has(g.MaKhoa)) {
+          kMap.set(g.MaKhoa, {
+            MaKhoa: g.MaKhoa,
+            TenKhoa: g.TenKhoa || g.MaKhoa
+          });
+        }
+      });
+      effectiveKhoaList = Array.from(kMap.values());
+    }
+
+    // Nếu vẫn chưa có và là BOMON, tự tạo node từ scopedBoMonId và departmentFullName
+    if (isBoMonRole && scopedBoMonId && effectiveBoMonList.length === 0) {
+      effectiveBoMonList = [{
+        MaBoMon: scopedBoMonId,
+        TenBoMon: departmentFullName || scopedBoMonId,
+        MaKhoa: 'CNTT'
+      }];
+      if (effectiveKhoaList.length === 0) {
+        effectiveKhoaList = [{
+          MaKhoa: 'CNTT',
+          TenKhoa: 'Khoa Công nghệ thông tin'
+        }];
+      }
+    }
+
+    if (isBoMonRole && scopedBoMonId) {
+      effectiveBoMonList = effectiveBoMonList.filter(bm => bm.MaBoMon === scopedBoMonId);
+      const targetKhoaIds = new Set(effectiveBoMonList.map(bm => bm.MaKhoa));
+      effectiveKhoaList = effectiveKhoaList.filter(k => targetKhoaIds.has(k.MaKhoa));
+      // Nếu khoa chưa có trong effectiveKhoaList, tìm từ giangVienList
+      if (effectiveKhoaList.length === 0 && giangVienList.length > 0) {
+        const firstGv = giangVienList.find(g => g.MaBoMon === scopedBoMonId);
+        if (firstGv?.MaKhoa) {
+          effectiveKhoaList = [{
+            MaKhoa: firstGv.MaKhoa,
+            TenKhoa: firstGv.TenKhoa || firstGv.MaKhoa
+          }];
+        }
+      }
+    }
+
     // Lọc GV theo trạng thái nếu có
     let filteredGVs = giangVienList;
+    if (isBoMonRole && scopedBoMonId) {
+      filteredGVs = filteredGVs.filter(gv => gv.MaBoMon === scopedBoMonId);
+    }
+
     if (filterTrangThai === 'Active') {
       filteredGVs = filteredGVs.filter(gv => gv.TrangThai === 'Active');
     } else if (filterTrangThai === 'Inactive') {
@@ -74,8 +161,8 @@ export default function GiangVienTreeView({
     // Tổ chức cây
     const result = [];
 
-    for (const k of khoaList) {
-      const boMonsOfKhoa = boMonList.filter(bm => bm.MaKhoa === k.MaKhoa);
+    for (const k of effectiveKhoaList) {
+      const boMonsOfKhoa = effectiveBoMonList.filter(bm => bm.MaKhoa === k.MaKhoa || (isBoMonRole && bm.MaBoMon === scopedBoMonId));
       const boMonNodes = [];
 
       let khoaCount = 0;
@@ -89,7 +176,7 @@ export default function GiangVienTreeView({
         if (!term || gvsOfBm.length > 0 || bmMatchesSearch) {
           boMonNodes.push({
             MaBoMon: bm.MaBoMon,
-            TenBoMon: bm.TenBoMon,
+            TenBoMon: bm.TenBoMon || (bm.MaBoMon === scopedBoMonId ? departmentFullName : bm.MaBoMon),
             MaKhoa: k.MaKhoa,
             totalCount: gvsOfBm.length,
             giangViens: gvsOfBm
@@ -108,32 +195,34 @@ export default function GiangVienTreeView({
       }
     }
 
-    // Nhóm Giảng viên chưa phân bộ môn (nếu có)
-    const unassignedGVs = filteredGVs.filter(gv => !gv.MaBoMon);
-    if (unassignedGVs.length > 0) {
-      result.push({
-        MaKhoa: '__NULL__',
-        TenKhoa: 'Chưa phân Khoa / Bộ môn',
-        totalCount: unassignedGVs.length,
-        boMons: [
-          {
-            MaBoMon: '__NULL__',
-            TenBoMon: 'Chưa phân bộ môn',
-            MaKhoa: '__NULL__',
-            totalCount: unassignedGVs.length,
-            giangViens: unassignedGVs
-          }
-        ]
-      });
+    // Nhóm Giảng viên chưa phân bộ môn (Chỉ hiển thị cho ADMIN)
+    if (!isBoMonRole) {
+      const unassignedGVs = filteredGVs.filter(gv => !gv.MaBoMon);
+      if (unassignedGVs.length > 0) {
+        result.push({
+          MaKhoa: '__NULL__',
+          TenKhoa: 'Chưa phân Khoa / Bộ môn',
+          totalCount: unassignedGVs.length,
+          boMons: [
+            {
+              MaBoMon: '__NULL__',
+              TenBoMon: 'Chưa phân bộ môn',
+              MaKhoa: '__NULL__',
+              totalCount: unassignedGVs.length,
+              giangViens: unassignedGVs
+            }
+          ]
+        });
+      }
     }
 
     return {
       tree: result,
       totalGVs: filteredGVs.length
     };
-  }, [khoaList, boMonList, giangVienList, filterTrangThai, searchTerm]);
+  }, [khoaList, boMonList, giangVienList, filterTrangThai, searchTerm, isBoMonRole, scopedBoMonId, departmentFullName]);
 
-  const isAllSelected = !selectedKhoaId && !selectedBoMonId && !selectedGvId;
+  const isAllSelected = !selectedKhoaId && (!selectedBoMonId || (isBoMonRole && selectedBoMonId === scopedBoMonId && !selectedGvId)) && !selectedGvId;
 
   return (
     <aside className="gv-treeview-sidebar">
@@ -169,7 +258,7 @@ export default function GiangVienTreeView({
           <Search size={14} className="gv-tree-search-icon" />
           <input
             type="text"
-            placeholder="Lọc khoa, bộ môn, GV..."
+            placeholder={isBoMonRole ? "Tìm giảng viên bộ môn..." : "Lọc khoa, bộ môn, GV..."}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -218,21 +307,23 @@ export default function GiangVienTreeView({
           className={`gv-tree-node ${isAllSelected ? 'active' : ''}`}
           onClick={() => {
             onSelectKhoa('');
-            onSelectBoMon('');
+            onSelectBoMon(isBoMonRole ? scopedBoMonId : '');
             onSelectGv('');
           }}
         >
           <div className="gv-tree-node-label">
             <UserCheck size={16} className="gv-tree-node-icon root" />
-            <span className="gv-tree-node-text font-semibold">Tất cả giảng viên</span>
+            <span className="gv-tree-node-text font-semibold">
+              Tất cả giảng viên
+            </span>
           </div>
           <span className="gv-tree-node-badge">{treeData.totalGVs}</span>
         </div>
 
         {/* Level 1: Khoa Nodes */}
         {treeData.tree.map(khoa => {
-          const isKhoaExpanded = !!expandedKhoas[khoa.MaKhoa] || searchTerm.trim() !== '';
-          const isKhoaSelected = selectedKhoaId === khoa.MaKhoa && !selectedBoMonId && !selectedGvId;
+          const isKhoaExpanded = !!expandedKhoas[khoa.MaKhoa] || searchTerm.trim() !== '' || isBoMonRole;
+          const isKhoaSelected = selectedKhoaId === khoa.MaKhoa && (!selectedBoMonId || (isBoMonRole && selectedBoMonId === scopedBoMonId)) && !selectedGvId;
 
           return (
             <div key={khoa.MaKhoa} className="gv-tree-group-khoa">
@@ -241,7 +332,7 @@ export default function GiangVienTreeView({
                 className={`gv-tree-node level-1 ${isKhoaSelected ? 'active' : ''}`}
                 onClick={() => {
                   onSelectKhoa(khoa.MaKhoa);
-                  onSelectBoMon('');
+                  onSelectBoMon(isBoMonRole ? scopedBoMonId : '');
                   onSelectGv('');
                 }}
               >
@@ -263,7 +354,7 @@ export default function GiangVienTreeView({
 
               {/* Level 2: BoMon Nodes */}
               {isKhoaExpanded && khoa.boMons.map(bm => {
-                const isBmExpanded = !!expandedBoMons[bm.MaBoMon] || searchTerm.trim() !== '';
+                const isBmExpanded = !!expandedBoMons[bm.MaBoMon] || searchTerm.trim() !== '' || isBoMonRole;
                 const isBmSelected = selectedBoMonId === bm.MaBoMon && !selectedGvId;
 
                 return (

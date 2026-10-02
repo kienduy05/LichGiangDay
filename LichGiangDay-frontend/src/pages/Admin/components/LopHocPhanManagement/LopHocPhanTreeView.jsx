@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   BookMarked, School, Network, BookOpen, ChevronDown, ChevronRight,
   Search, X, ChevronsDownUp, ChevronsUpDown
@@ -15,11 +15,25 @@ export default function LopHocPhanTreeView({
   selectedMonHocId = '',
   onSelectKhoa,
   onSelectBoMon,
-  onSelectMonHoc
+  onSelectMonHoc,
+  isBoMonRole = false,
+  scopedBoMonId = '',
+  departmentFullName = ''
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedKhoas, setExpandedKhoas] = useState({});
   const [expandedBoMons, setExpandedBoMons] = useState({});
+
+  // Nếu là role BOMON: tự động mở rộng Khoa & Bộ môn của tài khoản
+  useEffect(() => {
+    if (isBoMonRole && scopedBoMonId) {
+      setExpandedBoMons(prev => ({ ...prev, [scopedBoMonId]: true }));
+      const foundBm = boMonList.find(b => b.MaBoMon === scopedBoMonId);
+      if (foundBm?.MaKhoa) {
+        setExpandedKhoas(prev => ({ ...prev, [foundBm.MaKhoa]: true }));
+      }
+    }
+  }, [isBoMonRole, scopedBoMonId, boMonList]);
 
   const toggleKhoa = (maKhoa, e) => {
     e?.stopPropagation();
@@ -45,22 +59,37 @@ export default function LopHocPhanTreeView({
     setExpandedBoMons({});
   };
 
-  // Build hierarchical data structure: Khoa -> BoMon -> MonHoc (with LHP counts in current semester)
+  // Build hierarchical data structure: CHỈ HIỆN MÔN NÀO CÓ LỚP HỌC PHẦN TRONG HỌC KỲ
   const treeData = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
 
-    // Map số lượng LHP theo MaMonHoc trong học kỳ hiện tại
+    // 1. Map số lượng LHP theo MaMonHoc trong học kỳ hiện tại
     const countByMonHoc = {};
-    lhpList.forEach(lhp => {
+    let filteredLhpList = lhpList;
+
+    if (isBoMonRole && scopedBoMonId) {
+      filteredLhpList = filteredLhpList.filter(lhp => lhp.MaBoMon === scopedBoMonId);
+    }
+
+    filteredLhpList.forEach(lhp => {
       if (lhp.MaMonHoc) {
         countByMonHoc[lhp.MaMonHoc] = (countByMonHoc[lhp.MaMonHoc] || 0) + 1;
       }
     });
 
+    let effectiveBoMonList = boMonList;
+    let effectiveKhoaList = khoaList;
+
+    if (isBoMonRole && scopedBoMonId) {
+      effectiveBoMonList = effectiveBoMonList.filter(bm => bm.MaBoMon === scopedBoMonId);
+      const targetKhoaIds = new Set(effectiveBoMonList.map(bm => bm.MaKhoa));
+      effectiveKhoaList = effectiveKhoaList.filter(k => targetKhoaIds.has(k.MaKhoa));
+    }
+
     const result = [];
 
-    for (const k of khoaList) {
-      const boMonsOfKhoa = boMonList.filter(bm => bm.MaKhoa === k.MaKhoa);
+    for (const k of effectiveKhoaList) {
+      const boMonsOfKhoa = effectiveBoMonList.filter(bm => bm.MaKhoa === k.MaKhoa || (isBoMonRole && bm.MaBoMon === scopedBoMonId));
       const boMonNodes = [];
       let khoaLhpCount = 0;
 
@@ -71,14 +100,18 @@ export default function LopHocPhanTreeView({
 
         for (const mh of mhsOfBm) {
           const lhpCount = countByMonHoc[mh.MaMonHoc] || 0;
+          
+          // 🔥 CHỈ LẤY MÔN HỌC ĐANG CÓ LỚP HỌC PHẦN TRONG HỌC KỲ (lhpCount > 0)
+          if (lhpCount === 0) continue;
+
           boMonLhpCount += lhpCount;
 
-          const mhMatchesSearch = term && (
+          const mhMatchesSearch = !term || (
             mh.TenMonHoc?.toLowerCase().includes(term) ||
             mh.MaMonHoc?.toLowerCase().includes(term)
           );
 
-          if (!term || lhpCount > 0 || mhMatchesSearch) {
+          if (mhMatchesSearch) {
             monHocNodes.push({
               MaMonHoc: mh.MaMonHoc,
               TenMonHoc: mh.TenMonHoc,
@@ -91,11 +124,11 @@ export default function LopHocPhanTreeView({
 
         khoaLhpCount += boMonLhpCount;
 
-        const bmMatchesSearch = term && bm.TenBoMon?.toLowerCase().includes(term);
-        if (!term || boMonLhpCount > 0 || monHocNodes.length > 0 || bmMatchesSearch) {
+        // Chỉ hiển thị Bộ môn nếu có môn học mở lớp
+        if (monHocNodes.length > 0) {
           boMonNodes.push({
             MaBoMon: bm.MaBoMon,
-            TenBoMon: bm.TenBoMon,
+            TenBoMon: bm.TenBoMon || (bm.MaBoMon === scopedBoMonId ? departmentFullName : bm.MaBoMon),
             MaKhoa: k.MaKhoa,
             totalLhp: boMonLhpCount,
             monHocs: monHocNodes
@@ -103,8 +136,8 @@ export default function LopHocPhanTreeView({
         }
       }
 
-      const khoaMatchesSearch = term && k.TenKhoa?.toLowerCase().includes(term);
-      if (!term || khoaLhpCount > 0 || boMonNodes.length > 0 || khoaMatchesSearch) {
+      // Chỉ hiển thị Khoa nếu có bộ môn mở lớp
+      if (boMonNodes.length > 0) {
         result.push({
           MaKhoa: k.MaKhoa,
           TenKhoa: k.TenKhoa,
@@ -116,11 +149,11 @@ export default function LopHocPhanTreeView({
 
     return {
       tree: result,
-      totalLhps: lhpList.length
+      totalLhps: filteredLhpList.length
     };
-  }, [khoaList, boMonList, monHocList, lhpList, searchTerm]);
+  }, [khoaList, boMonList, monHocList, lhpList, searchTerm, isBoMonRole, scopedBoMonId, departmentFullName]);
 
-  const isAllSelected = !selectedKhoaId && !selectedBoMonId && !selectedMonHocId;
+  const isAllSelected = !selectedKhoaId && (!selectedBoMonId || (isBoMonRole && selectedBoMonId === scopedBoMonId && !selectedMonHocId)) && !selectedMonHocId;
 
   return (
     <aside className="lhp-treeview-sidebar">
@@ -129,7 +162,7 @@ export default function LopHocPhanTreeView({
         <div className="lhp-treeview-title-row">
           <div className="lhp-treeview-title">
             <BookMarked size={16} color="#3b82f6" />
-            <span>Phân Cấp Môn Học</span>
+            <span>Môn Học Mở Lớp</span>
           </div>
           <div className="lhp-tree-actions">
             <button
@@ -156,7 +189,7 @@ export default function LopHocPhanTreeView({
           <Search size={14} className="lhp-tree-search-icon" />
           <input
             type="text"
-            placeholder="Lọc khoa, bộ môn, môn học..."
+            placeholder={isBoMonRole ? "Lọc môn học của bộ môn..." : "Lọc môn học có lớp..."}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -179,7 +212,7 @@ export default function LopHocPhanTreeView({
           className={`lhp-tree-node ${isAllSelected ? 'active' : ''}`}
           onClick={() => {
             onSelectKhoa('');
-            onSelectBoMon('');
+            onSelectBoMon(isBoMonRole ? scopedBoMonId : '');
             onSelectMonHoc('');
           }}
         >
@@ -192,8 +225,8 @@ export default function LopHocPhanTreeView({
 
         {/* Level 1: Khoa Nodes */}
         {treeData.tree.map(khoa => {
-          const isKhoaExpanded = !!expandedKhoas[khoa.MaKhoa] || searchTerm.trim() !== '';
-          const isKhoaSelected = selectedKhoaId === khoa.MaKhoa && !selectedBoMonId && !selectedMonHocId;
+          const isKhoaExpanded = !!expandedKhoas[khoa.MaKhoa] || searchTerm.trim() !== '' || isBoMonRole;
+          const isKhoaSelected = selectedKhoaId === khoa.MaKhoa && (!selectedBoMonId || (isBoMonRole && selectedBoMonId === scopedBoMonId)) && !selectedMonHocId;
 
           return (
             <div key={khoa.MaKhoa} className="lhp-tree-group-khoa">
@@ -202,7 +235,7 @@ export default function LopHocPhanTreeView({
                 className={`lhp-tree-node level-1 ${isKhoaSelected ? 'active' : ''}`}
                 onClick={() => {
                   onSelectKhoa(khoa.MaKhoa);
-                  onSelectBoMon('');
+                  onSelectBoMon(isBoMonRole ? scopedBoMonId : '');
                   onSelectMonHoc('');
                 }}
               >
@@ -224,7 +257,7 @@ export default function LopHocPhanTreeView({
 
               {/* Level 2: BoMon Nodes */}
               {isKhoaExpanded && khoa.boMons.map(bm => {
-                const isBmExpanded = !!expandedBoMons[bm.MaBoMon] || searchTerm.trim() !== '';
+                const isBmExpanded = !!expandedBoMons[bm.MaBoMon] || searchTerm.trim() !== '' || isBoMonRole;
                 const isBmSelected = selectedBoMonId === bm.MaBoMon && !selectedMonHocId;
 
                 return (
@@ -276,7 +309,7 @@ export default function LopHocPhanTreeView({
                             <span className="lhp-tree-mh-name">{mh.TenMonHoc}</span>
                             <span className="lhp-tree-mh-code">{mh.MaMonHoc}</span>
                           </div>
-                          <span className={`lhp-tree-count-pill ${mh.totalLhp === 0 ? 'empty' : ''}`}>
+                          <span className="lhp-tree-count-pill">
                             {mh.totalLhp} LHP
                           </span>
                         </div>
@@ -291,7 +324,7 @@ export default function LopHocPhanTreeView({
 
         {treeData.tree.length === 0 && (
           <div className="tree-empty-text text-center" style={{ padding: '24px 10px', color: '#94a3b8', fontSize: '0.82rem' }}>
-            Không tìm thấy khoa / bộ môn / môn học nào khớp từ khóa.
+            Không có môn học nào mở lớp trong học kỳ này.
           </div>
         )}
       </div>

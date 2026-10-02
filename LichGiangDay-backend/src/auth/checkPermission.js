@@ -27,6 +27,15 @@ const checkPermission = (resourceId, action) => {
         return next();
       }
 
+      // Cho phép các vai trò đọc danh mục nền dùng chung phục vụ tra cứu giao diện / dropdown
+      const LOOKUP_RESOURCES = [
+        'HocKy', 'Khoa', 'BoMon', 'MonHoc', 'KhoaSinhVien',
+        'TietHoc', 'ToaNha', 'PhongHoc', 'LopSinhVien', 'GiangVien'
+      ];
+      if (action === 'CanRead' && LOOKUP_RESOURCES.includes(resourceId)) {
+        return next();
+      }
+
       // Truy vấn kiểm tra quyền trong CSDL
       const [rows] = await db.query(`
         SELECT CanRead, CanCreate, CanUpdate, CanDelete 

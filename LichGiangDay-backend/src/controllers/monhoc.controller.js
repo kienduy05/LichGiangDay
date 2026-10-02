@@ -3,9 +3,15 @@ const MonHocService = require('../services/monhoc.service');
 class MonHocController {
 
   // 1. Lấy danh sách Môn học (lọc: ?maKhoa=...&maBoMon=...&search=...)
+  // Nếu là role BOMON: tự động ép maBoMon theo username tài khoản đăng nhập
   getAll = async (req, res, next) => {
     try {
-      const { maKhoa, maBoMon, search } = req.query;
+      let { maKhoa, maBoMon, search } = req.query;
+
+      if (req.user?.role === 'BOMON') {
+        maBoMon = req.user.username; // Lấy động từ username tài khoản BOMON
+      }
+
       const list = await MonHocService.getAll({ maKhoa, maBoMon, search });
       return res.status(200).json({
         status: 'success',
@@ -34,6 +40,16 @@ class MonHocController {
           message: `Không tìm thấy môn học '${maMonHoc}'.`
         });
       }
+
+      // Phân quyền dữ liệu Bộ môn:
+      if (req.user?.role === 'BOMON' && monHoc.MaBoMon !== req.user.username) {
+        return res.status(403).json({
+          status: 'error',
+          code: 403,
+          message: `Từ chối truy cập: Môn học '${maMonHoc}' không thuộc bộ môn '${req.user.username}'.`
+        });
+      }
+
       return res.status(200).json({
         status: 'success',
         code: 200,
@@ -53,6 +69,24 @@ class MonHocController {
   getChiTiet = async (req, res, next) => {
     try {
       const { maMonHoc } = req.params;
+      const monHoc = await MonHocService.getById(maMonHoc);
+      if (!monHoc) {
+        return res.status(404).json({
+          status: 'error',
+          code: 404,
+          message: `Không tìm thấy môn học '${maMonHoc}'.`
+        });
+      }
+
+      // Phân quyền dữ liệu Bộ môn:
+      if (req.user?.role === 'BOMON' && monHoc.MaBoMon !== req.user.username) {
+        return res.status(403).json({
+          status: 'error',
+          code: 403,
+          message: `Từ chối truy cập: Môn học '${maMonHoc}' không thuộc bộ môn '${req.user.username}'.`
+        });
+      }
+
       const result = await MonHocService.getChiTiet(maMonHoc);
       return res.status(200).json({
         status: 'success',
@@ -73,7 +107,7 @@ class MonHocController {
   // 4. Tạo mới Môn học
   create = async (req, res, next) => {
     try {
-      const { maMonHoc, tenMonHoc, soTinChi, maBoMon, loaiMonHoc } = req.body;
+      let { maMonHoc, tenMonHoc, soTinChi, maBoMon, loaiMonHoc } = req.body;
 
       if (!maMonHoc || !maMonHoc.trim()) {
         return res.status(400).json({
@@ -87,6 +121,12 @@ class MonHocController {
           message: 'Tên môn học không được để trống.'
         });
       }
+
+      // Nếu là role BOMON: ép cố định maBoMon là username của tài khoản
+      if (req.user?.role === 'BOMON') {
+        maBoMon = req.user.username;
+      }
+
       if (!maBoMon || !maBoMon.trim()) {
         return res.status(400).json({
           status: 'error', code: 400,
@@ -114,7 +154,7 @@ class MonHocController {
   update = async (req, res, next) => {
     try {
       const { maMonHoc } = req.params;
-      const { tenMonHoc, soTinChi, maBoMon, loaiMonHoc } = req.body;
+      let { tenMonHoc, soTinChi, maBoMon, loaiMonHoc } = req.body;
 
       if (!tenMonHoc || !tenMonHoc.trim()) {
         return res.status(400).json({
@@ -122,6 +162,25 @@ class MonHocController {
           message: 'Tên môn học không được để trống.'
         });
       }
+
+      // Phân quyền dữ liệu Bộ môn:
+      if (req.user?.role === 'BOMON') {
+        const existing = await MonHocService.getById(maMonHoc);
+        if (!existing) {
+          return res.status(404).json({
+            status: 'error', code: 404,
+            message: `Không tìm thấy môn học '${maMonHoc}'.`
+          });
+        }
+        if (existing.MaBoMon !== req.user.username) {
+          return res.status(403).json({
+            status: 'error', code: 403,
+            message: `Từ chối truy cập: Bạn không có quyền chỉnh sửa môn học của bộ môn khác.`
+          });
+        }
+        maBoMon = req.user.username; // Cố định bộ môn
+      }
+
       if (!maBoMon || !maBoMon.trim()) {
         return res.status(400).json({
           status: 'error', code: 400,
@@ -150,6 +209,24 @@ class MonHocController {
   deleteMonHoc = async (req, res, next) => {
     try {
       const { maMonHoc } = req.params;
+
+      // Phân quyền dữ liệu Bộ môn:
+      if (req.user?.role === 'BOMON') {
+        const existing = await MonHocService.getById(maMonHoc);
+        if (!existing) {
+          return res.status(404).json({
+            status: 'error', code: 404,
+            message: `Không tìm thấy môn học '${maMonHoc}'.`
+          });
+        }
+        if (existing.MaBoMon !== req.user.username) {
+          return res.status(403).json({
+            status: 'error', code: 403,
+            message: `Từ chối truy cập: Bạn không có quyền xóa môn học của bộ môn khác.`
+          });
+        }
+      }
+
       const result = await MonHocService.delete(maMonHoc);
       return res.status(200).json({
         status: 'success',
