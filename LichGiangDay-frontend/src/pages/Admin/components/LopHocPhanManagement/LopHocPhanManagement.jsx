@@ -47,7 +47,11 @@ const EMPTY_FORM = {
 };
 
 export default function LopHocPhanManagement() {
-  const { hasPermission } = useAuth();
+  const { user, hasPermission } = useAuth();
+
+  // ─── Phân quyền dữ liệu theo vai trò Bộ môn (Role: BOMON) ───
+  const isBoMonRole = user?.role === 'BOMON';
+  const scopedBoMonId = isBoMonRole ? (user?.username || '') : '';
 
   // ─── View: 'list' | 'detail' ───
   const [view, setView] = useState('list');
@@ -60,6 +64,16 @@ export default function LopHocPhanManagement() {
   const [boMonList, setBoMonList] = useState([]);
   const [monHocList, setMonHocList] = useState([]);
   const [khoaSinhVienList, setKhoaSinhVienList] = useState([]);
+
+  // Tìm tên đầy đủ của Bộ môn đang đăng nhập
+  const departmentFullName = React.useMemo(() => {
+    if (!isBoMonRole || !scopedBoMonId) return '';
+    const found = boMonList.find(b => b.MaBoMon === scopedBoMonId);
+    if (found?.TenBoMon) return found.TenBoMon;
+    const foundInMh = monHocList.find(m => m.MaBoMon === scopedBoMonId);
+    if (foundInMh?.TenBoMon) return foundInMh.TenBoMon;
+    return user?.fullName || `Bộ môn ${scopedBoMonId}`;
+  }, [isBoMonRole, scopedBoMonId, boMonList, monHocList, user?.fullName]);
 
   // ─── Học kỳ đang chọn ───
   const [filterHocKy, setFilterHocKy] = useState('');
@@ -135,12 +149,15 @@ export default function LopHocPhanManagement() {
       return;
     }
     try {
-      const data = await apiGetLopHocPhanList({ maHocKy: filterHocKy });
+      const data = await apiGetLopHocPhanList({
+        maHocKy: filterHocKy,
+        maBoMon: isBoMonRole ? scopedBoMonId : ''
+      });
       setAllLhpList(data || []);
     } catch {
       setAllLhpList([]);
     }
-  }, [filterHocKy]);
+  }, [filterHocKy, isBoMonRole, scopedBoMonId]);
 
   useEffect(() => {
     fetchAllLhpForSemester();
@@ -242,10 +259,12 @@ export default function LopHocPhanManagement() {
     const nkt = selectedHk?.NgayKetThuc ? String(selectedHk.NgayKetThuc).split('T')[0] : '';
     const st = nbd && nkt ? Math.ceil((new Date(nkt) - new Date(nbd)) / (7 * 24 * 60 * 60 * 1000)) : '';
 
+    const defaultBm = isBoMonRole ? scopedBoMonId : (selectedBoMonId && selectedBoMonId !== '__NULL__' ? selectedBoMonId : '');
+
     setFormData({
       ...EMPTY_FORM,
       maHocKy: filterHocKy || '',
-      maBoMon: selectedBoMonId && selectedBoMonId !== '__NULL__' ? selectedBoMonId : '',
+      maBoMon: defaultBm,
       maMonHoc: selectedMonHocId || '',
       ngayBatDau: nbd,
       ngayKetThuc: nkt,
@@ -345,6 +364,12 @@ export default function LopHocPhanManagement() {
         setFormSuccess('Cập nhật thành công!');
       }
       await handleRefresh();
+      if (view === 'detail' && detailData?.lopHocPhan?.MaLopHocPhan === formData.maLopHocPhan) {
+        try {
+          const updatedDetail = await apiGetLopHocPhanChiTiet(formData.maLopHocPhan);
+          setDetailData(updatedDetail);
+        } catch { /* ignore */ }
+      }
       setTimeout(() => {
         setIsFormOpen(false);
         setFormSuccess('');
@@ -425,26 +450,7 @@ export default function LopHocPhanManagement() {
   }, {});
 
   // ════════════════════════════════════════════════
-  // RENDER — Detail View
-  // ════════════════════════════════════════════════
-  if (view === 'detail') {
-    return (
-      <div className="lhp-management-container">
-        <LopHocPhanDetailView
-          detailData={detailData}
-          detailLoading={detailLoading}
-          hasPermission={hasPermission}
-          onBack={() => {
-            setView('list');
-            setDetailData(null);
-          }}
-        />
-      </div>
-    );
-  }
-
-  // ════════════════════════════════════════════════
-  // RENDER — List View
+  // RENDER
   // ════════════════════════════════════════════════
   return (
     <div className="lhp-management-container">
@@ -571,63 +577,79 @@ export default function LopHocPhanManagement() {
             onSelectKhoa={handleSelectKhoa}
             onSelectBoMon={handleSelectBoMon}
             onSelectMonHoc={handleSelectMonHoc}
+            isBoMonRole={isBoMonRole}
+            scopedBoMonId={scopedBoMonId}
+            departmentFullName={departmentFullName}
           />
 
           {/* 2. RIGHT PANEL: Content Area */}
           <main className="lhp-main-content">
-            <div className="admin-card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {/* Filter & Context Bar */}
-              <LopHocPhanFilterBar
-                khoaList={khoaList}
-                boMonList={boMonList}
-                monHocList={monHocList}
-                selectedKhoaId={selectedKhoaId}
-                selectedBoMonId={selectedBoMonId}
-                selectedMonHocId={selectedMonHocId}
-                filterLoaiHoc={filterLoaiHoc}
-                setFilterLoaiHoc={setFilterLoaiHoc}
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                onRefresh={handleRefresh}
-                loading={lhpLoading}
-                totalCount={lhpList.length}
-                onClearSelection={handleClearAllFilters}
+            {view === 'detail' ? (
+              <LopHocPhanDetailView
+                detailData={detailData}
+                detailLoading={detailLoading}
+                hasPermission={hasPermission}
+                onBack={() => {
+                  setView('list');
+                  setDetailData(null);
+                }}
+                onEdit={handleOpenEdit}
               />
-
-              {/* Error Banner */}
-              {lhpError && (
-                <div className="alert-banner error" style={{ margin: '0' }}>
-                  <AlertCircle size={18} />
-                  <span>{lhpError}</span>
-                </div>
-              )}
-
-              {/* Table */}
-              {lhpLoading ? (
-                <div className="table-loading-cell" style={{ padding: '50px 0', textAlign: 'center' }}>
-                  <Loader2 size={32} className="animate-spin text-blue-500" style={{ margin: '0 auto 10px' }} />
-                  <span>Đang tải danh sách lớp học phần...</span>
-                </div>
-              ) : lhpList.length === 0 ? (
-                <div className="table-empty-cell" style={{ padding: '50px 20px', textAlign: 'center' }}>
-                  <BookMarked size={36} style={{ color: '#cbd5e1', margin: '0 auto 8px' }} />
-                  <p style={{ fontWeight: 600, color: 'var(--admin-text-main)' }}>
-                    Không tìm thấy lớp học phần nào phù hợp
-                  </p>
-                  <p style={{ color: 'var(--admin-text-sub)', fontSize: '0.82rem', marginTop: '4px' }}>
-                    Thử chọn môn học khác trên cây thư mục hoặc xóa các điều kiện lọc.
-                  </p>
-                </div>
-              ) : (
-                <LopHocPhanTable
-                  list={lhpList}
-                  hasPermission={hasPermission}
-                  onViewDetail={handleViewDetail}
-                  onEdit={handleOpenEdit}
-                  onDelete={handleOpenDelete}
+            ) : (
+              <div className="admin-card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* Filter & Context Bar */}
+                <LopHocPhanFilterBar
+                  khoaList={khoaList}
+                  boMonList={boMonList}
+                  monHocList={monHocList}
+                  selectedKhoaId={selectedKhoaId}
+                  selectedBoMonId={selectedBoMonId}
+                  selectedMonHocId={selectedMonHocId}
+                  filterLoaiHoc={filterLoaiHoc}
+                  setFilterLoaiHoc={setFilterLoaiHoc}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                  onRefresh={handleRefresh}
+                  loading={lhpLoading}
+                  totalCount={lhpList.length}
+                  onClearSelection={handleClearAllFilters}
                 />
-              )}
-            </div>
+
+                {/* Error Banner */}
+                {lhpError && (
+                  <div className="alert-banner error" style={{ margin: '0' }}>
+                    <AlertCircle size={18} />
+                    <span>{lhpError}</span>
+                  </div>
+                )}
+
+                {/* Table */}
+                {lhpLoading ? (
+                  <div className="table-loading-cell" style={{ padding: '50px 0', textAlign: 'center' }}>
+                    <Loader2 size={32} className="animate-spin text-blue-500" style={{ margin: '0 auto 10px' }} />
+                    <span>Đang tải danh sách lớp học phần...</span>
+                  </div>
+                ) : lhpList.length === 0 ? (
+                  <div className="table-empty-cell" style={{ padding: '50px 20px', textAlign: 'center' }}>
+                    <BookMarked size={36} style={{ color: '#cbd5e1', margin: '0 auto 8px' }} />
+                    <p style={{ fontWeight: 600, color: 'var(--admin-text-main)' }}>
+                      Không tìm thấy lớp học phần nào phù hợp
+                    </p>
+                    <p style={{ color: 'var(--admin-text-sub)', fontSize: '0.82rem', marginTop: '4px' }}>
+                      Thử chọn môn học khác trên cây thư mục hoặc xóa các điều kiện lọc.
+                    </p>
+                  </div>
+                ) : (
+                  <LopHocPhanTable
+                    list={lhpList}
+                    hasPermission={hasPermission}
+                    onViewDetail={handleViewDetail}
+                    onEdit={handleOpenEdit}
+                    onDelete={handleOpenDelete}
+                  />
+                )}
+              </div>
+            )}
           </main>
         </div>
       )}
@@ -648,6 +670,9 @@ export default function LopHocPhanManagement() {
         formError={formError}
         setFormError={setFormError}
         formSuccess={formSuccess}
+        isBoMonRole={isBoMonRole}
+        scopedBoMonId={scopedBoMonId}
+        departmentFullName={departmentFullName}
       />
 
       {/* ══════════ MODAL: Xóa ══════════ */}

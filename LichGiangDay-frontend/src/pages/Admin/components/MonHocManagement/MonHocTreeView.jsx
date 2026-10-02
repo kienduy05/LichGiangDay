@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   BookOpen, School, Network, ChevronDown, ChevronRight,
-  Search, X, BookMarked, ChevronsDownUp, ChevronsUpDown, Layers
+  Search, X, BookMarked, ChevronsDownUp, ChevronsUpDown
 } from 'lucide-react';
 import './MonHocComponents.css';
 
@@ -14,11 +14,30 @@ export default function MonHocTreeView({
   selectedMhId = '',
   onSelectKhoa,
   onSelectBoMon,
-  onSelectMh
+  onSelectMh,
+  isBoMonRole = false,
+  scopedBoMonId = '',
+  departmentFullName = ''
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedKhoas, setExpandedKhoas] = useState({});
   const [expandedBoMons, setExpandedBoMons] = useState({});
+
+  // Nếu là role BOMON: tự động mở rộng Khoa & Bộ môn của tài khoản
+  useEffect(() => {
+    if (isBoMonRole && scopedBoMonId) {
+      setExpandedBoMons(prev => ({ ...prev, [scopedBoMonId]: true }));
+      const foundBm = boMonList.find(b => b.MaBoMon === scopedBoMonId);
+      if (foundBm?.MaKhoa) {
+        setExpandedKhoas(prev => ({ ...prev, [foundBm.MaKhoa]: true }));
+      } else {
+        const foundMh = monHocList.find(m => m.MaBoMon === scopedBoMonId);
+        if (foundMh?.MaKhoa) {
+          setExpandedKhoas(prev => ({ ...prev, [foundMh.MaKhoa]: true }));
+        }
+      }
+    }
+  }, [isBoMonRole, scopedBoMonId, boMonList, monHocList]);
 
   // Toggle node expand/collapse
   const toggleKhoa = (maKhoa, e) => {
@@ -50,7 +69,73 @@ export default function MonHocTreeView({
   const treeData = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
 
+    // 1. Phân quyền dữ liệu Bộ môn: nếu là role BOMON, chỉ lấy dữ liệu của scopedBoMonId
+    let effectiveBoMonList = boMonList;
+    let effectiveKhoaList = khoaList;
+
+    // Tự tổng hợp danh mục từ monHocList nếu boMonList hoặc khoaList chưa kịp tải
+    if (effectiveBoMonList.length === 0 && monHocList.length > 0) {
+      const bmMap = new Map();
+      monHocList.forEach(m => {
+        if (m.MaBoMon && !bmMap.has(m.MaBoMon)) {
+          bmMap.set(m.MaBoMon, {
+            MaBoMon: m.MaBoMon,
+            TenBoMon: m.TenBoMon || m.MaBoMon,
+            MaKhoa: m.MaKhoa || 'CNTT'
+          });
+        }
+      });
+      effectiveBoMonList = Array.from(bmMap.values());
+    }
+
+    if (effectiveKhoaList.length === 0 && monHocList.length > 0) {
+      const kMap = new Map();
+      monHocList.forEach(m => {
+        if (m.MaKhoa && !kMap.has(m.MaKhoa)) {
+          kMap.set(m.MaKhoa, {
+            MaKhoa: m.MaKhoa,
+            TenKhoa: m.TenKhoa || m.MaKhoa
+          });
+        }
+      });
+      effectiveKhoaList = Array.from(kMap.values());
+    }
+
+    // Nếu vẫn chưa có và là BOMON, tự tạo node từ scopedBoMonId và departmentFullName
+    if (isBoMonRole && scopedBoMonId && effectiveBoMonList.length === 0) {
+      effectiveBoMonList = [{
+        MaBoMon: scopedBoMonId,
+        TenBoMon: departmentFullName || scopedBoMonId,
+        MaKhoa: 'CNTT'
+      }];
+      if (effectiveKhoaList.length === 0) {
+        effectiveKhoaList = [{
+          MaKhoa: 'CNTT',
+          TenKhoa: 'Khoa Công nghệ thông tin'
+        }];
+      }
+    }
+
+    if (isBoMonRole && scopedBoMonId) {
+      effectiveBoMonList = effectiveBoMonList.filter(bm => bm.MaBoMon === scopedBoMonId);
+      const targetKhoaIds = new Set(effectiveBoMonList.map(bm => bm.MaKhoa));
+      effectiveKhoaList = effectiveKhoaList.filter(k => targetKhoaIds.has(k.MaKhoa));
+      if (effectiveKhoaList.length === 0 && monHocList.length > 0) {
+        const firstMh = monHocList.find(m => m.MaBoMon === scopedBoMonId);
+        if (firstMh?.MaKhoa) {
+          effectiveKhoaList = [{
+            MaKhoa: firstMh.MaKhoa,
+            TenKhoa: firstMh.TenKhoa || firstMh.MaKhoa
+          }];
+        }
+      }
+    }
+
     let filteredMHs = monHocList;
+    if (isBoMonRole && scopedBoMonId) {
+      filteredMHs = filteredMHs.filter(mh => mh.MaBoMon === scopedBoMonId);
+    }
+
     if (term) {
       filteredMHs = filteredMHs.filter(mh =>
         (mh.TenMonHoc && mh.TenMonHoc.toLowerCase().includes(term)) ||
@@ -62,8 +147,8 @@ export default function MonHocTreeView({
 
     const result = [];
 
-    for (const k of khoaList) {
-      const boMonsOfKhoa = boMonList.filter(bm => bm.MaKhoa === k.MaKhoa);
+    for (const k of effectiveKhoaList) {
+      const boMonsOfKhoa = effectiveBoMonList.filter(bm => bm.MaKhoa === k.MaKhoa || (isBoMonRole && bm.MaBoMon === scopedBoMonId));
       const boMonNodes = [];
 
       let khoaCount = 0;
@@ -76,7 +161,7 @@ export default function MonHocTreeView({
         if (!term || mhsOfBm.length > 0 || bmMatchesSearch) {
           boMonNodes.push({
             MaBoMon: bm.MaBoMon,
-            TenBoMon: bm.TenBoMon,
+            TenBoMon: bm.TenBoMon || (bm.MaBoMon === scopedBoMonId ? departmentFullName : bm.MaBoMon),
             MaKhoa: k.MaKhoa,
             totalCount: mhsOfBm.length,
             monHocs: mhsOfBm
@@ -95,32 +180,34 @@ export default function MonHocTreeView({
       }
     }
 
-    // Nhóm Môn học chưa phân bộ môn (nếu có)
-    const unassignedMHs = filteredMHs.filter(mh => !mh.MaBoMon);
-    if (unassignedMHs.length > 0) {
-      result.push({
-        MaKhoa: '__NULL__',
-        TenKhoa: 'Chưa phân Khoa / Bộ môn',
-        totalCount: unassignedMHs.length,
-        boMons: [
-          {
-            MaBoMon: '__NULL__',
-            TenBoMon: 'Chưa phân bộ môn',
-            MaKhoa: '__NULL__',
-            totalCount: unassignedMHs.length,
-            monHocs: unassignedMHs
-          }
-        ]
-      });
+    // Nhóm Môn học chưa phân bộ môn (Chỉ hiển thị cho ADMIN)
+    if (!isBoMonRole) {
+      const unassignedMHs = filteredMHs.filter(mh => !mh.MaBoMon);
+      if (unassignedMHs.length > 0) {
+        result.push({
+          MaKhoa: '__NULL__',
+          TenKhoa: 'Chưa phân Khoa / Bộ môn',
+          totalCount: unassignedMHs.length,
+          boMons: [
+            {
+              MaBoMon: '__NULL__',
+              TenBoMon: 'Chưa phân bộ môn',
+              MaKhoa: '__NULL__',
+              totalCount: unassignedMHs.length,
+              monHocs: unassignedMHs
+            }
+          ]
+        });
+      }
     }
 
     return {
       tree: result,
       totalMHs: filteredMHs.length
     };
-  }, [khoaList, boMonList, monHocList, searchTerm]);
+  }, [khoaList, boMonList, monHocList, searchTerm, isBoMonRole, scopedBoMonId, departmentFullName]);
 
-  const isAllSelected = !selectedKhoaId && !selectedBoMonId && !selectedMhId;
+  const isAllSelected = !selectedKhoaId && (!selectedBoMonId || (isBoMonRole && selectedBoMonId === scopedBoMonId && !selectedMhId)) && !selectedMhId;
 
   return (
     <aside className="mh-treeview-sidebar">
@@ -156,7 +243,7 @@ export default function MonHocTreeView({
           <Search size={14} className="mh-tree-search-icon" />
           <input
             type="text"
-            placeholder="Lọc khoa, bộ môn, môn học..."
+            placeholder={isBoMonRole ? "Tìm môn học bộ môn..." : "Lọc khoa, bộ môn, môn học..."}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -179,7 +266,7 @@ export default function MonHocTreeView({
           className={`mh-tree-node ${isAllSelected ? 'active' : ''}`}
           onClick={() => {
             onSelectKhoa('');
-            onSelectBoMon('');
+            onSelectBoMon(isBoMonRole ? scopedBoMonId : '');
             onSelectMh('');
           }}
         >
@@ -192,8 +279,8 @@ export default function MonHocTreeView({
 
         {/* Level 1: Khoa Nodes */}
         {treeData.tree.map(khoa => {
-          const isKhoaExpanded = !!expandedKhoas[khoa.MaKhoa] || searchTerm.trim() !== '';
-          const isKhoaSelected = selectedKhoaId === khoa.MaKhoa && !selectedBoMonId && !selectedMhId;
+          const isKhoaExpanded = !!expandedKhoas[khoa.MaKhoa] || searchTerm.trim() !== '' || isBoMonRole;
+          const isKhoaSelected = selectedKhoaId === khoa.MaKhoa && (!selectedBoMonId || (isBoMonRole && selectedBoMonId === scopedBoMonId)) && !selectedMhId;
 
           return (
             <div key={khoa.MaKhoa} className="mh-tree-group-khoa">
@@ -202,7 +289,7 @@ export default function MonHocTreeView({
                 className={`mh-tree-node level-1 ${isKhoaSelected ? 'active' : ''}`}
                 onClick={() => {
                   onSelectKhoa(khoa.MaKhoa);
-                  onSelectBoMon('');
+                  onSelectBoMon(isBoMonRole ? scopedBoMonId : '');
                   onSelectMh('');
                 }}
               >
@@ -224,7 +311,7 @@ export default function MonHocTreeView({
 
               {/* Level 2: BoMon Nodes */}
               {isKhoaExpanded && khoa.boMons.map(bm => {
-                const isBmExpanded = !!expandedBoMons[bm.MaBoMon] || searchTerm.trim() !== '';
+                const isBmExpanded = !!expandedBoMons[bm.MaBoMon] || searchTerm.trim() !== '' || isBoMonRole;
                 const isBmSelected = selectedBoMonId === bm.MaBoMon && !selectedMhId;
 
                 return (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle2, AlertCircle, Loader2, Network, School, User, Mail, Phone } from 'lucide-react';
+import { X, CheckCircle2, AlertCircle, Loader2, Network, School, User, Mail, Phone, Lock } from 'lucide-react';
 import './GiangVienComponents.css';
 
 export default function GiangVienFormModal({
@@ -14,13 +14,21 @@ export default function GiangVienFormModal({
   loading = false,
   error = '',
   success = '',
-  warning = ''
+  warning = '',
+  isBoMonRole = false,
+  scopedBoMonId = ''
 }) {
   const [selectedKhoaForFilter, setSelectedKhoaForFilter] = useState('');
 
   // Khi modal mở hoặc formData.maBoMon thay đổi, tự xác định Khoa tương ứng
   useEffect(() => {
-    if (formData.maBoMon) {
+    if (isBoMonRole && scopedBoMonId) {
+      const bm = boMonList.find(b => b.MaBoMon === scopedBoMonId);
+      if (bm?.MaKhoa) {
+        setSelectedKhoaForFilter(bm.MaKhoa);
+      }
+      setFormData(prev => ({ ...prev, maBoMon: scopedBoMonId }));
+    } else if (formData.maBoMon) {
       const bm = boMonList.find(b => b.MaBoMon === formData.maBoMon);
       if (bm?.MaKhoa) {
         setSelectedKhoaForFilter(bm.MaKhoa);
@@ -28,7 +36,7 @@ export default function GiangVienFormModal({
     } else {
       setSelectedKhoaForFilter('');
     }
-  }, [formData.maBoMon, boMonList, isOpen]);
+  }, [formData.maBoMon, boMonList, isOpen, isBoMonRole, scopedBoMonId]);
 
   if (!isOpen) return null;
 
@@ -38,6 +46,7 @@ export default function GiangVienFormModal({
     : boMonList;
 
   const handleKhoaSelectChange = (e) => {
+    if (isBoMonRole) return;
     const maKhoa = e.target.value;
     setSelectedKhoaForFilter(maKhoa);
     // Nếu bộ môn hiện tại không thuộc khoa mới chọn thì reset bộ môn
@@ -167,20 +176,22 @@ export default function GiangVienFormModal({
             </div>
           </div>
 
-          {/* Lọc Khoa (Hỗ trợ chọn Bộ môn) */}
+          {/* Lọc Khoa & Bộ môn */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
             {/* Khoa */}
             <div className="modal-form-group">
               <label className="modal-label">
                 <School size={13} style={{ display: 'inline', marginRight: '4px', verticalAlign: '-2px', color: '#8b5cf6' }} />
-                Khoa trực thuộc (Gợi ý)
+                Khoa trực thuộc
               </label>
               <select
                 className="modal-input"
                 value={selectedKhoaForFilter}
                 onChange={handleKhoaSelectChange}
+                disabled={isBoMonRole}
+                style={isBoMonRole ? { background: '#f8fafc', color: '#64748b', cursor: 'not-allowed' } : {}}
               >
-                <option value="">— Tất cả Khoa —</option>
+                {!isBoMonRole && <option value="">— Tất cả Khoa —</option>}
                 {khoaList.map(k => (
                   <option key={k.MaKhoa} value={k.MaKhoa}>
                     {k.TenKhoa}
@@ -193,14 +204,16 @@ export default function GiangVienFormModal({
             <div className="modal-form-group">
               <label className="modal-label">
                 <Network size={13} style={{ display: 'inline', marginRight: '4px', verticalAlign: '-2px', color: '#0ea5e9' }} />
-                Bộ Môn công tác
+                Bộ Môn công tác {isBoMonRole && <Lock size={12} style={{ display: 'inline', marginLeft: '4px', color: '#64748b' }} />}
               </label>
               <select
                 className="modal-input"
                 value={formData.maBoMon}
                 onChange={e => setFormData({ ...formData, maBoMon: e.target.value })}
+                disabled={isBoMonRole}
+                style={isBoMonRole ? { background: '#f8fafc', color: '#0f172a', fontWeight: '600', cursor: 'not-allowed' } : {}}
               >
-                <option value="">— Chưa phân bộ môn —</option>
+                {!isBoMonRole && <option value="">— Chưa phân bộ môn —</option>}
                 {filteredBoMons.map(bm => (
                   <option key={bm.MaBoMon} value={bm.MaBoMon}>
                     {bm.TenBoMon} ({bm.MaBoMon})

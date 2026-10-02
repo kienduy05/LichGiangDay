@@ -114,13 +114,29 @@ export const apiDeleteScheduleItem = async (maThoiKhoaBieu) => {
 };
 
 /** 9. Lấy dữ liệu dạng Lưới Ma trận (Matrix Grid View) */
-export const apiGetMatrixGrid = async ({ maHocKy, maToaNha = '', maPhong = '', maKhoa = '', maBoMon = '' }) => {
+export const apiGetMatrixGrid = async ({
+  maHocKy,
+  maToaNha = '',
+  maPhong = '',
+  maKhoa = '',
+  maBoMon = '',
+  maGiangVien = '',
+  loaiHoc = '',
+  search = '',
+  tuNgay = '',
+  denNgay = ''
+} = {}) => {
   const params = new URLSearchParams();
   if (maHocKy) params.append('maHocKy', maHocKy);
   if (maToaNha) params.append('maToaNha', maToaNha);
   if (maPhong) params.append('maPhong', maPhong);
   if (maKhoa) params.append('maKhoa', maKhoa);
   if (maBoMon) params.append('maBoMon', maBoMon);
+  if (maGiangVien) params.append('maGiangVien', maGiangVien);
+  if (loaiHoc) params.append('loaiHoc', loaiHoc);
+  if (search) params.append('search', search);
+  if (tuNgay) params.append('tuNgay', tuNgay);
+  if (denNgay) params.append('denNgay', denNgay);
 
   const url = `${API_BASE_URL}/thoikhoabieu/matrix-grid?${params.toString()}`;
   const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() });

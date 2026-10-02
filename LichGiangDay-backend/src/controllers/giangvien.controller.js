@@ -3,9 +3,15 @@ const GiangVienService = require('../services/giangvien.service');
 class GiangVienController {
 
   // 1. Lấy danh sách Giảng viên (lọc: maKhoa, maBoMon, trangThai, search)
+  // Nếu là role BOMON: tự động ép maBoMon theo username tài khoản đăng nhập
   getAll = async (req, res, next) => {
     try {
-      const { maKhoa, maBoMon, trangThai, search } = req.query;
+      let { maKhoa, maBoMon, trangThai, search } = req.query;
+
+      if (req.user?.role === 'BOMON') {
+        maBoMon = req.user.username; // Lấy động từ username tài khoản BOMON
+      }
+
       const list = await GiangVienService.getAll({ maKhoa, maBoMon, trangThai, search });
       return res.status(200).json({
         status: 'success',
@@ -34,6 +40,16 @@ class GiangVienController {
           message: `Không tìm thấy giảng viên '${maGiangVien}'.`
         });
       }
+
+      // Phân quyền dữ liệu Bộ môn:
+      if (req.user?.role === 'BOMON' && giangVien.MaBoMon !== req.user.username) {
+        return res.status(403).json({
+          status: 'error',
+          code: 403,
+          message: `Từ chối truy cập: Giảng viên '${maGiangVien}' không thuộc bộ môn '${req.user.username}'.`
+        });
+      }
+
       return res.status(200).json({
         status: 'success',
         code: 200,
@@ -53,6 +69,24 @@ class GiangVienController {
   getChiTiet = async (req, res, next) => {
     try {
       const { maGiangVien } = req.params;
+      const giangVien = await GiangVienService.getById(maGiangVien);
+      if (!giangVien) {
+        return res.status(404).json({
+          status: 'error',
+          code: 404,
+          message: `Không tìm thấy giảng viên '${maGiangVien}'.`
+        });
+      }
+
+      // Phân quyền dữ liệu Bộ môn:
+      if (req.user?.role === 'BOMON' && giangVien.MaBoMon !== req.user.username) {
+        return res.status(403).json({
+          status: 'error',
+          code: 403,
+          message: `Từ chối truy cập: Giảng viên '${maGiangVien}' không thuộc bộ môn '${req.user.username}'.`
+        });
+      }
+
       const result = await GiangVienService.getChiTiet(maGiangVien);
       return res.status(200).json({
         status: 'success',
@@ -73,7 +107,7 @@ class GiangVienController {
   // 4. Tạo mới Giảng viên
   create = async (req, res, next) => {
     try {
-      const { maGiangVien, hoTen, email, soDienThoai, maBoMon } = req.body;
+      let { maGiangVien, hoTen, email, soDienThoai, maBoMon } = req.body;
 
       if (!maGiangVien || !maGiangVien.trim()) {
         return res.status(400).json({
@@ -86,6 +120,11 @@ class GiangVienController {
           status: 'error', code: 400,
           message: 'Họ tên giảng viên không được để trống.'
         });
+      }
+
+      // Nếu là role BOMON: ép cố định maBoMon là username của tài khoản
+      if (req.user?.role === 'BOMON') {
+        maBoMon = req.user.username;
       }
 
       const result = await GiangVienService.create({ maGiangVien, hoTen, email, soDienThoai, maBoMon });
@@ -108,13 +147,31 @@ class GiangVienController {
   update = async (req, res, next) => {
     try {
       const { maGiangVien } = req.params;
-      const { hoTen, email, soDienThoai, maBoMon } = req.body;
+      let { hoTen, email, soDienThoai, maBoMon } = req.body;
 
       if (!hoTen || !hoTen.trim()) {
         return res.status(400).json({
           status: 'error', code: 400,
           message: 'Họ tên giảng viên không được để trống.'
         });
+      }
+
+      // Phân quyền dữ liệu Bộ môn:
+      if (req.user?.role === 'BOMON') {
+        const existing = await GiangVienService.getById(maGiangVien);
+        if (!existing) {
+          return res.status(404).json({
+            status: 'error', code: 404,
+            message: `Không tìm thấy giảng viên '${maGiangVien}'.`
+          });
+        }
+        if (existing.MaBoMon !== req.user.username) {
+          return res.status(403).json({
+            status: 'error', code: 403,
+            message: `Từ chối truy cập: Bạn không có quyền chỉnh sửa giảng viên của bộ môn khác.`
+          });
+        }
+        maBoMon = req.user.username; // Cố định bộ môn
       }
 
       const result = await GiangVienService.update(maGiangVien, { hoTen, email, soDienThoai, maBoMon });
@@ -138,10 +195,26 @@ class GiangVienController {
   toggleTrangThai = async (req, res, next) => {
     try {
       const { maGiangVien } = req.params;
+
+      // Phân quyền dữ liệu Bộ môn:
+      if (req.user?.role === 'BOMON') {
+        const existing = await GiangVienService.getById(maGiangVien);
+        if (!existing) {
+          return res.status(404).json({
+            status: 'error', code: 404,
+            message: `Không tìm thấy giảng viên '${maGiangVien}'.`
+          });
+        }
+        if (existing.MaBoMon !== req.user.username) {
+          return res.status(403).json({
+            status: 'error', code: 403,
+            message: `Từ chối truy cập: Bạn không có quyền thay đổi trạng thái giảng viên của bộ môn khác.`
+          });
+        }
+      }
+
       const result = await GiangVienService.toggleTrangThai(maGiangVien);
 
-      // Nếu có cảnh báo (chuyển Inactive khi còn lớp/buổi học), vẫn trả 200
-      // nhưng kèm warnHoatDong để frontend hiện confirm
       return res.status(200).json({
         status: 'success',
         code: 200,
@@ -162,6 +235,24 @@ class GiangVienController {
   deleteGiangVien = async (req, res, next) => {
     try {
       const { maGiangVien } = req.params;
+
+      // Phân quyền dữ liệu Bộ môn:
+      if (req.user?.role === 'BOMON') {
+        const existing = await GiangVienService.getById(maGiangVien);
+        if (!existing) {
+          return res.status(404).json({
+            status: 'error', code: 404,
+            message: `Không tìm thấy giảng viên '${maGiangVien}'.`
+          });
+        }
+        if (existing.MaBoMon !== req.user.username) {
+          return res.status(403).json({
+            status: 'error', code: 403,
+            message: `Từ chối truy cập: Bạn không có quyền xóa giảng viên của bộ môn khác.`
+          });
+        }
+      }
+
       const result = await GiangVienService.delete(maGiangVien);
       return res.status(200).json({
         status: 'success',

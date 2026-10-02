@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../../../../context/AuthContext';
 import {
   BookOpen, BookMarked, Network, Plus, AlertCircle,
@@ -22,7 +22,11 @@ import './MonHocManagement.css';
 import './MonHocComponents.css';
 
 export default function MonHocManagement() {
-  const { hasPermission } = useAuth();
+  const { user, hasPermission } = useAuth();
+
+  // ─── Phân quyền dữ liệu theo vai trò Bộ môn (Role: BOMON) ───
+  const isBoMonRole = user?.role === 'BOMON';
+  const scopedBoMonId = isBoMonRole ? (user?.username || '') : '';
 
   // ─── View mode: 'list' | 'detail' ───
   const [view, setView] = useState('list');
@@ -43,9 +47,26 @@ export default function MonHocManagement() {
 
   // ─── Bộ lọc & Tree selection ───
   const [selectedKhoaId, setSelectedKhoaId] = useState('');
-  const [selectedBoMonId, setSelectedBoMonId] = useState('');
+  const [selectedBoMonId, setSelectedBoMonId] = useState(isBoMonRole ? scopedBoMonId : '');
   const [selectedMhId, setSelectedMhId] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Đồng bộ selectedBoMonId khi scopedBoMonId thay đổi
+  useEffect(() => {
+    if (isBoMonRole && scopedBoMonId) {
+      setSelectedBoMonId(scopedBoMonId);
+    }
+  }, [isBoMonRole, scopedBoMonId]);
+
+  // Tìm tên đầy đủ của Bộ môn đang đăng nhập
+  const departmentFullName = useMemo(() => {
+    if (!isBoMonRole || !scopedBoMonId) return '';
+    const found = boMonList.find(b => b.MaBoMon === scopedBoMonId);
+    if (found?.TenBoMon) return found.TenBoMon;
+    const foundInMh = allMhList.find(m => m.MaBoMon === scopedBoMonId);
+    if (foundInMh?.TenBoMon) return foundInMh.TenBoMon;
+    return user?.fullName || `Bộ môn ${scopedBoMonId}`;
+  }, [isBoMonRole, scopedBoMonId, boMonList, allMhList, user?.fullName]);
 
   // ─── Modal Thêm / Sửa ───
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -54,7 +75,7 @@ export default function MonHocManagement() {
     maMonHoc: '',
     tenMonHoc: '',
     soTinChi: '',
-    maBoMon: '',
+    maBoMon: isBoMonRole ? scopedBoMonId : '',
     loaiMonHoc: ''
   });
   const [formLoading, setFormLoading] = useState(false);
@@ -96,9 +117,12 @@ export default function MonHocManagement() {
     setMhLoading(true);
     setMhError('');
     try {
+      const effectiveBoMon = isBoMonRole ? scopedBoMonId : selectedBoMonId;
+      const effectiveKhoa = isBoMonRole ? '' : selectedKhoaId;
+
       const data = await apiGetMonHocList({
-        maKhoa: selectedKhoaId,
-        maBoMon: selectedBoMonId,
+        maKhoa: effectiveKhoa,
+        maBoMon: effectiveBoMon,
         search: searchQuery
       });
 
@@ -113,7 +137,7 @@ export default function MonHocManagement() {
     } finally {
       setMhLoading(false);
     }
-  }, [selectedKhoaId, selectedBoMonId, selectedMhId, searchQuery]);
+  }, [selectedKhoaId, selectedBoMonId, selectedMhId, searchQuery, isBoMonRole, scopedBoMonId]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -132,7 +156,7 @@ export default function MonHocManagement() {
   // ─────────────────────────────────────────────────────────────
   const handleSelectKhoa = (maKhoa) => {
     setSelectedKhoaId(maKhoa);
-    setSelectedBoMonId('');
+    setSelectedBoMonId(isBoMonRole ? scopedBoMonId : '');
     setSelectedMhId('');
     setView('list');
   };
@@ -150,7 +174,7 @@ export default function MonHocManagement() {
 
   const handleClearAllFilters = () => {
     setSelectedKhoaId('');
-    setSelectedBoMonId('');
+    setSelectedBoMonId(isBoMonRole ? scopedBoMonId : '');
     setSelectedMhId('');
     setSearchQuery('');
     setView('list');
@@ -186,7 +210,7 @@ export default function MonHocManagement() {
       maMonHoc: '',
       tenMonHoc: '',
       soTinChi: '',
-      maBoMon: selectedBoMonId && selectedBoMonId !== '__NULL__' ? selectedBoMonId : '',
+      maBoMon: isBoMonRole ? scopedBoMonId : (selectedBoMonId && selectedBoMonId !== '__NULL__' ? selectedBoMonId : ''),
       loaiMonHoc: ''
     });
     setFormError('');
@@ -200,7 +224,7 @@ export default function MonHocManagement() {
       maMonHoc: item.MaMonHoc,
       tenMonHoc: item.TenMonHoc,
       soTinChi: item.SoTinChi !== null && item.SoTinChi !== undefined ? String(item.SoTinChi) : '',
-      maBoMon: item.MaBoMon || '',
+      maBoMon: isBoMonRole ? scopedBoMonId : (item.MaBoMon || ''),
       loaiMonHoc: item.LoaiMonHoc || ''
     });
     setFormError('');
@@ -289,14 +313,21 @@ export default function MonHocManagement() {
   };
 
   // ─────────────────────────────────────────────────────────────
-  // 7. KPI STATS
+  // 7. KPI STATS (Tự động tính theo phạm vi Bộ môn nếu role = BOMON)
   // ─────────────────────────────────────────────────────────────
-  const totalTC = allMhList.reduce((s, m) => s + (m.SoTinChi || 0), 0);
-  const coBoMon = allMhList.filter(m => m.MaBoMon).length;
-  const coLopHP = allMhList.filter(m => (m.SoLopHocPhan || 0) > 0).length;
+  const displayedAllMh = useMemo(() => {
+    if (isBoMonRole && scopedBoMonId) {
+      return allMhList.filter(mh => mh.MaBoMon === scopedBoMonId);
+    }
+    return allMhList;
+  }, [allMhList, isBoMonRole, scopedBoMonId]);
+
+  const totalTC = displayedAllMh.reduce((s, m) => s + (m.SoTinChi || 0), 0);
+  const coBoMon = displayedAllMh.filter(m => m.MaBoMon).length;
+  const coLopHP = displayedAllMh.filter(m => (m.SoLopHocPhan || 0) > 0).length;
 
   const selectedMhInfo = selectedMhId
-    ? allMhList.find(mh => mh.MaMonHoc === selectedMhId)
+    ? displayedAllMh.find(mh => mh.MaMonHoc === selectedMhId)
     : null;
 
   return (
@@ -306,7 +337,9 @@ export default function MonHocManagement() {
         <div>
           <h2 className="page-title">Quản Lý Môn Học</h2>
           <p className="page-subtitle">
-            Danh mục môn học, số tín chỉ định lượng và tình hình tổ chức lớp học phần
+            {isBoMonRole && departmentFullName
+              ? `Danh mục môn học và lớp học phần thuộc ${departmentFullName}`
+              : 'Danh mục môn học, số tín chỉ định lượng và tình hình tổ chức lớp học phần'}
           </p>
         </div>
         {hasPermission('MonHoc', 'CanCreate') && (
@@ -324,8 +357,8 @@ export default function MonHocManagement() {
             <BookOpen size={24} />
           </div>
           <div>
-            <div className="admin-stat-number">{allMhList.length}</div>
-            <div className="admin-stat-text">Tổng số môn học</div>
+            <div className="admin-stat-number">{displayedAllMh.length}</div>
+            <div className="admin-stat-text">{isBoMonRole ? 'Môn học của bộ môn' : 'Tổng số môn học'}</div>
           </div>
         </div>
 
@@ -345,7 +378,7 @@ export default function MonHocManagement() {
           </div>
           <div>
             <div className="admin-stat-number">{coBoMon}</div>
-            <div className="admin-stat-text">Có bộ môn quản lý</div>
+            <div className="admin-stat-text">{isBoMonRole ? 'Đúng mã bộ môn' : 'Có bộ môn quản lý'}</div>
           </div>
         </div>
 
@@ -373,6 +406,9 @@ export default function MonHocManagement() {
           onSelectKhoa={handleSelectKhoa}
           onSelectBoMon={handleSelectBoMon}
           onSelectMh={handleSelectMh}
+          isBoMonRole={isBoMonRole}
+          scopedBoMonId={scopedBoMonId}
+          departmentFullName={departmentFullName}
         />
 
         {/* 2. RIGHT PANEL: Content Area */}
@@ -402,6 +438,9 @@ export default function MonHocManagement() {
                 totalCount={mhList.length}
                 selectedMhInfo={selectedMhInfo}
                 onClearSelection={handleClearAllFilters}
+                isBoMonRole={isBoMonRole}
+                scopedBoMonId={scopedBoMonId}
+                departmentFullName={departmentFullName}
               />
 
               {/* Data Table */}
@@ -437,6 +476,9 @@ export default function MonHocManagement() {
         loading={formLoading}
         error={formError}
         success={formSuccess}
+        isBoMonRole={isBoMonRole}
+        scopedBoMonId={scopedBoMonId}
+        departmentFullName={departmentFullName}
       />
 
       {/* ══════════ MODAL: Xóa Môn Học ══════════ */}

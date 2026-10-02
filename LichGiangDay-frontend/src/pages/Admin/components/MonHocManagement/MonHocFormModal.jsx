@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle2, AlertCircle, Loader2, BookOpen, Network, School } from 'lucide-react';
+import { X, CheckCircle2, AlertCircle, Loader2, BookOpen, Network, School, Lock } from 'lucide-react';
 import './MonHocComponents.css';
 
 export default function MonHocFormModal({
@@ -13,12 +13,21 @@ export default function MonHocFormModal({
   onSubmit,
   loading = false,
   error = '',
-  success = ''
+  success = '',
+  isBoMonRole = false,
+  scopedBoMonId = '',
+  departmentFullName = ''
 }) {
   const [selectedKhoaForFilter, setSelectedKhoaForFilter] = useState('');
 
   useEffect(() => {
-    if (formData.maBoMon) {
+    if (isBoMonRole && scopedBoMonId) {
+      setFormData(prev => ({ ...prev, maBoMon: scopedBoMonId }));
+      const bm = boMonList.find(b => b.MaBoMon === scopedBoMonId);
+      if (bm?.MaKhoa) {
+        setSelectedKhoaForFilter(bm.MaKhoa);
+      }
+    } else if (formData.maBoMon) {
       const bm = boMonList.find(b => b.MaBoMon === formData.maBoMon);
       if (bm?.MaKhoa) {
         setSelectedKhoaForFilter(bm.MaKhoa);
@@ -26,7 +35,7 @@ export default function MonHocFormModal({
     } else {
       setSelectedKhoaForFilter('');
     }
-  }, [formData.maBoMon, boMonList, isOpen]);
+  }, [formData.maBoMon, boMonList, isOpen, isBoMonRole, scopedBoMonId, setFormData]);
 
   if (!isOpen) return null;
 
@@ -34,7 +43,11 @@ export default function MonHocFormModal({
     ? boMonList.filter(bm => bm.MaKhoa === selectedKhoaForFilter)
     : boMonList;
 
+  const currentBmObj = boMonList.find(b => b.MaBoMon === (isBoMonRole ? scopedBoMonId : formData.maBoMon));
+  const currentKhoaObj = khoaList.find(k => k.MaKhoa === (currentBmObj?.MaKhoa || selectedKhoaForFilter));
+
   const handleKhoaSelectChange = (e) => {
+    if (isBoMonRole) return;
     const maKhoa = e.target.value;
     setSelectedKhoaForFilter(maKhoa);
     if (maKhoa && formData.maBoMon) {
@@ -130,20 +143,38 @@ export default function MonHocFormModal({
             <div className="modal-form-group">
               <label className="modal-label">
                 <School size={13} style={{ display: 'inline', marginRight: '4px', verticalAlign: '-2px', color: '#8b5cf6' }} />
-                Khoa quản lý (Gợi ý)
+                Khoa quản lý {isBoMonRole && '(Cố định)'}
               </label>
-              <select
-                className="modal-input"
-                value={selectedKhoaForFilter}
-                onChange={handleKhoaSelectChange}
-              >
-                <option value="">— Tất cả Khoa —</option>
-                {khoaList.map(k => (
-                  <option key={k.MaKhoa} value={k.MaKhoa}>
-                    {k.TenKhoa}
-                  </option>
-                ))}
-              </select>
+              {!isBoMonRole ? (
+                <select
+                  className="modal-input"
+                  value={selectedKhoaForFilter}
+                  onChange={handleKhoaSelectChange}
+                >
+                  <option value="">— Tất cả Khoa —</option>
+                  {khoaList.map(k => (
+                    <option key={k.MaKhoa} value={k.MaKhoa}>
+                      {k.TenKhoa}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div style={{
+                  padding: '9px 12px',
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  color: '#475569',
+                  fontSize: '0.85rem',
+                  fontWeight: '500',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}>
+                  <span>{currentKhoaObj?.TenKhoa || 'Khoa Công nghệ thông tin'}</span>
+                  <Lock size={12} color="#94a3b8" />
+                </div>
+              )}
             </div>
 
             {/* Bộ môn */}
@@ -152,19 +183,37 @@ export default function MonHocFormModal({
                 <Network size={13} style={{ display: 'inline', marginRight: '4px', verticalAlign: '-2px', color: '#0ea5e9' }} />
                 Bộ Môn trực thuộc <span style={{ color: '#ef4444' }}>*</span>
               </label>
-              <select
-                className="modal-input"
-                value={formData.maBoMon}
-                onChange={e => setFormData({ ...formData, maBoMon: e.target.value })}
-                required
-              >
-                <option value="">— Chọn bộ môn —</option>
-                {filteredBoMons.map(bm => (
-                  <option key={bm.MaBoMon} value={bm.MaBoMon}>
-                    {bm.TenBoMon} ({bm.MaBoMon})
-                  </option>
-                ))}
-              </select>
+              {!isBoMonRole ? (
+                <select
+                  className="modal-input"
+                  value={formData.maBoMon}
+                  onChange={e => setFormData({ ...formData, maBoMon: e.target.value })}
+                  required
+                >
+                  <option value="">— Chọn bộ môn —</option>
+                  {filteredBoMons.map(bm => (
+                    <option key={bm.MaBoMon} value={bm.MaBoMon}>
+                      {bm.TenBoMon} ({bm.MaBoMon})
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div style={{
+                  padding: '9px 12px',
+                  background: '#f0f9ff',
+                  border: '1px solid #bae6fd',
+                  borderRadius: '8px',
+                  color: '#0369a1',
+                  fontSize: '0.85rem',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}>
+                  <span>{departmentFullName || currentBmObj?.TenBoMon || scopedBoMonId}</span>
+                  <Lock size={13} color="#0284c7" />
+                </div>
+              )}
             </div>
           </div>
 
