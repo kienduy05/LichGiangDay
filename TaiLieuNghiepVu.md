@@ -1378,46 +1378,33 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
 - **Kết quả hiển thị (UI Response)**:
   - Tiết học bị xóa khỏi CSDL và biến mất khỏi bảng danh sách.
 
-## PHÂN HỆ: QUẢN LÝ LỚP HỌC PHẦN (LopHocPhan) — Phạm vi: chỉ dữ liệu nền
+## PHÂN HỆ: QUẢN LÝ LỚP HỌC PHẦN (LopHocPhan) — Dữ liệu nền (bản sửa đúng)
 
-Không bao gồm: xếp lịch (ThoiKhoaBieu), sinh buổi học (BuoiHoc), bộ môn xác nhận lịch. Ba phần này để dành cho module "Thời Khóa Biểu" làm sau.
-
-Bảng tác động chính: LopHocPhan, LopHocPhan_LopSinhVien
-Bảng cha (bắt buộc có trước): MonHoc, HocKy, BoMon
-Bảng cha (không bắt buộc): GiangVien, KhoaSinhVien, LopSinhVien
-ResourceId dùng cho checkPermission: 'LopHocPhan'
-
-Vì chưa đụng tới ThoiKhoaBieu, cột NgayBatDau/NgayKetThuc/SoTuan của LopHocPhan (vốn NOT NULL) phải nhập tay ở module này, không tự tính từ giai đoạn lịch như bản trước (vì giai đoạn lịch chưa tồn tại). Validate khoảng ngày nằm trong Học kỳ vẫn áp dụng, chỉ khác là áp dụng ngay lúc nhập tay thay vì tính tự động.
+Bảng tác động chính: LopHocPhan (chỉ 6 trường nghiệp vụ dùng ở giai đoạn này: MaLopHocPhan, MaMonHoc, LoaiHoc, SiSoDuKien, SiSoDangKy, KhoaHoc, cộng với MaHocKy, MaBoMon là bắt buộc theo CSDL nhưng không hiện trong bảng tổng hợp của bạn vì cố định theo ngữ cảnh đang nhập — tức khi nhập 116 lớp của bộ môn MHT học kỳ 1 2025-2026 thì MaBoMon='MHT', MaHocKy='HK1_2025_2026' áp dụng chung cho cả lô).
+Bảng cha bắt buộc: MonHoc, HocKy, BoMon.
+ResourceId: 'LopHocPhan'
 
 1. Lọc & Hiển thị danh sách
-   Chọn Học kỳ (bắt buộc), lọc thêm theo Bộ môn, Môn học, Giảng viên, Trạng thái phân công, hoặc tìm theo mã/tên.
-   Backend LEFT JOIN MonHoc, GiangVien, BoMon, KhoaSinhVien; đếm số LopSinhVien ghép.
-   Hiển thị: Mã LHP, Tên môn, Loại học, Sĩ số DK/ĐK, Giảng viên (hoặc "Chưa phân công"), khoảng ngày, badge trạng thái phân công. Chưa có cột "số giai đoạn lịch" vì module đó chưa làm.
+Chọn Học kỳ (bắt buộc) và Bộ môn (bắt buộc hoặc mặc định "Tất cả"), lọc thêm theo Môn học, Kiểu học, hoặc tìm theo MaLopHocPhan.
+Backend JOIN MonHoc lấy TenMonHoc, JOIN BoMon lấy TenBoMon.
+Hiển thị: Mã lớp môn tín chỉ, Tên môn học, Kiểu học, SV dự kiến/đăng ký, Khóa. Không có cột Giảng viên, không có badge số giai đoạn lịch.
 2. Thêm mới thủ công
-   Nhập TenLopHocPhan, chọn MaMonHoc, MaHocKy, LoaiHoc (theo whitelist mở, tối thiểu LT/BT/TH/BTL), MaBoMon, SiSoDuKien (không bắt buộc), KhoaHoc (không bắt buộc), và nhập tay NgayBatDau/NgayKetThuc/SoTuan.
-   Validate: các trường NOT NULL không trống; khóa ngoại tồn tại; NgayBatDau < NgayKetThuc; khoảng ngày nằm trong HocKy đã chọn.
-   MaLopHocPhan tự sinh theo quy tắc MaMonHoc + "." + mã nhóm (người dùng nhập mã nhóm, ví dụ QT01.BT1), check trùng.
-   MaGiangVien để trống, TrangThaiPhanCong mặc định 'Unassigned'.
+Nhập MaLopHocPhan trực tiếp (chính là "mã lớp môn tín chỉ", ví dụ "An ninh mạng-1-1-25(N01)"), chọn MaMonHoc, LoaiHoc, nhập SiSoDuKien, SiSoDangKy (không bắt buộc), chọn KhoaHoc (không bắt buộc). MaHocKy, MaBoMon lấy theo ngữ cảnh màn hình đang chọn (không hỏi lại mỗi lần thêm).
+Validate: MaLopHocPhan, MaMonHoc, LoaiHoc không trống; check trùng MaLopHocPhan; LoaiHoc theo danh mục Kiểu học (xem mục Dữ liệu danh mục bên dưới); môn học tồn tại.
+NgayBatDau/NgayKetThuc/SoTuan (vẫn NOT NULL trong CSDL) tự động gán bằng đúng khoảng ngày của HocKy đang chọn làm giá trị khởi tạo — không có ô nhập tay ở form này nữa (sẽ được ghi đè chính xác khi làm module Thời khóa biểu sau).
+MaGiangVien luôn NULL, TrangThaiPhanCong mặc định 'Unassigned', không có ô nào liên quan tới giảng viên trên form.
 3. Cập nhật thông tin cơ bản
-   Sửa TenLopHocPhan, SiSoDuKien, SiSoDangKy, LoaiHoc, MaBoMon, KhoaHoc, NgayBatDau, NgayKetThuc, SoTuan. MaLopHocPhan, MaMonHoc, MaHocKy khóa cứng.
-   Validate lại toàn bộ như mục 2, bao gồm validate ngày nằm trong Học kỳ.
-   Lưu ý cho tương lai: khi module Thời Khóa Biểu được làm, các trường ngày này sẽ chuyển sang tự tính từ giai đoạn lịch (không cho sửa tay nữa) — cần nhớ điều chỉnh lại validate ở đây khi tới lúc đó.
-4. Gắn / Gỡ lớp sinh viên ghép
-   Chọn một hoặc nhiều LopSinhVien (gợi ý theo KhoaHoc của lớp học phần), thêm/xóa dòng trong LopHocPhan_LopSinhVien.
-5. Phân công / Đổi Giảng viên
-   Chọn giảng viên Active, ưu tiên đúng MaBoMon.
-   Vì chưa có ThoiKhoaBieu, bỏ bước kiểm tra trùng lịch ở giai đoạn này (sẽ bổ sung khi module Thời Khóa Biểu ra đời).
-   UPDATE MaGiangVien, chuyển TrangThaiPhanCong sang 'Assigned'. Cho phép gán lại NULL để bỏ phân công.
-6. Xem chi tiết
-   Hiển thị thông tin cơ bản và danh sách lớp sinh viên ghép. Không có tab "Lịch học" ở giai đoạn này.
-7. Xóa
-   Vì chưa có BuoiHoc/ThoiKhoaBieu, điều kiện chặn xóa rút gọn còn: kiểm tra DangKyDayBu.MaLopHocPhan (nếu module đó đã chạy) — nhưng thực tế giai đoạn này gần như luôn xóa được vì chưa có gì vận hành phía sau.
-   Nếu qua được → xóa LopHocPhan_LopSinhVien rồi xóa LopHocPhan trong 1 transaction.
-8. Import từ Excel (chỉ dữ liệu nền)
-   Vẫn theo đúng luồng TepNhap + ChiTietNhap, chọn Bộ môn + Học kỳ trước khi upload.
-   Chỉ đọc các cột: Mã học phần, Số TC (đối chiếu, không ghi), Lớp môn tín chỉ, Số SV DK, Số SV ĐK, Kiểu học, Giảng viên, Khóa, Tên các lớp ghép.
-   Bỏ qua hoàn toàn các cột: Thời gian, Số tuần, và toàn bộ khối Thứ 2 → Chủ Nhật (Tiết học/Phòng học) — các cột này vẫn được lưu nguyên vào ChiTietNhap (vì bảng đó có sẵn cột KhoangThoiGianGoc, SoTuanGoc, LichHocHangTuanGoc) để giữ lại dữ liệu gốc, dùng sau khi làm module Thời Khóa Biểu, nhưng không tạo ThoiKhoaBieu ngay bây giờ.
-   Vì bỏ cột Thời gian, NgayBatDau/NgayKetThuc/SoTuan của LopHocPhan tạm thời gán bằng đúng khoảng ngày của Học kỳ đã chọn khi import (giá trị placeholder hợp lệ), Admin có thể sửa tay lại sau nếu cần qua chức năng 3.
-   Vẫn giữ quy tắc gộp dòng: "Lớp môn tín chỉ" có giá trị → 1 lớp mới; cả 2 cột đều trống → bỏ qua dòng đó luôn ở giai đoạn này (vì dòng đó chỉ có ý nghĩa bổ sung giai đoạn lịch, mà lịch chưa làm).
-9. Export ra Excel (chỉ dữ liệu nền)
-   Xuất các cột tương ứng đã import ở mục 8 (không có cột Thời gian/Số tuần/Thứ-Tiết-Phòng), dùng để đối chiếu dữ liệu nền đã nhập.
+Sửa LoaiHoc, SiSoDuKien, SiSoDangKy, KhoaHoc. MaLopHocPhan, MaMonHoc khóa cứng (đổi coi như tạo lớp khác).
+4. Xem chi tiết
+Chỉ hiển thị thông tin cơ bản đã nhập. Không có tab Lịch học, không có tab Lớp sinh viên ghép ở giai đoạn này.
+5. Xóa
+Vì chưa có ThoiKhoaBieu/BuoiHoc, điều kiện xóa gần như luôn thỏa mãn — chỉ cần kiểm tra chưa bị ChiTietNhap.MaLopHocPhanDaTao trỏ tới dở dang (nếu có, cảnh báo trước khi xóa).
+6. Import từ file tổng hợp (Excel/Word dữ liệu nền)
+
+Theo đúng cấu trúc tài liệu Du_lieu_nen_bo_mon_MHT.docx bạn gửi, một lần import phục vụ đúng 1 Bộ môn + 1 Học kỳ (khớp cơ chế TepNhap), đọc bảng "LỚP HỌC PHẦN" với 6 cột: Mã lớp môn tín chỉ → MaLopHocPhan (dùng thẳng), Mã học phần → MaMonHoc, Kiểu học → LoaiHoc, SV dự kiến → SiSoDuKien, SV đăng ký → SiSoDangKy, Khóa → KhoaHoc.
+
+Trước khi import danh sách lớp, phải import hoặc có sẵn 4 bảng danh mục nền khác trước: Bộ môn, Học kỳ, Môn học, Phòng học, Khóa sinh viên — đúng thứ tự xuất hiện trong tài liệu của bạn (mục 1-7 trước khi tới mục 8 Lớp học phần). Nếu Môn học trong dòng Lớp học phần chưa tồn tại → báo lỗi, không tự tạo ngầm.
+Không có bước map Giảng viên (vì cột này không tồn tại trong nguồn dữ liệu nền).
+Mỗi dòng độc lập, 1 dòng = 1 LopHocPhan, không có khái niệm "dòng nối tiếp/giai đoạn bổ sung" ở bước này (khác với Import Excel TKB sau này) — vì bảng nguồn không có khái niệm đó.
+7. Export ra Excel
+Xuất đúng 6 cột đã import, theo Bộ môn + Học kỳ đã chọn, dùng để đối chiếu dữ liệu nền.

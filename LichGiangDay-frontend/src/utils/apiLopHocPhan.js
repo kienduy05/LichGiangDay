@@ -4,16 +4,16 @@ import { getAuthHeaders } from './api';
 
 // ==========================================
 // LOPHOCPHAN (LỚP HỌC PHẦN) API SERVICES
+// Phạm vi: Dữ liệu nền — 7 chức năng
 // ==========================================
 
 /** 1. Danh sách LHP (bắt buộc maHocKy) */
-export const apiGetLopHocPhanList = async ({ maHocKy, maBoMon = '', maMonHoc = '', maGiangVien = '', trangThaiPhanCong = '', search = '' } = {}) => {
+export const apiGetLopHocPhanList = async ({ maHocKy, maBoMon = '', maMonHoc = '', loaiHoc = '', search = '' } = {}) => {
   const params = new URLSearchParams();
   if (maHocKy) params.append('maHocKy', maHocKy);
   if (maBoMon) params.append('maBoMon', maBoMon);
   if (maMonHoc) params.append('maMonHoc', maMonHoc);
-  if (maGiangVien) params.append('maGiangVien', maGiangVien);
-  if (trangThaiPhanCong) params.append('trangThaiPhanCong', trangThaiPhanCong);
+  if (loaiHoc) params.append('loaiHoc', loaiHoc);
   if (search) params.append('search', search);
   const url = `${API_BASE_URL}/lophocphan${params.toString() ? '?' + params.toString() : ''}`;
   const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() });
@@ -32,7 +32,7 @@ export const apiGetLopHocPhan = async (maLopHocPhan) => {
   return data.metadata;
 };
 
-/** 6. Chi tiết LHP kèm lớp SV ghép */
+/** 4. Chi tiết LHP — chỉ thông tin cơ bản */
 export const apiGetLopHocPhanChiTiet = async (maLopHocPhan) => {
   const response = await fetch(`${API_BASE_URL}/lophocphan/${encodeURIComponent(maLopHocPhan)}/chitiet`, {
     method: 'GET', headers: getAuthHeaders()
@@ -42,7 +42,7 @@ export const apiGetLopHocPhanChiTiet = async (maLopHocPhan) => {
   return data.metadata;
 };
 
-/** 2. Tạo mới LHP */
+/** 2. Tạo mới LHP — nhập MaLopHocPhan trực tiếp */
 export const apiCreateLopHocPhan = async (body) => {
   const response = await fetch(`${API_BASE_URL}/lophocphan`, {
     method: 'POST', headers: getAuthHeaders(),
@@ -53,7 +53,7 @@ export const apiCreateLopHocPhan = async (body) => {
   return data.metadata;
 };
 
-/** 3. Cập nhật LHP */
+/** 3. Cập nhật LHP — chỉ loaiHoc, siSoDuKien, siSoDangKy, khoaHoc */
 export const apiUpdateLopHocPhan = async (maLopHocPhan, body) => {
   const response = await fetch(`${API_BASE_URL}/lophocphan/${encodeURIComponent(maLopHocPhan)}`, {
     method: 'PUT', headers: getAuthHeaders(),
@@ -64,7 +64,7 @@ export const apiUpdateLopHocPhan = async (maLopHocPhan, body) => {
   return data.metadata;
 };
 
-/** 7. Xóa LHP */
+/** 5. Xóa LHP */
 export const apiDeleteLopHocPhan = async (maLopHocPhan) => {
   const response = await fetch(`${API_BASE_URL}/lophocphan/${encodeURIComponent(maLopHocPhan)}`, {
     method: 'DELETE', headers: getAuthHeaders()
@@ -74,60 +74,7 @@ export const apiDeleteLopHocPhan = async (maLopHocPhan) => {
   return data.metadata;
 };
 
-/** 5. Phân công / Đổi / Gỡ GV */
-export const apiAssignGiangVien = async (maLopHocPhan, maGiangVien) => {
-  const response = await fetch(`${API_BASE_URL}/lophocphan/${encodeURIComponent(maLopHocPhan)}/giangvien`, {
-    method: 'PUT', headers: getAuthHeaders(),
-    body: JSON.stringify({ maGiangVien: maGiangVien || null })
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Phân công giảng viên thất bại.');
-  return { metadata: data.metadata, message: data.message };
-};
-
-/** 4a. Lấy danh sách lớp SV đã ghép */
-export const apiGetLopSinhVienGhep = async (maLopHocPhan) => {
-  const response = await fetch(`${API_BASE_URL}/lophocphan/${encodeURIComponent(maLopHocPhan)}/lopsinhvien`, {
-    method: 'GET', headers: getAuthHeaders()
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Lấy danh sách lớp SV ghép thất bại.');
-  return data.metadata;
-};
-
-/** Gợi ý lớp SV */
-export const apiGetSuggestedLopSinhVien = async (maLopHocPhan) => {
-  const response = await fetch(`${API_BASE_URL}/lophocphan/${encodeURIComponent(maLopHocPhan)}/lopsinhvien/suggested`, {
-    method: 'GET', headers: getAuthHeaders()
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Lấy gợi ý lớp SV thất bại.');
-  return data.metadata;
-};
-
-/** 4b. Gắn lớp SV */
-export const apiAttachLopSinhVien = async (maLopHocPhan, dsLopSinhVien) => {
-  const response = await fetch(`${API_BASE_URL}/lophocphan/${encodeURIComponent(maLopHocPhan)}/lopsinhvien`, {
-    method: 'POST', headers: getAuthHeaders(),
-    body: JSON.stringify({ dsLopSinhVien })
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Gắn lớp sinh viên thất bại.');
-  return data.metadata;
-};
-
-/** 4c. Gỡ lớp SV */
-export const apiDetachLopSinhVien = async (maLopHocPhan, dsLopSinhVien) => {
-  const response = await fetch(`${API_BASE_URL}/lophocphan/${encodeURIComponent(maLopHocPhan)}/lopsinhvien`, {
-    method: 'DELETE', headers: getAuthHeaders(),
-    body: JSON.stringify({ dsLopSinhVien })
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Gỡ lớp sinh viên thất bại.');
-  return data.metadata;
-};
-
-/** 8. Import Excel (multipart) */
+/** 6. Import Excel (multipart) — 6 cột dữ liệu nền */
 export const apiImportLopHocPhan = async (file, maBoMon, maHocKy) => {
   const formData = new FormData();
   formData.append('file', file);
@@ -150,7 +97,7 @@ export const apiImportLopHocPhan = async (file, maBoMon, maHocKy) => {
   return data;
 };
 
-/** 9. Export Excel — returns blob */
+/** 7. Export Excel — returns blob (6 cột dữ liệu nền) */
 export const apiExportLopHocPhan = async (maHocKy, maBoMon = '') => {
   const params = new URLSearchParams();
   if (maHocKy) params.append('maHocKy', maHocKy);
