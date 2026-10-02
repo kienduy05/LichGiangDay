@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../../../context/AuthContext';
 import {
   BookMarked, Plus, AlertCircle, Loader2, ShieldAlert, CheckCircle2,
-  BookOpen, Users, UserCheck, Network
+  BookOpen, Hash, GraduationCap
 } from 'lucide-react';
 import {
   apiGetLopHocPhanList, apiGetLopHocPhanChiTiet,
@@ -15,12 +15,14 @@ import LopHocPhanFilterBar from './LopHocPhanFilterBar';
 import LopHocPhanTable from './LopHocPhanTable';
 import LopHocPhanFormModal from './LopHocPhanFormModal';
 import LopHocPhanDetailView from './LopHocPhanDetailView';
-import { AssignGiangVienModal, AttachLopSinhVienModal, DetachLopSinhVienModal } from './LopHocPhanAssignModal';
 import LopHocPhanImportExport from './LopHocPhanImportExport';
 
 import './LopHocPhanManagement.css';
 import './LopHocPhanComponents.css';
-
+const EMPTY_FORM = {
+  maLopHocPhan: '', maMonHoc: '', maHocKy: '', loaiHoc: '',
+  maBoMon: '', siSoDuKien: '', siSoDangKy: '', khoaHoc: ''
+};
 export default function LopHocPhanManagement() {
   const { hasPermission } = useAuth();
 
@@ -44,18 +46,13 @@ export default function LopHocPhanManagement() {
   const [filterHocKy, setFilterHocKy] = useState('');
   const [filterBoMon, setFilterBoMon] = useState('');
   const [filterMonHoc, setFilterMonHoc] = useState('');
-  const [filterGiangVien, setFilterGiangVien] = useState('');
-  const [filterTrangThai, setFilterTrangThai] = useState('');
+  const [filterLoaiHoc, setFilterLoaiHoc] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
   // ─── Modal Thêm / Sửa ───
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formMode, setFormMode] = useState('create');
-  const [formData, setFormData] = useState({
-    maMonHoc: '', maNhom: '', tenLopHocPhan: '', maHocKy: '', loaiHoc: '',
-    maBoMon: '', siSoDuKien: '', siSoDangKy: '', khoaHoc: '',
-    ngayBatDau: '', ngayKetThuc: '', soTuan: ''
-  });
+  const [formData, setFormData] = useState(EMPTY_FORM);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
@@ -65,17 +62,6 @@ export default function LopHocPhanManagement() {
   const [deletingItem, setDeletingItem] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState('');
-
-  // ─── Modal Assign GV ───
-  const [isAssignOpen, setIsAssignOpen] = useState(false);
-  const [assigningItem, setAssigningItem] = useState(null);
-
-  // ─── Modal Attach / Detach LSV ───
-  const [isAttachOpen, setIsAttachOpen] = useState(false);
-  const [attachItem, setAttachItem] = useState(null);
-  const [isDetachOpen, setIsDetachOpen] = useState(false);
-  const [detachItem, setDetachItem] = useState(null);
-  const [detachList, setDetachList] = useState([]);
 
   // ─── Import/Export ───
   const [importLoading, setImportLoading] = useState(false);
@@ -105,20 +91,20 @@ export default function LopHocPhanManagement() {
     try {
       const data = await apiGetLopHocPhanList({
         maHocKy: filterHocKy, maBoMon: filterBoMon, maMonHoc: filterMonHoc,
-        maGiangVien: filterGiangVien, trangThaiPhanCong: filterTrangThai, search: searchQuery
+        loaiHoc: filterLoaiHoc, search: searchQuery
       });
       setLhpList(data || []);
     } catch (err) {
       setLhpError(err.message || 'Không thể tải danh sách.');
     } finally { setLhpLoading(false); }
-  }, [filterHocKy, filterBoMon, filterMonHoc, filterGiangVien, filterTrangThai, searchQuery]);
+  }, [filterHocKy, filterBoMon, filterMonHoc, filterLoaiHoc, searchQuery]);
 
   useEffect(() => { fetchLookups(); }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => { fetchList(); }, 300);
     return () => clearTimeout(timer);
-  }, [filterHocKy, filterBoMon, filterMonHoc, filterGiangVien, filterTrangThai, searchQuery]);
+  }, [filterHocKy, filterBoMon, filterMonHoc, filterLoaiHoc, searchQuery]);
 
   // ═══════════════════════════════════════════════
   // DETAIL VIEW
@@ -129,50 +115,38 @@ export default function LopHocPhanManagement() {
       const data = await apiGetLopHocPhanChiTiet(item.MaLopHocPhan);
       setDetailData(data);
     } catch {
-      setDetailData({ lopHocPhan: item, lopSinhVienList: [] });
+      setDetailData({ lopHocPhan: item });
     } finally { setDetailLoading(false); }
-  };
-
-  const refreshDetail = async () => {
-    if (!detailData?.lopHocPhan?.MaLopHocPhan) return;
-    try {
-      const data = await apiGetLopHocPhanChiTiet(detailData.lopHocPhan.MaLopHocPhan);
-      setDetailData(data);
-    } catch { /* keep current */ }
   };
 
   // ═══════════════════════════════════════════════
   // MODAL: CREATE / EDIT
   // ═══════════════════════════════════════════════
   const handleOpenCreate = () => {
-    setFormMode('create');
-    setFormData({
-      maMonHoc: '', maNhom: '', tenLopHocPhan: '', maHocKy: filterHocKy || '', loaiHoc: '',
-      maBoMon: filterBoMon || '', siSoDuKien: '', siSoDangKy: '', khoaHoc: '',
-      ngayBatDau: '', ngayKetThuc: '', soTuan: ''
-    });
-    setFormError(''); setFormSuccess('');
-    setIsFormOpen(true);
-  };
+  setFormMode('create');
+  setFormData({
+    ...EMPTY_FORM,
+    maHocKy: filterHocKy || '',
+    maBoMon: filterBoMon || '',
+    siSoDangKy: 0
+  });
+  setFormError(''); setFormSuccess('');
+  setIsFormOpen(true);
+};
 
   const handleOpenEdit = (item) => {
     setFormMode('edit');
-    const formatD = (d) => d ? new Date(d).toISOString().split('T')[0] : '';
     setFormData({
-      maLopHocPhan: item.MaLopHocPhan,
-      maMonHoc: item.MaMonHoc,
-      maNhom: '',
-      tenLopHocPhan: item.TenLopHocPhan || '',
-      maHocKy: item.MaHocKy,
-      loaiHoc: item.LoaiHoc,
-      maBoMon: item.MaBoMon || '',
-      siSoDuKien: item.SiSoDuKien ?? '',
-      siSoDangKy: item.SiSoDangKy ?? '',
-      khoaHoc: item.KhoaHoc || '',
-      ngayBatDau: formatD(item.NgayBatDau),
-      ngayKetThuc: formatD(item.NgayKetThuc),
-      soTuan: item.SoTuan ?? ''
-    });
+  ...EMPTY_FORM,
+  maLopHocPhan: item.MaLopHocPhan,
+  maMonHoc: item.MaMonHoc,
+  maHocKy: item.MaHocKy,
+  loaiHoc: item.LoaiHoc,
+  maBoMon: item.MaBoMon || '',
+  siSoDuKien: item.SiSoDuKien ?? '',
+  siSoDangKy: item.SiSoDangKy ?? '',
+  khoaHoc: item.KhoaHoc || ''
+});
     setFormError(''); setFormSuccess('');
     setIsFormOpen(true);
   };
@@ -181,12 +155,27 @@ export default function LopHocPhanManagement() {
     e.preventDefault();
     setFormError(''); setFormSuccess('');
     setFormLoading(true);
+    const dk = formData.siSoDuKien === '' ? null : Number(formData.siSoDuKien);
+  const dky = formData.siSoDangKy === '' ? 0 : Number(formData.siSoDangKy);
+  if (dk !== null && dky > dk) {
+    setFormError(`Sinh viên đăng ký (${dky}) không được lớn hơn sinh viên dự kiến (${dk}).`);
+    return;
+  }
     try {
       if (formMode === 'create') {
-        await apiCreateLopHocPhan(formData);
-        setFormSuccess('Thêm lớp học phần thành công!');
-      } else {
-        await apiUpdateLopHocPhan(formData.maLopHocPhan, formData);
+  await apiCreateLopHocPhan({
+    ...formData,
+    maLopHocPhan: formData.maLopHocPhan.trim()
+  });
+  setFormSuccess('Thêm lớp học phần thành công!');
+} 
+      else {
+        await apiUpdateLopHocPhan(formData.maLopHocPhan, {
+          loaiHoc: formData.loaiHoc,
+          siSoDuKien: formData.siSoDuKien,
+          siSoDangKy: formData.siSoDangKy,
+          khoaHoc: formData.khoaHoc
+        });
         setFormSuccess('Cập nhật thành công!');
       }
       await fetchList();
@@ -215,23 +204,6 @@ export default function LopHocPhanManagement() {
   };
 
   // ═══════════════════════════════════════════════
-  // ASSIGN GV
-  // ═══════════════════════════════════════════════
-  const handleOpenAssign = (item) => {
-    setAssigningItem(item); setIsAssignOpen(true);
-  };
-
-  // ═══════════════════════════════════════════════
-  // ATTACH / DETACH LSV
-  // ═══════════════════════════════════════════════
-  const handleOpenAttach = (item) => {
-    setAttachItem(item); setIsAttachOpen(true);
-  };
-  const handleOpenDetach = (item, list) => {
-    setDetachItem(item); setDetachList(list); setIsDetachOpen(true);
-  };
-
-  // ═══════════════════════════════════════════════
   // IMPORT / EXPORT
   // ═══════════════════════════════════════════════
   const handleImport = async (file) => {
@@ -251,7 +223,7 @@ export default function LopHocPhanManagement() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `LopHocPhan_${filterHocKy || 'all'}.xlsx`;
+      a.download = `LopHocPhan_${filterHocKy || 'all'}_${filterBoMon || 'all'}.xlsx`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -264,46 +236,21 @@ export default function LopHocPhanManagement() {
   // ═══════════════════════════════════════════════
   // STATS
   // ═══════════════════════════════════════════════
-  const totalAssigned = lhpList.filter(l => l.TrangThaiPhanCong === 'Assigned').length;
-  const totalUnassigned = lhpList.filter(l => l.TrangThaiPhanCong !== 'Assigned').length;
-  const totalLopGhep = lhpList.reduce((s, l) => s + (l.SoLopSinhVienGhep || 0), 0);
+  const totalSVDK = lhpList.reduce((s, l) => s + (l.SiSoDuKien || 0), 0);
+  const totalSVDangKy = lhpList.reduce((s, l) => s + (l.SiSoDangKy || 0), 0);
+  const loaiHocCounts = lhpList.reduce((acc, l) => { acc[l.LoaiHoc] = (acc[l.LoaiHoc] || 0) + 1; return acc; }, {});
 
   // ════════════════════════════════════════════════
   // RENDER — Detail View
   // ════════════════════════════════════════════════
   if (view === 'detail') {
     return (
-      <>
-        <LopHocPhanDetailView
-          detailData={detailData}
-          detailLoading={detailLoading}
-          hasPermission={hasPermission}
-          onBack={() => { setView('list'); setDetailData(null); }}
-          onAttach={handleOpenAttach}
-          onDetach={handleOpenDetach}
-          onAssign={handleOpenAssign}
-        />
-
-        <AssignGiangVienModal
-          isOpen={isAssignOpen}
-          lopHocPhan={assigningItem}
-          onClose={() => setIsAssignOpen(false)}
-          onSuccess={() => { fetchList(); refreshDetail(); }}
-        />
-        <AttachLopSinhVienModal
-          isOpen={isAttachOpen}
-          lopHocPhan={attachItem}
-          onClose={() => setIsAttachOpen(false)}
-          onSuccess={() => { fetchList(); refreshDetail(); }}
-        />
-        <DetachLopSinhVienModal
-          isOpen={isDetachOpen}
-          lopHocPhan={detachItem}
-          currentList={detachList}
-          onClose={() => setIsDetachOpen(false)}
-          onSuccess={() => { fetchList(); refreshDetail(); }}
-        />
-      </>
+      <LopHocPhanDetailView
+        detailData={detailData}
+        detailLoading={detailLoading}
+        hasPermission={() => false} 
+        onBack={() => { setView('list'); setDetailData(null); }}
+      />
     );
   }
 
@@ -317,12 +264,12 @@ export default function LopHocPhanManagement() {
       <div className="page-header-toolbar">
         <div>
           <h2 className="page-title">Quản Lý Lớp Học Phần</h2>
-          <p className="page-subtitle">Dữ liệu nền lớp học phần: tạo, sửa, phân công giảng viên, gắn lớp sinh viên</p>
+          <p className="page-subtitle">Dữ liệu nền lớp học phần: tạo, sửa, import/export dữ liệu nền</p>
         </div>
         {hasPermission('LopHocPhan', 'CanCreate') && (
           <button className="btn-primary-add" onClick={handleOpenCreate}>
             <Plus size={18} />
-            <span>Thêm LHP</span>
+            <span>Mở LHP</span>
           </button>
         )}
       </div>
@@ -341,29 +288,31 @@ export default function LopHocPhanManagement() {
           </div>
           <div className="admin-stat-item">
             <div className="admin-stat-icon-bg" style={{ background: '#ecfdf5', color: '#059669' }}>
-              <UserCheck size={24} />
+              <Hash size={24} />
             </div>
             <div>
-              <div className="admin-stat-number">{totalAssigned}</div>
-              <div className="admin-stat-text">Đã phân công</div>
+              <div className="admin-stat-number">{totalSVDK}</div>
+              <div className="admin-stat-text">Tổng SV dự kiến</div>
             </div>
           </div>
           <div className="admin-stat-item">
             <div className="admin-stat-icon-bg" style={{ background: '#fff7ed', color: '#ea580c' }}>
-              <BookOpen size={24} />
+              <GraduationCap size={24} />
             </div>
             <div>
-              <div className="admin-stat-number">{totalUnassigned}</div>
-              <div className="admin-stat-text">Chưa phân công</div>
+              <div className="admin-stat-number">{totalSVDangKy}</div>
+              <div className="admin-stat-text">Tổng SV đăng ký</div>
             </div>
           </div>
           <div className="admin-stat-item">
-            <div className="admin-stat-icon-bg" style={{ background: '#f0fdf4', color: '#16a34a' }}>
-              <Users size={24} />
+            <div className="admin-stat-icon-bg" style={{ background: '#f5f3ff', color: '#7c3aed' }}>
+              <BookOpen size={24} />
             </div>
             <div>
-              <div className="admin-stat-number">{totalLopGhep}</div>
-              <div className="admin-stat-text">Lớp SV ghép</div>
+              <div className="admin-stat-number">
+                {Object.entries(loaiHocCounts).map(([k, v]) => `${k}:${v}`).join(' · ') || '—'}
+              </div>
+              <div className="admin-stat-text">Phân bổ kiểu học</div>
             </div>
           </div>
         </div>
@@ -388,12 +337,10 @@ export default function LopHocPhanManagement() {
           hocKyList={hocKyList}
           boMonList={boMonList}
           monHocList={monHocList}
-          giangVienList={[]}
           filterHocKy={filterHocKy} setFilterHocKy={setFilterHocKy}
           filterBoMon={filterBoMon} setFilterBoMon={setFilterBoMon}
           filterMonHoc={filterMonHoc} setFilterMonHoc={setFilterMonHoc}
-          filterGiangVien={filterGiangVien} setFilterGiangVien={setFilterGiangVien}
-          filterTrangThai={filterTrangThai} setFilterTrangThai={setFilterTrangThai}
+          filterLoaiHoc={filterLoaiHoc} setFilterLoaiHoc={setFilterLoaiHoc}
           searchQuery={searchQuery} setSearchQuery={setSearchQuery}
           loading={lhpLoading} onRefresh={fetchList}
         />
@@ -423,7 +370,7 @@ export default function LopHocPhanManagement() {
           </div>
         ) : lhpList.length === 0 ? (
           <div className="table-empty-cell" style={{ padding: '50px 20px' }}>
-            {searchQuery || filterBoMon || filterTrangThai
+            {searchQuery || filterBoMon || filterLoaiHoc
               ? 'Không tìm thấy lớp học phần nào phù hợp.'
               : 'Chưa có lớp học phần nào trong học kỳ này.'}
           </div>
@@ -434,7 +381,6 @@ export default function LopHocPhanManagement() {
             onViewDetail={handleViewDetail}
             onEdit={handleOpenEdit}
             onDelete={handleOpenDelete}
-            onAssign={handleOpenAssign}
           />
         )}
       </div>
@@ -482,14 +428,6 @@ export default function LopHocPhanManagement() {
           </div>
         </div>
       )}
-
-      {/* ══════════ MODAL: Assign GV ══════════ */}
-      <AssignGiangVienModal
-        isOpen={isAssignOpen}
-        lopHocPhan={assigningItem}
-        onClose={() => setIsAssignOpen(false)}
-        onSuccess={() => fetchList()}
-      />
     </div>
   );
 }
