@@ -3,12 +3,19 @@ import { useAuth } from '../../../context/AuthContext';
 import {
   LayoutDashboard, Building, Layers, School, Network, UserCheck,
   BookOpen, Users, BookMarked, CalendarDays, Clock,
-  Calendar, CalendarRange, ShieldCheck, KeyRound, GraduationCap
+  Calendar, CalendarRange, ShieldCheck, KeyRound, GraduationCap, X
 } from 'lucide-react';
 import './AdminSidebar.css';
 
-export default function AdminSidebar({ activeTab, setActiveTab }) {
+export default function AdminSidebar({ activeTab, setActiveTab, isOpenMobile, onCloseMobile }) {
   const { user, hasPermission } = useAuth();
+
+  const handleNavClick = (tab) => {
+    setActiveTab(tab);
+    if (onCloseMobile) {
+      onCloseMobile();
+    }
+  };
 
   // Kiểm tra xem nhóm Dữ liệu nền có mục nào được phép xem không
   const hasBaseDataPermissions = (
@@ -38,12 +45,22 @@ export default function AdminSidebar({ activeTab, setActiveTab }) {
   );
 
   return (
-    <aside className="admin-sidebar">
+    <aside className={`admin-sidebar ${isOpenMobile ? 'mobile-open' : ''}`}>
       <div className="admin-sidebar-header">
-        <div className="admin-sidebar-logo">
-          <Calendar size={22} />
+        <div className="admin-sidebar-brand-group">
+          <div className="admin-sidebar-logo">
+            <Calendar size={22} />
+          </div>
+          <span className="admin-brand-name">LịchGiảngDạy</span>
         </div>
-        <span className="admin-brand-name">LịchGiảngDạy</span>
+        {/* Nút đóng trên mobile */}
+        <button
+          className="admin-sidebar-close-btn"
+          onClick={onCloseMobile}
+          aria-label="Đóng thanh điều hướng"
+        >
+          <X size={20} />
+        </button>
       </div>
 
       <nav className="admin-sidebar-nav">
@@ -51,7 +68,7 @@ export default function AdminSidebar({ activeTab, setActiveTab }) {
         <div className="admin-nav-section">Tổng quan</div>
         <div
           className={`admin-nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
-          onClick={() => setActiveTab('dashboard')}
+          onClick={() => handleNavClick('dashboard')}
         >
           <LayoutDashboard size={18} />
           <span>Dashboard</span>
@@ -65,7 +82,7 @@ export default function AdminSidebar({ activeTab, setActiveTab }) {
             {hasPermission('ToaNha', 'CanRead') && (
               <div
                 className={`admin-nav-item ${activeTab === 'toanha' ? 'active' : ''}`}
-                onClick={() => setActiveTab('toanha')}
+                onClick={() => handleNavClick('toanha')}
               >
                 <Building size={18} />
                 <span>Quản lý Tòa nhà</span>
@@ -75,7 +92,7 @@ export default function AdminSidebar({ activeTab, setActiveTab }) {
             {hasPermission('PhongHoc', 'CanRead') && (
               <div
                 className={`admin-nav-item ${activeTab === 'phonghoc' ? 'active' : ''}`}
-                onClick={() => setActiveTab('phonghoc')}
+                onClick={() => handleNavClick('phonghoc')}
               >
                 <Layers size={18} />
                 <span>Quản lý Phòng học</span>
@@ -85,7 +102,7 @@ export default function AdminSidebar({ activeTab, setActiveTab }) {
             {hasPermission('Khoa', 'CanRead') && (
               <div
                 className={`admin-nav-item ${activeTab === 'khoa' ? 'active' : ''}`}
-                onClick={() => setActiveTab('khoa')}
+                onClick={() => handleNavClick('khoa')}
               >
                 <School size={18} />
                 <span>Quản lý Khoa</span>
@@ -95,7 +112,7 @@ export default function AdminSidebar({ activeTab, setActiveTab }) {
             {hasPermission('BoMon', 'CanRead') && (
               <div
                 className={`admin-nav-item ${activeTab === 'bomon' ? 'active' : ''}`}
-                onClick={() => setActiveTab('bomon')}
+                onClick={() => handleNavClick('bomon')}
               >
                 <Network size={18} />
                 <span>Quản lý Bộ môn</span>
@@ -105,7 +122,7 @@ export default function AdminSidebar({ activeTab, setActiveTab }) {
             {hasPermission('GiangVien', 'CanRead') && (
               <div
                 className={`admin-nav-item ${activeTab === 'giangvien' ? 'active' : ''}`}
-                onClick={() => setActiveTab('giangvien')}
+                onClick={() => handleNavClick('giangvien')}
               >
                 <UserCheck size={18} />
                 <span>Quản lý Giảng viên</span>
@@ -115,7 +132,7 @@ export default function AdminSidebar({ activeTab, setActiveTab }) {
             {hasPermission('MonHoc', 'CanRead') && (
               <div
                 className={`admin-nav-item ${activeTab === 'monhoc' ? 'active' : ''}`}
-                onClick={() => setActiveTab('monhoc')}
+                onClick={() => handleNavClick('monhoc')}
               >
                 <BookOpen size={18} />
                 <span>Quản lý Môn học</span>
@@ -125,7 +142,7 @@ export default function AdminSidebar({ activeTab, setActiveTab }) {
             {hasPermission('LopSinhVien', 'CanRead') && (
               <div
                 className={`admin-nav-item ${activeTab === 'lopsinhvien' ? 'active' : ''}`}
-                onClick={() => setActiveTab('lopsinhvien')}
+                onClick={() => handleNavClick('lopsinhvien')}
               >
                 <Users size={18} />
                 <span>Quản lý Lớp sinh viên</span>
@@ -135,7 +152,7 @@ export default function AdminSidebar({ activeTab, setActiveTab }) {
             {hasPermission('LopSinhVien', 'CanRead') && (
               <div
                 className={`admin-nav-item ${activeTab === 'khoasinhvien' ? 'active' : ''}`}
-                onClick={() => setActiveTab('khoasinhvien')}
+                onClick={() => handleNavClick('khoasinhvien')}
               >
                 <GraduationCap size={18} />
                 <span>Quản lý Khóa sinh viên</span>
@@ -145,7 +162,7 @@ export default function AdminSidebar({ activeTab, setActiveTab }) {
             {hasPermission('LopHocPhan', 'CanRead') && (
               <div
                 className={`admin-nav-item ${activeTab === 'lophocphan' ? 'active' : ''}`}
-                onClick={() => setActiveTab('lophocphan')}
+                onClick={() => handleNavClick('lophocphan')}
               >
                 <BookMarked size={18} />
                 <span>Quản lý Lớp học phần</span>
@@ -155,7 +172,7 @@ export default function AdminSidebar({ activeTab, setActiveTab }) {
             {hasPermission('HocKy', 'CanRead') && (
               <div
                 className={`admin-nav-item ${activeTab === 'hocky' ? 'active' : ''}`}
-                onClick={() => setActiveTab('hocky')}
+                onClick={() => handleNavClick('hocky')}
               >
                 <CalendarDays size={18} />
                 <span>Học kỳ & Năm học</span>
@@ -165,7 +182,7 @@ export default function AdminSidebar({ activeTab, setActiveTab }) {
             {hasPermission('TietHoc', 'CanRead') && (
               <div
                 className={`admin-nav-item ${activeTab === 'tiethoc' ? 'active' : ''}`}
-                onClick={() => setActiveTab('tiethoc')}
+                onClick={() => handleNavClick('tiethoc')}
               >
                 <Clock size={18} />
                 <span>Tiết học & Ca học</span>
@@ -182,7 +199,7 @@ export default function AdminSidebar({ activeTab, setActiveTab }) {
             {hasPermission('ThoiKhoaBieu', 'CanRead') && (
               <div
                 className={`admin-nav-item ${activeTab === 'thoikhoabieu' ? 'active' : ''}`}
-                onClick={() => setActiveTab('thoikhoabieu')}
+                onClick={() => handleNavClick('thoikhoabieu')}
               >
                 <Calendar size={18} />
                 <span>Tạo & Xếp Thời Khóa Biểu</span>
@@ -192,7 +209,7 @@ export default function AdminSidebar({ activeTab, setActiveTab }) {
             {hasPermission('ThoiKhoaBieu', 'CanRead') && (
               <div
                 className={`admin-nav-item ${activeTab === 'lichgiangday' ? 'active' : ''}`}
-                onClick={() => setActiveTab('lichgiangday')}
+                onClick={() => handleNavClick('lichgiangday')}
               >
                 <CalendarRange size={18} />
                 <span>Lịch Giảng Dạy & Học Tập</span>
@@ -203,7 +220,7 @@ export default function AdminSidebar({ activeTab, setActiveTab }) {
             {user?.role === 'BOMON' && (
               <div
                 className={`admin-nav-item ${activeTab === 'phanconggiangvien' ? 'active' : ''}`}
-                onClick={() => setActiveTab('phanconggiangvien')}
+                onClick={() => handleNavClick('phanconggiangvien')}
               >
                 <UserCheck size={18} />
                 <span>Phân Công Giảng Viên</span>
@@ -219,7 +236,7 @@ export default function AdminSidebar({ activeTab, setActiveTab }) {
             {hasPermission('Roles', 'CanRead') && (
               <div
                 className={`admin-nav-item ${activeTab === 'roles' ? 'active' : ''}`}
-                onClick={() => setActiveTab('roles')}
+                onClick={() => handleNavClick('roles')}
               >
                 <ShieldCheck size={18} />
                 <span>Nhóm người dùng</span>
@@ -228,7 +245,7 @@ export default function AdminSidebar({ activeTab, setActiveTab }) {
             {hasPermission('Users', 'CanRead') && (
               <div
                 className={`admin-nav-item ${activeTab === 'users' ? 'active' : ''}`}
-                onClick={() => setActiveTab('users')}
+                onClick={() => handleNavClick('users')}
               >
                 <Users size={18} />
                 <span>Người dùng</span>
@@ -237,7 +254,7 @@ export default function AdminSidebar({ activeTab, setActiveTab }) {
             {hasPermission('RolePermissions', 'CanRead') && (
               <div
                 className={`admin-nav-item ${activeTab === 'permissions' ? 'active' : ''}`}
-                onClick={() => setActiveTab('permissions')}
+                onClick={() => handleNavClick('permissions')}
               >
                 <KeyRound size={18} />
                 <span>Phân quyền chức năng</span>

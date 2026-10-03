@@ -825,3 +825,58 @@
   color: #334155;
   border: 1px solid #e2e8f0;
 }
+
+/* ==========================================================================
+   RESPONSIVE MEDIA QUERIES (PHÂN CÔNG GIẢNG VIÊN)
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .pcgv-header-top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .pcgv-header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .pcgv-select-hk {
+    flex: 1;
+  }
+
+  .pcgv-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .pcgv-kpi-card {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .pcgv-kpi-num {
+    font-size: 1.15rem;
+  }
+
+  .pcgv-master-panel {
+    min-height: auto;
+    max-height: 480px;
+  }
+
+  .pcgv-workload-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .pcgv-workload-table {
+    min-width: 600px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pcgv-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}

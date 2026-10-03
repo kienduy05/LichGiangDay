@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import {
-  Search, Bell, ChevronDown, Mail, Shield, UserCog, KeyRound, LogOut
+  Search, Bell, ChevronDown, Mail, Shield, UserCog, KeyRound, LogOut, Menu
 } from 'lucide-react';
 import './AdminTopbar.css';
 
@@ -10,7 +10,8 @@ export default function AdminTopbar({
   isProfileOpen,
   setIsProfileOpen,
   onOpenEditModal,
-  onOpenPasswordModal
+  onOpenPasswordModal,
+  onToggleMobileSidebar
 }) {
   const { user, logout } = useAuth();
 
@@ -19,13 +20,24 @@ export default function AdminTopbar({
 
   return (
     <header className="admin-topbar">
-      <div className="admin-search-wrapper">
-        <Search className="admin-search-icon" size={18} />
-        <input
-          type="text"
-          className="admin-search-input"
-          placeholder="Tìm kiếm thông tin, giảng viên, phòng học..."
-        />
+      <div className="admin-topbar-left">
+        {/* Hamburger Toggle Button (Mobile & Tablet) */}
+        <button
+          className="admin-hamburger-btn"
+          onClick={onToggleMobileSidebar}
+          aria-label="Mở thanh điều hướng"
+        >
+          <Menu size={22} />
+        </button>
+
+        <div className="admin-search-wrapper">
+          <Search className="admin-search-icon" size={18} />
+          <input
+            type="text"
+            className="admin-search-input"
+            placeholder="Tìm kiếm thông tin, giảng viên, phòng học..."
+          />
+        </div>
       </div>
 
       <div className="admin-header-right">

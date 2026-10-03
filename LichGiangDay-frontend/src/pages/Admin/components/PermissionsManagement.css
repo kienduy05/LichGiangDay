@@ -151,3 +151,20 @@
   border-color: #7c3aed;
   box-shadow: 0 2px 6px rgba(124, 58, 237, 0.3);
 }
+
+/* ==========================================
+   RESPONSIVE MEDIA QUERIES (PERMISSIONS)
+   ========================================== */
+
+@media (max-width: 768px) {
+  .perm-header-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .perm-role-select-box {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

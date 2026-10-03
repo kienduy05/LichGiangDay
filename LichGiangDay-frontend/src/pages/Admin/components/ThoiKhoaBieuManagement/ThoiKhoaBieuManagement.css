@@ -8,6 +8,7 @@
   flex-direction: column;
   gap: 20px;
   animation: fadeInTKB 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  min-width: 0;
 }
 
 @keyframes fadeInTKB {
@@ -26,7 +27,7 @@
 }
 
 .tkb-title-section h2 {
-  font-size: 1.5rem;
+  font-size: 1.45rem;
   font-weight: 800;
   color: #0f172a;
   margin: 0;
@@ -45,11 +46,12 @@
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+  flex-shrink: 0;
 }
 
 .tkb-title-section p {
   margin: 4px 0 0;
-  font-size: 0.88rem;
+  font-size: 0.86rem;
   color: #64748b;
 }
 
@@ -121,6 +123,7 @@
   gap: 6px;
   cursor: pointer;
   transition: all 0.18s ease;
+  white-space: nowrap;
 }
 
 .tkb-btn-view-mode:hover {
@@ -139,6 +142,7 @@
   display: flex;
   gap: 20px;
   align-items: flex-start;
+  min-width: 0;
 }
 
 /* RIGHT PANEL: MAIN CONTENT CARD */
@@ -153,6 +157,8 @@
   flex-direction: column;
   gap: 16px;
   min-height: calc(100vh - 200px);
+  min-width: 0;
+  overflow: hidden;
 }
 
 /* Right Header Tool Bar */
@@ -169,6 +175,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .tkb-current-node-tag {
@@ -212,12 +219,15 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .tkb-search-box {
   position: relative;
   display: flex;
   align-items: center;
+  flex: 1;
+  min-width: 180px;
 }
 
 .tkb-search-box .search-icon {
@@ -233,6 +243,7 @@
   border: 1px solid #cbd5e1;
   font-size: 0.86rem;
   width: 250px;
+  max-width: 100%;
   outline: none;
   background: #f8fafc;
   color: #0f172a;
@@ -296,4 +307,69 @@
   background: #fef2f2;
   border: 1px solid #fecaca;
   color: #b91c1c;
+}
+
+/* ==========================================================================
+   RESPONSIVE MEDIA QUERIES (THỜI KHÓA BIỂU)
+   ========================================================================== */
+
+@media (max-width: 1024px) {
+  .tkb-split-layout {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .tkb-right-content-panel {
+    width: 100%;
+    min-height: auto;
+    padding: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .tkb-header-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .tkb-header-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .tkb-semester-select-box {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .tkb-view-mode-group {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .tkb-btn-view-mode {
+    justify-content: center;
+  }
+
+  .tkb-right-panel-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .tkb-toolbar-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .tkb-search-box {
+    width: 100%;
+  }
+
+  .tkb-search-box input {
+    width: 100%;
+  }
 }

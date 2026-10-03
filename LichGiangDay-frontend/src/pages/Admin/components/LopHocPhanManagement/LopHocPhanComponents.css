@@ -648,3 +648,51 @@
   color: var(--admin-text-main, #0f172a);
 }
 
+/* ==========================================================================
+   RESPONSIVE MEDIA QUERIES (LỚP HỌC PHẦN COMPONENTS)
+   ========================================================================== */
+
+@media (max-width: 1024px) {
+  .lhp-page-layout {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .lhp-treeview-sidebar {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    position: static;
+    max-height: 320px;
+  }
+}
+
+@media (max-width: 768px) {
+  .lhp-semester-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .lhp-semester-select {
+    width: 100%;
+    min-width: auto;
+  }
+
+  .lhp-detail-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .lhp-modal-card {
+    padding: 18px 14px;
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .lhp-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

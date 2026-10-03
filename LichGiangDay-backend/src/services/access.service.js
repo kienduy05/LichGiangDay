@@ -31,6 +31,8 @@ class AccessService {
       {
         userId: foundUser.UserId,
         username: foundUser.Username,
+        fullName: foundUser.FullName,
+        email: foundUser.Email,
         role: foundUser.Role
       },
       publicKey,
@@ -54,6 +56,25 @@ class AccessService {
         role: foundUser.Role
       },
       tokens
+    };
+  };
+
+  static getMe = async (userId) => {
+    const foundUser = await UserService.findById(userId);
+    if (!foundUser) {
+      const error = new Error('Không tìm thấy tài khoản người dùng.');
+      error.status = 404;
+      throw error;
+    }
+    return {
+      userId: foundUser.UserId,
+      username: foundUser.Username,
+      fullName: foundUser.FullName,
+      email: foundUser.Email,
+      role: foundUser.Role,
+      roleName: foundUser.RoleName,
+      maGiangVien: foundUser.MaGiangVien,
+      tenGiangVien: foundUser.TenGiangVien
     };
   };
 
