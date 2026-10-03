@@ -123,3 +123,22 @@
   justify-content: center;
   gap: 10px;
 }
+
+/* ==========================================
+   RESPONSIVE MEDIA QUERIES (LOGIN PAGE)
+   ========================================== */
+
+@media (max-width: 480px) {
+  .login-container {
+    padding: 12px;
+  }
+
+  .login-card {
+    padding: 24px 18px;
+    border-radius: var(--radius-md);
+  }
+
+  .login-title {
+    font-size: 1.45rem;
+  }
+}

@@ -2128,3 +2128,52 @@
 }
 
 .room-picker-error { color: #ef4444; }
+
+/* ==========================================================================
+   RESPONSIVE MEDIA QUERIES (TKB COMPONENTS)
+   ========================================================================== */
+
+@media (max-width: 1024px) {
+  .tkb-treeview-panel {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    height: auto;
+    max-height: 340px;
+  }
+}
+
+@media (max-width: 768px) {
+  .tkb-modal-overlay {
+    padding: 12px;
+  }
+
+  .tkb-modal-card {
+    width: 100%;
+    max-width: 100%;
+    max-height: calc(100vh - 24px);
+    padding: 18px 14px;
+    border-radius: 16px;
+  }
+
+  .tkb-schedule-row-builder {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .tkb-grid-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tkb-matrix-grid-table {
+    min-width: 750px;
+  }
+
+  .room-picker-tiles-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px;
+  }
+}

@@ -536,3 +536,29 @@
   margin-bottom: 20px;
   line-height: 1.5;
 }
+
+/* ==========================================
+   RESPONSIVE MEDIA QUERIES (ROLES MANAGEMENT)
+   ========================================== */
+
+@media (max-width: 768px) {
+  .roles-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .roles-stat-card {
+    padding: 14px;
+    gap: 10px;
+  }
+
+  .roles-stat-value {
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .roles-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}

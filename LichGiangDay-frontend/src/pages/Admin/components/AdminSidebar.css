@@ -10,15 +10,23 @@
   bottom: 0;
   left: 0;
   z-index: 50;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
 }
 
 .admin-sidebar-header {
   height: 72px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 24px;
+  justify-content: space-between;
+  padding: 0 20px;
   border-bottom: 1px solid var(--admin-border, #e2e8f0);
+  flex-shrink: 0;
+}
+
+.admin-sidebar-brand-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .admin-sidebar-logo {
@@ -31,20 +39,40 @@
   justify-content: center;
   color: #ffffff;
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  flex-shrink: 0;
 }
 
 .admin-brand-name {
   font-weight: 700;
   font-size: 1.15rem;
   color: var(--admin-text-main, #0f172a);
+  white-space: nowrap;
+}
+
+.admin-sidebar-close-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.admin-sidebar-close-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
 }
 
 .admin-sidebar-nav {
   flex: 1;
-  padding: 20px 14px;
+  padding: 16px 12px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   overflow-y: auto;
 }
 
@@ -71,20 +99,21 @@
   color: var(--admin-text-sub, #94a3b8);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  padding: 16px 12px 6px;
+  padding: 14px 12px 6px;
 }
 
 .admin-nav-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 11px 14px;
+  padding: 10px 14px;
   border-radius: 10px;
   color: var(--admin-text-muted, #64748b);
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   font-weight: 500;
   transition: all 0.2s ease;
   cursor: pointer;
+  user-select: none;
 }
 
 .admin-nav-item:hover {
@@ -101,4 +130,26 @@
 
 .admin-nav-item.active svg {
   color: #ffffff;
+}
+
+/* ==========================================================================
+   RESPONSIVE MEDIA QUERIES (TABLET & MOBILE)
+   ========================================================================== */
+
+@media (max-width: 1024px) {
+  .admin-sidebar {
+    transform: translateX(-100%);
+    width: 280px;
+    z-index: 1000;
+    box-shadow: none;
+  }
+
+  .admin-sidebar.mobile-open {
+    transform: translateX(0);
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.25);
+  }
+
+  .admin-sidebar-close-btn {
+    display: flex;
+  }
 }

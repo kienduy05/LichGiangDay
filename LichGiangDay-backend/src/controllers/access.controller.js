@@ -47,16 +47,18 @@ class AccessController {
 
   getMe = async (req, res, next) => {
     try {
+      const userId = req.user.userId;
+      const user = await AccessService.getMe(userId);
       return res.status(200).json({
         status: 'success',
         code: 200,
         message: 'Lấy thông tin tài khoản thành công.',
-        metadata: req.user
+        metadata: user
       });
     } catch (error) {
-      return res.status(500).json({
+      return res.status(error.status || 500).json({
         status: 'error',
-        code: 500,
+        code: error.status || 500,
         message: error.message || 'Lỗi khi lấy thông tin tài khoản.'
       });
     }

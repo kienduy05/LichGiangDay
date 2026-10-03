@@ -34,16 +34,19 @@ export const AuthProvider = ({ children }) => {
           const res = await apiGetMe();
           if (res.metadata) {
             const currentUser = res.metadata;
-            const normalizedRole = currentUser.role || currentUser.Role;
             const normalizedUser = {
               ...currentUser,
-              role: normalizedRole
+              userId: currentUser.userId || currentUser.UserId,
+              username: currentUser.username || currentUser.Username,
+              fullName: currentUser.fullName || currentUser.FullName,
+              email: currentUser.email || currentUser.Email,
+              role: currentUser.role || currentUser.Role
             };
             setUser(normalizedUser);
             localStorage.setItem('user', JSON.stringify(normalizedUser));
 
-            if (normalizedRole) {
-              await loadUserPermissions(normalizedRole);
+            if (normalizedUser.role) {
+              await loadUserPermissions(normalizedUser.role);
             }
           }
         } catch (err) {
@@ -60,20 +63,23 @@ export const AuthProvider = ({ children }) => {
   const login = async (username, password) => {
     const res = await apiLogin(username, password);
     const { user: userData, tokens } = res.metadata;
-    const normalizedRole = userData.role || userData.Role;
     const normalizedUser = {
       ...userData,
-      role: normalizedRole
+      userId: userData.userId || userData.UserId,
+      username: userData.username || userData.Username,
+      fullName: userData.fullName || userData.FullName,
+      email: userData.email || userData.Email,
+      role: userData.role || userData.Role
     };
 
     localStorage.setItem('accessToken', tokens.accessToken);
     localStorage.setItem('refreshToken', tokens.refreshToken);
-    localStorage.setItem('userId', normalizedUser.userId || normalizedUser.UserId);
+    localStorage.setItem('userId', normalizedUser.userId);
     localStorage.setItem('user', JSON.stringify(normalizedUser));
 
     setUser(normalizedUser);
-    if (normalizedRole) {
-      await loadUserPermissions(normalizedRole);
+    if (normalizedUser.role) {
+      await loadUserPermissions(normalizedUser.role);
     }
     return normalizedUser;
   };
