@@ -40,6 +40,7 @@ export default function LopSinhVienManagement() {
   const [lsvError, setLsvError] = useState('');
 
   // ─── Bộ lọc & Tree selection ───
+  const [isTreeCollapsed, setIsTreeCollapsed] = useState(false);
   const [selectedKhoaId, setSelectedKhoaId] = useState('');
   const [selectedLsvId, setSelectedLsvId] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -337,6 +338,8 @@ export default function LopSinhVienManagement() {
           selectedLsvId={selectedLsvId}
           onSelectKhoa={handleSelectKhoa}
           onSelectLsv={handleSelectLsv}
+          isCollapsed={isTreeCollapsed}
+          onToggleCollapse={() => setIsTreeCollapsed(prev => !prev)}
         />
 
         {/* 2. RIGHT PANEL: Content Area */}
@@ -363,6 +366,8 @@ export default function LopSinhVienManagement() {
                 totalCount={lsvList.length}
                 selectedLsvInfo={selectedLsvInfo}
                 onClearSelection={handleClearAllFilters}
+                isTreeCollapsed={isTreeCollapsed}
+                onToggleTree={() => setIsTreeCollapsed(prev => !prev)}
               />
 
               {/* Data Table */}

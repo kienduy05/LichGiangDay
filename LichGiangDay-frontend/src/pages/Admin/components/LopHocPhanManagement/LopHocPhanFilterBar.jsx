@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, X, RefreshCw, Layers, School, Network, BookOpen, Filter } from 'lucide-react';
+import { Search, X, RefreshCw, Layers, School, Network, BookOpen, Filter, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import './LopHocPhanComponents.css';
 
 export default function LopHocPhanFilterBar({
@@ -16,7 +16,9 @@ export default function LopHocPhanFilterBar({
   onRefresh,
   loading = false,
   totalCount = 0,
-  onClearSelection
+  onClearSelection,
+  isTreeCollapsed = false,
+  onToggleTree
 }) {
   const hasFilter = !!selectedKhoaId || !!selectedBoMonId || !!selectedMonHocId || !!filterLoaiHoc || !!searchQuery;
 
@@ -29,8 +31,20 @@ export default function LopHocPhanFilterBar({
       {/* 1. Context Breadcrumb */}
       <div className="lhp-context-bar">
         <div className="lhp-breadcrumb">
+          {onToggleTree && (
+            <button
+              type="button"
+              className={`lhp-btn-toggle-tree ${isTreeCollapsed ? 'collapsed' : ''}`}
+              onClick={onToggleTree}
+              title={isTreeCollapsed ? 'Mở rộng Cây Môn Học' : 'Thu gọn Cây Môn Học để tăng diện tích bảng'}
+            >
+              {isTreeCollapsed ? <PanelLeftOpen size={14} /> : <PanelLeftClose size={14} />}
+              <span>{isTreeCollapsed ? 'Hiện Cây' : 'Thu Gọn Cây'}</span>
+            </button>
+          )}
+
           <Layers size={15} style={{ color: '#3b82f6' }} />
-          <span>Phạm vi hiển thị:</span>
+          <span>Phạm vi:</span>
 
           {!selectedKhoaId && !selectedBoMonId && !selectedMonHocId ? (
             <span className="lhp-breadcrumb-item">Tất cả lớp học phần</span>

@@ -7,22 +7,91 @@
    1. TREEVIEW PANEL STYLES (LEFT SIDEBAR)
    ================================================================ */
 .tkb-treeview-panel {
-  width: 330px;
-  min-width: 310px;
-  max-width: 360px;
+  width: 285px;
+  min-width: 275px;
+  max-width: 305px;
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 16px;
+  border-radius: 14px;
   display: flex;
   flex-direction: column;
   height: calc(100vh - 200px);
   overflow: hidden;
   box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+}
+
+/* Collapsed State Mini Bar */
+.tkb-treeview-panel.collapsed {
+  width: 48px;
+  min-width: 48px;
+  max-width: 48px;
+  background: #ffffff;
+  cursor: pointer;
+  padding: 12px 6px;
+  border: 1px dashed #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.2s ease;
 }
 
+.tkb-treeview-panel.collapsed:hover {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  border-style: solid;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.12);
+}
+
+.btn-tree-expand-bar {
+  background: none;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #2563eb;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+.collapsed-vertical-text {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #475569;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.collapsed-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  padding: 2px 6px;
+  border-radius: 9999px;
+}
+
+.collapsed-open-icon {
+  margin-top: auto;
+  color: #94a3b8;
+  transition: transform 0.2s ease;
+}
+
+.tkb-treeview-panel.collapsed:hover .collapsed-open-icon {
+  transform: translateX(2px);
+  color: #2563eb;
+}
+
 .tkb-treeview-header {
-  padding: 14px 16px;
+  padding: 10px 12px;
   border-bottom: 1px solid #e2e8f0;
   display: flex;
   align-items: center;
@@ -33,9 +102,11 @@
 .tkb-treeview-title-group {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: #0f172a;
 }
 
@@ -46,16 +117,16 @@
 .tree-header-actions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
 }
 
 .btn-tree-tool {
   background: transparent;
   border: 1px solid transparent;
   color: #64748b;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -68,23 +139,34 @@
   color: #0f172a;
 }
 
+.btn-tree-tool.collapse-btn {
+  color: #2563eb;
+  background: #eff6ff;
+  border-color: #dbeafe;
+}
+
+.btn-tree-tool.collapse-btn:hover {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
 /* Tree filter pills (Tất cả / Đã xếp / Chưa xếp) */
 .tree-filter-pills {
-  padding: 10px 12px;
+  padding: 8px 10px;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 6px;
+  gap: 4px;
   background: #ffffff;
   border-bottom: 1px solid #e2e8f0;
 }
 
 .filter-pill {
-  padding: 5px 6px;
-  border-radius: 8px;
+  padding: 4px 4px;
+  border-radius: 6px;
   border: 1px solid #e2e8f0;
   background: #f8fafc;
   color: #64748b;
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -119,9 +201,9 @@
 }
 
 .pill-count {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   background: rgba(0, 0, 0, 0.06);
-  padding: 1px 5px;
+  padding: 1px 4px;
   border-radius: 4px;
 }
 
@@ -131,8 +213,8 @@
 }
 
 .dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   display: inline-block;
 }
@@ -143,7 +225,7 @@
 
 /* Tree search input */
 .tree-search-wrapper {
-  padding: 8px 12px;
+  padding: 6px 10px;
   position: relative;
   border-bottom: 1px solid #e2e8f0;
   background: #ffffff;
@@ -151,7 +233,7 @@
 
 .tree-search-icon {
   position: absolute;
-  left: 22px;
+  left: 18px;
   top: 50%;
   transform: translateY(-50%);
   color: #94a3b8;
@@ -160,40 +242,35 @@
 
 .tree-search-wrapper input {
   width: 100%;
-  padding: 7px 10px 7px 32px;
-  border-radius: 8px;
+  padding: 5px 8px 5px 28px;
   border: 1px solid #cbd5e1;
-  font-size: 0.82rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  outline: none;
   background: #f8fafc;
   color: #0f172a;
-  outline: none;
-  transition: all 0.15s ease;
-}
-
-.tree-search-wrapper input:focus {
-  border-color: #2563eb;
-  background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 /* Tree Body & Nodes */
 .tkb-treeview-body {
   flex: 1;
   overflow-y: auto;
-  padding: 8px 10px;
+  padding: 6px 8px;
 }
 
 .tree-node-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  padding: 8px 10px;
-  border-radius: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
   cursor: pointer;
-  margin-bottom: 3px;
+  margin-bottom: 2px;
   transition: all 0.15s ease;
   user-select: none;
   color: #334155;
+  font-size: 0.81rem;
+  gap: 6px;
 }
 
 .tree-node-item:hover {
@@ -210,11 +287,9 @@
 
 .tree-node-label {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
   flex: 1;
 }
 
@@ -222,14 +297,16 @@
   background: transparent;
   border: none;
   color: #94a3b8;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 4px;
   cursor: pointer;
   padding: 0;
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 
 .tree-expand-btn:hover {
@@ -239,26 +316,37 @@
 
 .tree-node-icon {
   flex-shrink: 0;
+  margin-top: 2px;
 }
 .root-icon { color: #6366f1; }
 .khoa-icon { color: #2563eb; }
 .bomon-icon { color: #0284c7; }
 
 .tree-node-text {
-  font-size: 0.86rem;
+  font-size: 0.81rem;
+  line-height: 1.35;
+  color: #1e293b;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  flex: 1;
 }
 
 .tree-node-badge {
-  font-size: 0.74rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 12px;
+  padding: 1px 6px;
+  border-radius: 9999px;
   background: #f1f5f9;
   color: #475569;
   flex-shrink: 0;
+  margin-top: 1px;
+  min-width: 18px;
+  text-align: center;
 }
 
 .tree-node-item.active .tree-node-badge {
@@ -2139,7 +2227,33 @@
     min-width: 100%;
     max-width: 100%;
     height: auto;
-    max-height: 340px;
+    max-height: 280px;
+  }
+
+  .tkb-treeview-panel.collapsed {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    height: 42px;
+    padding: 0 16px;
+    border-radius: 10px;
+    flex-direction: row;
+  }
+
+  .tkb-treeview-panel.collapsed .btn-tree-expand-bar {
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .tkb-treeview-panel.collapsed .collapsed-vertical-text {
+    writing-mode: horizontal-tb;
+    transform: none;
+    font-size: 0.85rem;
+  }
+
+  .tkb-treeview-panel.collapsed .collapsed-open-icon {
+    margin-top: 0;
   }
 }
 

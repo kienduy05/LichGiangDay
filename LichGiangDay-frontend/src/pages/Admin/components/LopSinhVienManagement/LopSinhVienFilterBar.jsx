@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, X, RefreshCw, Layers, School, Users } from 'lucide-react';
+import { Search, X, RefreshCw, Layers, School, Users, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import './LopSinhVienComponents.css';
 
 export default function LopSinhVienFilterBar({
@@ -12,7 +12,9 @@ export default function LopSinhVienFilterBar({
   loading = false,
   totalCount = 0,
   selectedLsvInfo = null,
-  onClearSelection
+  onClearSelection,
+  isTreeCollapsed = false,
+  onToggleTree
 }) {
   const hasFilter = !!filterKhoa || !!searchQuery || !!selectedLsvInfo;
   const currentKhoaObj = khoaList.find(k => k.MaKhoa === filterKhoa);
@@ -22,6 +24,18 @@ export default function LopSinhVienFilterBar({
       {/* 1. Context Breadcrumb */}
       <div className="lsv-context-bar">
         <div className="lsv-breadcrumb">
+          {onToggleTree && (
+            <button
+              type="button"
+              className={`lsv-btn-toggle-tree ${isTreeCollapsed ? 'collapsed' : ''}`}
+              onClick={onToggleTree}
+              title={isTreeCollapsed ? 'Mở rộng Cây Khoa' : 'Thu gọn Cây để tăng diện tích bảng'}
+            >
+              {isTreeCollapsed ? <PanelLeftOpen size={14} /> : <PanelLeftClose size={14} />}
+              <span>{isTreeCollapsed ? 'Hiện Cây' : 'Thu Gọn Cây'}</span>
+            </button>
+          )}
+
           <Layers size={15} style={{ color: '#3b82f6' }} />
           <span>Phạm vi hiển thị:</span>
 

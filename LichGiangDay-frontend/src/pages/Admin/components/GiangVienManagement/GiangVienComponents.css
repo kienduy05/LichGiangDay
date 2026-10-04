@@ -14,9 +14,9 @@
    ========================================================================== */
 
 .gv-treeview-sidebar {
-  width: 320px;
-  min-width: 300px;
-  max-width: 340px;
+  width: 285px;
+  min-width: 275px;
+  max-width: 305px;
   background: var(--admin-card-bg, #ffffff);
   border: 1px solid var(--admin-card-border, #e2e8f0);
   border-radius: 12px;
@@ -28,10 +28,110 @@
   max-height: calc(100vh - 100px);
   overflow: hidden;
   flex-shrink: 0;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Collapsed State Mini Bar */
+.gv-treeview-sidebar.collapsed {
+  width: 48px;
+  min-width: 48px;
+  max-width: 48px;
+  background: #ffffff;
+  cursor: pointer;
+  padding: 12px 6px;
+  border: 1px dashed #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.gv-treeview-sidebar.collapsed:hover {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  border-style: solid;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.12);
+}
+
+.gv-btn-expand-bar {
+  background: none;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #2563eb;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+}
+
+.gv-collapsed-vertical-text {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #475569;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.gv-collapsed-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  padding: 2px 6px;
+  border-radius: 9999px;
+}
+
+.gv-collapsed-open-icon {
+  margin-top: auto;
+  color: #94a3b8;
+  transition: transform 0.2s ease;
+}
+
+.gv-treeview-sidebar.collapsed:hover .gv-collapsed-open-icon {
+  transform: translateX(2px);
+  color: #2563eb;
+}
+
+/* Toggle Tree button in filter bar */
+.gv-btn-toggle-tree {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #475569;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  margin-right: 6px;
+}
+
+.gv-btn-toggle-tree:hover {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+}
+
+.gv-btn-toggle-tree.collapsed {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #3b82f6;
 }
 
 .gv-treeview-header {
-  padding: 14px 16px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--admin-card-border, #e2e8f0);
   background: var(--admin-header-bg, #fafbfc);
 }
@@ -40,16 +140,18 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .gv-treeview-title {
-  font-size: 0.95rem;
+  font-size: 0.82rem;
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--admin-text-main, #0f172a);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .gv-tree-actions {
@@ -75,6 +177,16 @@
   background: #f1f5f9;
   color: #1e293b;
   border-color: #cbd5e1;
+}
+
+.gv-tree-action-btn.collapse-btn {
+  color: #64748b;
+}
+
+.gv-tree-action-btn.collapse-btn:hover {
+  background: #fee2e2;
+  color: #ef4444;
+  border-color: #fca5a5;
 }
 
 .gv-tree-search-box {
@@ -172,14 +284,15 @@
 /* Tree Nodes */
 .gv-tree-node {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  padding: 7px 10px;
+  padding: 6px 10px;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s ease;
   user-select: none;
   margin-bottom: 2px;
+  gap: 8px;
 }
 
 .gv-tree-node:hover {
@@ -194,8 +307,8 @@
 
 .gv-tree-node-label {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-start;
+  gap: 7px;
   min-width: 0;
   flex: 1;
 }
@@ -211,6 +324,8 @@
   justify-content: center;
   border-radius: 4px;
   transition: all 0.15s ease;
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 
 .gv-tree-expand-btn:hover {
@@ -220,6 +335,7 @@
 
 .gv-tree-node-icon {
   flex-shrink: 0;
+  margin-top: 2px;
 }
 
 .gv-tree-node-icon.root { color: #3b82f6; }
@@ -228,20 +344,30 @@
 .gv-tree-node-icon.gv { color: #10b981; }
 
 .gv-tree-node-text {
-  font-size: 0.86rem;
+  font-size: 0.81rem;
+  line-height: 1.35;
+  color: var(--admin-text-main, #1e293b);
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  flex: 1;
 }
 
 .gv-tree-node-badge {
   font-size: 0.72rem;
   font-weight: 600;
   padding: 2px 7px;
-  border-radius: 12px;
+  border-radius: 9999px;
   background: #f1f5f9;
   color: #64748b;
   flex-shrink: 0;
+  margin-top: 1px;
+  min-width: 20px;
+  text-align: center;
 }
 
 .gv-tree-node.active .gv-tree-node-badge {
@@ -250,17 +376,23 @@
 }
 
 .gv-tree-node.level-1 {
-  padding-left: 10px;
+  padding-left: 8px;
 }
 
 .gv-tree-node.level-2 {
-  padding-left: 26px;
-  font-size: 0.83rem;
+  padding-left: 20px;
+}
+
+.gv-tree-node.level-2 .gv-tree-node-text {
+  font-size: 0.78rem;
 }
 
 .gv-tree-node.level-3 {
-  padding-left: 44px;
-  font-size: 0.81rem;
+  padding-left: 32px;
+}
+
+.gv-tree-node.level-3 .gv-tree-node-text {
+  font-size: 0.76rem;
 }
 
 /* Lecturer item in tree */
@@ -268,11 +400,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 10px 6px 44px;
-  border-radius: 8px;
+  padding: 5px 8px 5px 32px;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s ease;
   margin-bottom: 1px;
+  gap: 6px;
 }
 
 .gv-tree-gv-item:hover {
@@ -287,18 +420,18 @@
 .gv-tree-gv-info {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   min-width: 0;
   flex: 1;
 }
 
 .gv-tree-gv-avatar {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   background: #e0e7ff;
   color: #4338ca;
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -307,12 +440,17 @@
 }
 
 .gv-tree-gv-name {
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 500;
   color: var(--admin-text-main, #1e293b);
+  line-height: 1.3;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .gv-tree-gv-code {
@@ -510,4 +648,241 @@
     position: static;
     max-height: 400px;
   }
+  .gv-treeview-sidebar.collapsed {
+    width: 100%;
+    max-width: 100%;
+    height: 44px;
+    min-height: 44px;
+    padding: 8px 16px;
+  }
+  .gv-treeview-sidebar.collapsed .gv-btn-expand-bar {
+    flex-direction: row;
+    gap: 10px;
+  }
+  .gv-treeview-sidebar.collapsed .gv-collapsed-vertical-text {
+    writing-mode: horizontal-tb;
+    transform: none;
+  }
+  .gv-treeview-sidebar.collapsed .gv-collapsed-open-icon {
+    margin-top: 0;
+    margin-left: auto;
+  }
+}
+
+/* ==========================================================================
+   ACCOUNT LINKING COMPONENT STYLES IN MODAL
+   ========================================================================== */
+
+.gv-account-link-section {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.gv-account-link-section.is-linked {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.gv-account-link-section.is-unlinked {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+}
+
+.gv-account-link-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.gv-account-link-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.gv-account-link-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 9999px;
+}
+
+.gv-account-link-status.linked {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+.gv-account-link-status.unlinked {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.gv-linked-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border: 1px solid #dcfce7;
+  padding: 12px 14px;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  gap: 12px;
+}
+
+.gv-linked-user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.gv-linked-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.88rem;
+  flex-shrink: 0;
+}
+
+.gv-linked-details {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.gv-linked-username-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.gv-linked-username {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: #0f172a;
+  font-family: monospace;
+}
+
+.gv-linked-role-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: #eff6ff;
+  color: #2563eb;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid #bfdbfe;
+}
+
+.gv-linked-subtext {
+  font-size: 0.78rem;
+  color: #64748b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gv-account-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.gv-btn-unlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #fff1f2;
+  color: #e11d48;
+  border: 1px solid #fecdd3;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gv-btn-unlink:hover {
+  background: #ffe4e6;
+  border-color: #fda4af;
+}
+
+.gv-btn-change-acc {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gv-btn-change-acc:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.gv-btn-quick-create-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 0;
+  margin-top: 6px;
+  transition: color 0.15s ease;
+}
+
+.gv-btn-quick-create-toggle:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.gv-quick-create-card {
+  background: #ffffff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-top: 10px;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.08);
+}
+
+.gv-quick-create-card-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1e40af;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }

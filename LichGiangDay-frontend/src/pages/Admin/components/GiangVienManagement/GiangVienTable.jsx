@@ -137,9 +137,12 @@ export default function GiangVienTable({
 
                 {/* 5. Tài khoản liên kết */}
                 <td style={{ textAlign: 'center' }}>
-                  <span className={`gv-account-badge ${gv.DaLienKetTaiKhoan ? 'linked' : 'unlinked'}`}>
+                  <span
+                    className={`gv-account-badge ${gv.DaLienKetTaiKhoan ? 'linked' : 'unlinked'}`}
+                    title={gv.Username ? `Tài khoản: @${gv.Username} (${gv.RoleName || gv.UserRole || 'Giảng viên'})` : 'Chưa liên kết tài khoản hệ thống'}
+                  >
                     {gv.DaLienKetTaiKhoan ? (
-                      <><Link size={11} /> Đã liên kết</>
+                      <><Link size={11} /> {gv.Username ? `@${gv.Username}` : 'Đã liên kết'}</>
                     ) : (
                       <><Unlink size={11} /> Chưa có</>
                     )}

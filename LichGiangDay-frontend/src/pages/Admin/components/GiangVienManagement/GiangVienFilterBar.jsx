@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, X, RefreshCw, Filter, Layers, School, Network, User, Lock } from 'lucide-react';
+import { Search, X, RefreshCw, Filter, Layers, School, Network, User, Lock, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import './GiangVienComponents.css';
 
 export default function GiangVienFilterBar({
@@ -20,7 +20,9 @@ export default function GiangVienFilterBar({
   onClearSelection,
   isBoMonRole = false,
   scopedBoMonId = '',
-  departmentFullName = ''
+  departmentFullName = '',
+  isTreeCollapsed = false,
+  onToggleTree
 }) {
   // Bộ môn thuộc khoa đang lọc (nếu có chọn khoa)
   const availableBoMons = isBoMonRole && scopedBoMonId
@@ -53,6 +55,18 @@ export default function GiangVienFilterBar({
       {/* 1. Context Breadcrumb / Active scope indicator */}
       <div className="gv-context-bar">
         <div className="gv-breadcrumb">
+          {onToggleTree && (
+            <button
+              type="button"
+              className={`gv-btn-toggle-tree ${isTreeCollapsed ? 'collapsed' : ''}`}
+              onClick={onToggleTree}
+              title={isTreeCollapsed ? 'Mở rộng Cây Cơ Cấu Tổ Chức' : 'Thu gọn Cây để tăng diện tích bảng'}
+            >
+              {isTreeCollapsed ? <PanelLeftOpen size={14} /> : <PanelLeftClose size={14} />}
+              <span>{isTreeCollapsed ? 'Hiện Cây' : 'Thu Gọn Cây'}</span>
+            </button>
+          )}
+
           <Layers size={15} style={{ color: '#3b82f6' }} />
           <span>Phạm vi hiển thị:</span>
 

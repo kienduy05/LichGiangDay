@@ -69,13 +69,13 @@ export default function LichGiangDayRoomGrid({
       )}
 
       {!loading && filteredRooms.length > 0 && (
-        <table className="lgd-matrix-table" style={{ minWidth: '1100px' }}>
+        <table className="lgd-matrix-table" style={{ minWidth: '1180px' }}>
           <thead>
             <tr>
-              <th style={{ width: '160px' }} className="lgd-th-period">
+              <th style={{ width: '135px' }} className="lgd-th-period">
                 Phòng Học
               </th>
-              <th style={{ width: '100px' }} className="lgd-th-period">
+              <th style={{ width: '85px' }} className="lgd-th-period">
                 Ca / Tiết
               </th>
               {weekDays.map(d => {

@@ -46,6 +46,7 @@ export default function MonHocManagement() {
   const [mhError, setMhError] = useState('');
 
   // ─── Bộ lọc & Tree selection ───
+  const [isTreeCollapsed, setIsTreeCollapsed] = useState(false);
   const [selectedKhoaId, setSelectedKhoaId] = useState('');
   const [selectedBoMonId, setSelectedBoMonId] = useState(isBoMonRole ? scopedBoMonId : '');
   const [selectedMhId, setSelectedMhId] = useState('');
@@ -409,6 +410,8 @@ export default function MonHocManagement() {
           isBoMonRole={isBoMonRole}
           scopedBoMonId={scopedBoMonId}
           departmentFullName={departmentFullName}
+          isCollapsed={isTreeCollapsed}
+          onToggleCollapse={() => setIsTreeCollapsed(prev => !prev)}
         />
 
         {/* 2. RIGHT PANEL: Content Area */}
@@ -441,6 +444,8 @@ export default function MonHocManagement() {
                 isBoMonRole={isBoMonRole}
                 scopedBoMonId={scopedBoMonId}
                 departmentFullName={departmentFullName}
+                isTreeCollapsed={isTreeCollapsed}
+                onToggleTree={() => setIsTreeCollapsed(prev => !prev)}
               />
 
               {/* Data Table */}

@@ -119,7 +119,7 @@ export default function GiangVienDetailView({
                   {/* Tài khoản */}
                   <span className={`gv-account-badge ${giangVien?.DaLienKetTaiKhoan ? 'linked' : 'unlinked'}`}>
                     {giangVien?.DaLienKetTaiKhoan ? (
-                      <><Link size={11} /> Có tài khoản người dùng</>
+                      <><Link size={11} /> {giangVien?.Username ? `Tài khoản: @${giangVien.Username}` : 'Có tài khoản người dùng'}</>
                     ) : (
                       <><Unlink size={11} /> Chưa liên kết tài khoản</>
                     )}

@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle2, AlertCircle, Loader2, Network, School, User, Mail, Phone, Lock } from 'lucide-react';
+import {
+  X, CheckCircle2, AlertCircle, Loader2, Network, School, User, Mail, Phone,
+  Lock, Link, Unlink, UserPlus, KeyRound, UserCheck
+} from 'lucide-react';
+import {
+  apiGetAvailableAccountsForGiangVien,
+  apiCreateAndLinkGiangVienAccount
+} from '../../../../utils/api';
 import './GiangVienComponents.css';
 
 export default function GiangVienFormModal({
@@ -16,9 +23,21 @@ export default function GiangVienFormModal({
   success = '',
   warning = '',
   isBoMonRole = false,
-  scopedBoMonId = ''
+  scopedBoMonId = '',
+  onRefresh
 }) {
   const [selectedKhoaForFilter, setSelectedKhoaForFilter] = useState('');
+
+  // Trạng thái quản lý liên kết tài khoản
+  const [availableAccounts, setAvailableAccounts] = useState([]);
+  const [loadingAccounts, setLoadingAccounts] = useState(false);
+  const [isChangingAccount, setIsChangingAccount] = useState(false);
+  const [showQuickCreate, setShowQuickCreate] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
+  const [newPassword, setNewPassword] = useState('123456');
+  const [createAccountLoading, setCreateAccountLoading] = useState(false);
+  const [createAccountError, setCreateAccountError] = useState('');
+  const [createAccountSuccess, setCreateAccountSuccess] = useState('');
 
   // Khi modal mở hoặc formData.maBoMon thay đổi, tự xác định Khoa tương ứng
   useEffect(() => {
@@ -38,12 +57,31 @@ export default function GiangVienFormModal({
     }
   }, [formData.maBoMon, boMonList, isOpen, isBoMonRole, scopedBoMonId]);
 
-  if (!isOpen) return null;
+  // Tải danh sách tài khoản khả dụng khi mở modal ở chế độ Edit
+  useEffect(() => {
+    if (isOpen && mode === 'edit' && formData.maGiangVien) {
+      loadAvailableAccounts();
+      setIsChangingAccount(false);
+      setShowQuickCreate(false);
+      setCreateAccountError('');
+      setCreateAccountSuccess('');
+      setNewUsername(formData.maGiangVien.toLowerCase());
+      setNewPassword('123456');
+    }
+  }, [isOpen, mode, formData.maGiangVien]);
 
-  // Lọc danh sách bộ môn theo khoa được chọn trong modal (nếu có chọn khoa)
-  const filteredBoMons = selectedKhoaForFilter
-    ? boMonList.filter(bm => bm.MaKhoa === selectedKhoaForFilter)
-    : boMonList;
+  const loadAvailableAccounts = async () => {
+    if (!formData.maGiangVien) return;
+    setLoadingAccounts(true);
+    try {
+      const list = await apiGetAvailableAccountsForGiangVien(formData.maGiangVien);
+      setAvailableAccounts(list || []);
+    } catch (err) {
+      console.error('Lỗi khi tải danh sách tài khoản khả dụng:', err);
+    } finally {
+      setLoadingAccounts(false);
+    }
+  };
 
   const handleKhoaSelectChange = (e) => {
     if (isBoMonRole) return;
@@ -58,9 +96,91 @@ export default function GiangVienFormModal({
     }
   };
 
+  // Chọn tài khoản từ dropdown
+  const handleSelectAccount = (e) => {
+    const selectedId = e.target.value;
+    if (!selectedId) {
+      setFormData(prev => ({
+        ...prev,
+        userId: '',
+        username: '',
+        userFullName: '',
+        userRole: ''
+      }));
+      return;
+    }
+    const found = availableAccounts.find(a => a.UserId === selectedId);
+    setFormData(prev => ({
+      ...prev,
+      userId: selectedId,
+      username: found?.Username || '',
+      userFullName: found?.FullName || '',
+      userRole: found?.RoleName || found?.Role || ''
+    }));
+    setIsChangingAccount(false);
+  };
+
+  // Hủy liên kết tài khoản
+  const handleUnlinkAccount = () => {
+    setFormData(prev => ({
+      ...prev,
+      userId: '',
+      username: '',
+      userFullName: '',
+      userRole: ''
+    }));
+    setIsChangingAccount(false);
+  };
+
+  // Tạo nhanh tài khoản mới cho giảng viên
+  const handleQuickCreateAccount = async () => {
+    setCreateAccountError('');
+    setCreateAccountSuccess('');
+    if (!newUsername.trim()) {
+      setCreateAccountError('Vui lòng nhập tên tài khoản (Username).');
+      return;
+    }
+    if (newPassword && newPassword.length < 6) {
+      setCreateAccountError('Mật khẩu tối thiểu 6 ký tự.');
+      return;
+    }
+
+    setCreateAccountLoading(true);
+    try {
+      const result = await apiCreateAndLinkGiangVienAccount(formData.maGiangVien, {
+        username: newUsername.trim(),
+        password: newPassword,
+        fullName: formData.hoTen,
+        email: formData.email
+      });
+      setCreateAccountSuccess(`Đã tạo và liên kết tài khoản @${result.Username || newUsername.trim()} thành công!`);
+      setFormData(prev => ({
+        ...prev,
+        userId: result.UserId,
+        username: result.Username,
+        userFullName: result.UserFullName,
+        userRole: result.RoleName || result.UserRole
+      }));
+      setShowQuickCreate(false);
+      await loadAvailableAccounts();
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      setCreateAccountError(err.message || 'Tạo tài khoản thất bại.');
+    } finally {
+      setCreateAccountLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  // Lọc danh sách bộ môn theo khoa được chọn trong modal (nếu có chọn khoa)
+  const filteredBoMons = selectedKhoaForFilter
+    ? boMonList.filter(bm => bm.MaKhoa === selectedKhoaForFilter)
+    : boMonList;
+
   return (
     <div className="modal-overlay" style={{ zIndex: 1000 }}>
-      <div className="modal-card" style={{ maxWidth: '560px' }}>
+      <div className="modal-card" style={{ maxWidth: '580px' }}>
         {/* Header */}
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -222,6 +342,208 @@ export default function GiangVienFormModal({
               </select>
             </div>
           </div>
+
+          {/* ═════════════════════════════════════════════════════════ */}
+          {/* LIÊN KẾT TÀI KHOẢN NGƯỜI DÙNG (ÁP DỤNG TRONG PHẦN CẬP NHẬT) */}
+          {/* ═════════════════════════════════════════════════════════ */}
+          {mode === 'edit' && (
+            <div className={`gv-account-link-section ${formData.userId ? 'is-linked' : 'is-unlinked'}`}>
+              {/* Header của block */}
+              <div className="gv-account-link-header">
+                <div className="gv-account-link-title">
+                  {formData.userId ? (
+                    <UserCheck size={18} color="#16a34a" />
+                  ) : (
+                    <Unlink size={18} color="#d97706" />
+                  )}
+                  <span>Tài Khoản Đăng Nhập Hệ Thống</span>
+                </div>
+                <span className={`gv-account-link-status ${formData.userId ? 'linked' : 'unlinked'}`}>
+                  {formData.userId ? (
+                    <><CheckCircle2 size={12} /> Đã liên kết</>
+                  ) : (
+                    <><AlertCircle size={12} /> Chưa liên kết</>
+                  )}
+                </span>
+              </div>
+
+              {createAccountSuccess && (
+                <div className="alert-banner success" style={{ marginBottom: '10px', fontSize: '0.82rem', padding: '8px 12px' }}>
+                  <CheckCircle2 size={15} />
+                  <span>{createAccountSuccess}</span>
+                </div>
+              )}
+
+              {/* Trường hợp A: Đang có tài khoản liên kết */}
+              {formData.userId && !isChangingAccount ? (
+                <div className="gv-linked-card">
+                  <div className="gv-linked-user-info">
+                    <div className="gv-linked-avatar">
+                      {(formData.username || formData.hoTen || 'U')[0].toUpperCase()}
+                    </div>
+                    <div className="gv-linked-details">
+                      <div className="gv-linked-username-row">
+                        <span className="gv-linked-username">@{formData.username || 'user'}</span>
+                        <span className="gv-linked-role-pill">
+                          {formData.userRole || 'Giảng viên'}
+                        </span>
+                      </div>
+                      <div className="gv-linked-subtext">
+                        {formData.userFullName ? `${formData.userFullName}` : formData.hoTen}
+                        {formData.email ? ` • ${formData.email}` : ''}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="gv-account-actions">
+                    <button
+                      type="button"
+                      onClick={() => setIsChangingAccount(true)}
+                      className="gv-btn-change-acc"
+                      title="Chọn tài khoản khác để liên kết"
+                    >
+                      Đổi tài khoản
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleUnlinkAccount}
+                      className="gv-btn-unlink"
+                      title="Gỡ liên kết tài khoản này khỏi giảng viên"
+                    >
+                      <Unlink size={13} /> Hủy liên kết
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Trường hợp B: Chưa liên kết hoặc đang chọn đổi tài khoản */
+                <div>
+                  <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '8px' }}>
+                    {isChangingAccount
+                      ? 'Chọn tài khoản khác từ danh sách tài khoản khả dụng:'
+                      : 'Liên kết với tài khoản người dùng để giảng viên đăng nhập xem lịch và gửi báo nghỉ:'}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <div style={{ flex: 1, position: 'relative' }}>
+                      <select
+                        className="modal-input"
+                        value={formData.userId || ''}
+                        onChange={handleSelectAccount}
+                        disabled={loadingAccounts}
+                        style={{ height: '38px', fontSize: '0.85rem' }}
+                      >
+                        <option value="">— Chọn tài khoản người dùng khả dụng —</option>
+                        {availableAccounts.map(acc => (
+                          <option key={acc.UserId} value={acc.UserId}>
+                            @{acc.Username} — {acc.FullName || 'Không tên'} ({acc.RoleName || acc.Role})
+                          </option>
+                        ))}
+                      </select>
+                      {loadingAccounts && (
+                        <div style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)' }}>
+                          <Loader2 size={16} className="animate-spin" color="#64748b" />
+                        </div>
+                      )}
+                    </div>
+
+                    {isChangingAccount && (
+                      <button
+                        type="button"
+                        onClick={() => setIsChangingAccount(false)}
+                        className="btn-cancel"
+                        style={{ height: '38px', padding: '0 12px', fontSize: '0.8rem' }}
+                      >
+                        Hủy đổi
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Toggle tạo nhanh tài khoản mới */}
+                  {!isChangingAccount && (
+                    <div style={{ marginTop: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowQuickCreate(!showQuickCreate);
+                          setCreateAccountError('');
+                          setCreateAccountSuccess('');
+                        }}
+                        className="gv-btn-quick-create-toggle"
+                      >
+                        <UserPlus size={14} />
+                        {showQuickCreate ? 'Đóng form tạo nhanh' : '+ Tạo nhanh tài khoản mới cho giảng viên này'}
+                      </button>
+
+                      {showQuickCreate && (
+                        <div className="gv-quick-create-card">
+                          <div className="gv-quick-create-card-title">
+                            <KeyRound size={14} />
+                            Tạo tài khoản đăng nhập tự động
+                          </div>
+
+                          {createAccountError && (
+                            <div className="alert-banner error" style={{ margin: '6px 0 10px', fontSize: '0.8rem', padding: '6px 10px' }}>
+                              <AlertCircle size={14} />
+                              <span>{createAccountError}</span>
+                            </div>
+                          )}
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                            <div>
+                              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '3px' }}>
+                                Tên tài khoản (Username) <span style={{ color: '#ef4444' }}>*</span>
+                              </label>
+                              <input
+                                type="text"
+                                className="modal-input"
+                                placeholder="VD: gv.001"
+                                value={newUsername}
+                                onChange={e => setNewUsername(e.target.value)}
+                                style={{ height: '34px', fontSize: '0.82rem' }}
+                              />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '3px' }}>
+                                Mật khẩu khởi tạo
+                              </label>
+                              <input
+                                type="text"
+                                className="modal-input"
+                                placeholder="123456"
+                                value={newPassword}
+                                onChange={e => setNewPassword(e.target.value)}
+                                style={{ height: '34px', fontSize: '0.82rem' }}
+                              />
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '10px' }}>
+                            <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                              * Mặc định quyền <strong style={{ color: '#2563eb' }}>GIANGVIEN</strong>, mật khẩu mặc định 123456.
+                            </span>
+                            <button
+                              type="button"
+                              onClick={handleQuickCreateAccount}
+                              disabled={createAccountLoading}
+                              className="btn-save"
+                              style={{ padding: '6px 14px', fontSize: '0.78rem', height: '32px' }}
+                            >
+                              {createAccountLoading ? (
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                  <Loader2 size={13} className="animate-spin" /> Đang tạo...
+                                </span>
+                              ) : (
+                                'Tạo & Liên Kết Ngay'
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Footer Actions */}
           <div className="modal-footer" style={{ marginTop: '20px' }}>

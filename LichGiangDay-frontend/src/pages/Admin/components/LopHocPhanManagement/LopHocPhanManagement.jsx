@@ -87,6 +87,7 @@ export default function LopHocPhanManagement() {
   const [lhpError, setLhpError] = useState('');
 
   // ─── Treeview Selection Filters ───
+  const [isTreeCollapsed, setIsTreeCollapsed] = useState(false);
   const [selectedKhoaId, setSelectedKhoaId] = useState('');
   const [selectedBoMonId, setSelectedBoMonId] = useState('');
   const [selectedMonHocId, setSelectedMonHocId] = useState('');
@@ -580,6 +581,8 @@ export default function LopHocPhanManagement() {
             isBoMonRole={isBoMonRole}
             scopedBoMonId={scopedBoMonId}
             departmentFullName={departmentFullName}
+            isCollapsed={isTreeCollapsed}
+            onToggleCollapse={() => setIsTreeCollapsed(prev => !prev)}
           />
 
           {/* 2. RIGHT PANEL: Content Area */}
@@ -613,6 +616,8 @@ export default function LopHocPhanManagement() {
                   loading={lhpLoading}
                   totalCount={lhpList.length}
                   onClearSelection={handleClearAllFilters}
+                  isTreeCollapsed={isTreeCollapsed}
+                  onToggleTree={() => setIsTreeCollapsed(prev => !prev)}
                 />
 
                 {/* Error Banner */}

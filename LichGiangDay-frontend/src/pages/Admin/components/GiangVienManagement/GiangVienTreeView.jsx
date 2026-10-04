@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Users, School, Network, ChevronDown, ChevronRight,
-  Search, X, UserCheck, ChevronsDownUp, ChevronsUpDown
+  Search, X, UserCheck, ChevronsDownUp, ChevronsUpDown,
+  PanelLeftClose, PanelLeftOpen
 } from 'lucide-react';
 import './GiangVienComponents.css';
 
@@ -19,7 +20,9 @@ export default function GiangVienTreeView({
   setFilterTrangThai,
   isBoMonRole = false,
   scopedBoMonId = '',
-  departmentFullName = ''
+  departmentFullName = '',
+  isCollapsed = false,
+  onToggleCollapse
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedKhoas, setExpandedKhoas] = useState({});
@@ -224,6 +227,23 @@ export default function GiangVienTreeView({
 
   const isAllSelected = !selectedKhoaId && (!selectedBoMonId || (isBoMonRole && selectedBoMonId === scopedBoMonId && !selectedGvId)) && !selectedGvId;
 
+  if (isCollapsed) {
+    return (
+      <aside
+        className="gv-treeview-sidebar collapsed"
+        onClick={onToggleCollapse}
+        title="Nhấn để mở rộng Cơ Cấu Tổ Chức"
+      >
+        <button type="button" className="gv-btn-expand-bar" aria-label="Mở rộng cơ cấu tổ chức">
+          <Users size={16} />
+          <span className="gv-collapsed-vertical-text">Cơ Cấu Tổ Chức</span>
+          <span className="gv-collapsed-badge">{treeData.totalGVs || 0}</span>
+          <PanelLeftOpen size={16} className="gv-collapsed-open-icon" />
+        </button>
+      </aside>
+    );
+  }
+
   return (
     <aside className="gv-treeview-sidebar">
       {/* Header */}
@@ -250,6 +270,16 @@ export default function GiangVienTreeView({
             >
               <ChevronsDownUp size={14} />
             </button>
+            {onToggleCollapse && (
+              <button
+                type="button"
+                className="gv-tree-action-btn collapse-btn"
+                onClick={onToggleCollapse}
+                title="Thu gọn cây cơ cấu"
+              >
+                <PanelLeftClose size={14} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -258,7 +288,7 @@ export default function GiangVienTreeView({
           <Search size={14} className="gv-tree-search-icon" />
           <input
             type="text"
-            placeholder={isBoMonRole ? "Tìm giảng viên bộ môn..." : "Lọc khoa, bộ môn, GV..."}
+            placeholder={isBoMonRole ? "Tìm theo mã hoặc tên giảng viên..." : "Tìm theo mã hoặc tên đơn vị..."}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />

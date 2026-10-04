@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   BookOpen, School, Network, ChevronDown, ChevronRight,
-  Search, X, BookMarked, ChevronsDownUp, ChevronsUpDown
+  Search, X, BookMarked, ChevronsDownUp, ChevronsUpDown,
+  PanelLeftClose, PanelLeftOpen
 } from 'lucide-react';
 import './MonHocComponents.css';
 
@@ -17,7 +18,9 @@ export default function MonHocTreeView({
   onSelectMh,
   isBoMonRole = false,
   scopedBoMonId = '',
-  departmentFullName = ''
+  departmentFullName = '',
+  isCollapsed = false,
+  onToggleCollapse
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedKhoas, setExpandedKhoas] = useState({});
@@ -209,6 +212,23 @@ export default function MonHocTreeView({
 
   const isAllSelected = !selectedKhoaId && (!selectedBoMonId || (isBoMonRole && selectedBoMonId === scopedBoMonId && !selectedMhId)) && !selectedMhId;
 
+  if (isCollapsed) {
+    return (
+      <aside
+        className="mh-treeview-sidebar collapsed"
+        onClick={onToggleCollapse}
+        title="Nhấn để mở rộng Phân Cấp Môn Học"
+      >
+        <button type="button" className="mh-btn-expand-bar" aria-label="Mở rộng phân cấp môn học">
+          <BookOpen size={16} />
+          <span className="mh-collapsed-vertical-text">Phân Cấp Môn Học</span>
+          <span className="mh-collapsed-badge">{treeData.totalMHs || 0}</span>
+          <PanelLeftOpen size={16} className="mh-collapsed-open-icon" />
+        </button>
+      </aside>
+    );
+  }
+
   return (
     <aside className="mh-treeview-sidebar">
       {/* Header */}
@@ -216,7 +236,7 @@ export default function MonHocTreeView({
         <div className="mh-treeview-title-row">
           <div className="mh-treeview-title">
             <BookOpen size={16} color="#3b82f6" />
-            <span>Phân Cấp Môn Học</span>
+            <span>Cơ Cấu Môn Học</span>
           </div>
           <div className="mh-tree-actions">
             <button
@@ -235,6 +255,16 @@ export default function MonHocTreeView({
             >
               <ChevronsDownUp size={14} />
             </button>
+            {onToggleCollapse && (
+              <button
+                type="button"
+                className="mh-tree-action-btn collapse-btn"
+                onClick={onToggleCollapse}
+                title="Thu gọn cây môn học"
+              >
+                <PanelLeftClose size={14} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -243,7 +273,7 @@ export default function MonHocTreeView({
           <Search size={14} className="mh-tree-search-icon" />
           <input
             type="text"
-            placeholder={isBoMonRole ? "Tìm môn học bộ môn..." : "Lọc khoa, bộ môn, môn học..."}
+            placeholder={isBoMonRole ? "Tìm theo mã hoặc tên môn học..." : "Tìm theo mã hoặc tên đơn vị..."}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
