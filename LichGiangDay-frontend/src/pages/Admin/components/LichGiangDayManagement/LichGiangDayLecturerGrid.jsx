@@ -72,13 +72,13 @@ export default function LichGiangDayLecturerGrid({
       )}
 
       {!loading && filteredLecturers.length > 0 && (
-        <table className="lgd-matrix-table" style={{ minWidth: '1100px' }}>
+        <table className="lgd-matrix-table" style={{ minWidth: '1180px' }}>
           <thead>
             <tr>
-              <th style={{ width: '180px' }} className="lgd-th-period">
+              <th style={{ width: '145px' }} className="lgd-th-period">
                 Giảng Viên
               </th>
-              <th style={{ width: '100px' }} className="lgd-th-period">
+              <th style={{ width: '85px' }} className="lgd-th-period">
                 Ca / Tiết
               </th>
               {weekDays.map(d => {

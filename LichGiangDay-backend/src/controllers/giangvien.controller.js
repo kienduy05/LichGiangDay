@@ -143,11 +143,11 @@ class GiangVienController {
     }
   };
 
-  // 5. Cập nhật thông tin Giảng viên
+  // 5. Cập nhật thông tin Giảng viên (kèm liên kết tài khoản)
   update = async (req, res, next) => {
     try {
       const { maGiangVien } = req.params;
-      let { hoTen, email, soDienThoai, maBoMon } = req.body;
+      let { hoTen, email, soDienThoai, maBoMon, userId } = req.body;
 
       if (!hoTen || !hoTen.trim()) {
         return res.status(400).json({
@@ -174,7 +174,7 @@ class GiangVienController {
         maBoMon = req.user.username; // Cố định bộ môn
       }
 
-      const result = await GiangVienService.update(maGiangVien, { hoTen, email, soDienThoai, maBoMon });
+      const result = await GiangVienService.update(maGiangVien, { hoTen, email, soDienThoai, maBoMon, userId });
       return res.status(200).json({
         status: 'success',
         code: 200,
@@ -265,6 +265,109 @@ class GiangVienController {
       return res.status(statusCode).json({
         status: 'error',
         code: statusCode,
+        message: error.message
+      });
+    }
+  };
+
+  // 7. Lấy danh sách tài khoản người dùng khả dụng để liên kết
+  getAvailableAccounts = async (req, res, next) => {
+    try {
+      const { maGiangVien } = req.query;
+      const accounts = await GiangVienService.getAvailableAccounts({ maGiangVien });
+      return res.status(200).json({
+        status: 'success',
+        code: 200,
+        message: 'Lấy danh sách tài khoản khả dụng thành công.',
+        metadata: accounts
+      });
+    } catch (error) {
+      return res.status(500).json({
+        status: 'error',
+        code: 500,
+        message: error.message || 'Lỗi server khi lấy danh sách tài khoản khả dụng.'
+      });
+    }
+  };
+
+  // 8. Liên kết / Hủy liên kết tài khoản cho Giảng viên
+  linkAccount = async (req, res, next) => {
+    try {
+      const { maGiangVien } = req.params;
+      const { userId } = req.body;
+
+      if (req.user?.role === 'BOMON') {
+        const existing = await GiangVienService.getById(maGiangVien);
+        if (!existing) {
+          return res.status(404).json({
+            status: 'error', code: 404,
+            message: `Không tìm thấy giảng viên '${maGiangVien}'.`
+          });
+        }
+        if (existing.MaBoMon !== req.user.username) {
+          return res.status(403).json({
+            status: 'error', code: 403,
+            message: `Từ chối truy cập: Bạn không có quyền liên kết tài khoản cho giảng viên của bộ môn khác.`
+          });
+        }
+      }
+
+      const result = await GiangVienService.linkAccount(maGiangVien, { userId });
+      return res.status(200).json({
+        status: 'success',
+        code: 200,
+        message: userId ? 'Liên kết tài khoản người dùng thành công.' : 'Hủy liên kết tài khoản thành công.',
+        metadata: result
+      });
+    } catch (error) {
+      return res.status(400).json({
+        status: 'error',
+        code: 400,
+        message: error.message
+      });
+    }
+  };
+
+  // 9. Tạo tài khoản mới và liên kết ngay cho Giảng viên
+  createAndLinkAccount = async (req, res, next) => {
+    try {
+      const { maGiangVien } = req.params;
+      const { username, password, fullName, email } = req.body;
+
+      if (!username || !username.trim()) {
+        return res.status(400).json({
+          status: 'error', code: 400,
+          message: 'Tên tài khoản (Username) không được để trống.'
+        });
+      }
+
+      if (req.user?.role === 'BOMON') {
+        const existing = await GiangVienService.getById(maGiangVien);
+        if (!existing) {
+          return res.status(404).json({
+            status: 'error', code: 404,
+            message: `Không tìm thấy giảng viên '${maGiangVien}'.`
+          });
+        }
+        if (existing.MaBoMon !== req.user.username) {
+          return res.status(403).json({
+            status: 'error', code: 403,
+            message: `Từ chối truy cập: Bạn không có quyền thao tác cho giảng viên của bộ môn khác.`
+          });
+        }
+      }
+
+      const result = await GiangVienService.createAndLinkAccount(maGiangVien, { username, password, fullName, email });
+      return res.status(201).json({
+        status: 'success',
+        code: 201,
+        message: 'Tạo tài khoản và liên kết thành công.',
+        metadata: result
+      });
+    } catch (error) {
+      return res.status(400).json({
+        status: 'error',
+        code: 400,
         message: error.message
       });
     }

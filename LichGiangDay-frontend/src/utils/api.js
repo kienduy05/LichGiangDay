@@ -609,14 +609,49 @@ export const apiCreateGiangVien = async ({ maGiangVien, hoTen, email, soDienThoa
   return data.metadata;
 };
 
-export const apiUpdateGiangVien = async (maGiangVien, { hoTen, email, soDienThoai, maBoMon }) => {
+export const apiUpdateGiangVien = async (maGiangVien, { hoTen, email, soDienThoai, maBoMon, userId }) => {
   const response = await fetch(`${API_BASE_URL}/giangvien/${encodeURIComponent(maGiangVien)}`, {
     method: 'PUT',
     headers: getAuthHeaders(),
-    body: JSON.stringify({ hoTen, email, soDienThoai, maBoMon })
+    body: JSON.stringify({ hoTen, email, soDienThoai, maBoMon, userId })
   });
   const data = await response.json();
   if (!response.ok) throw new Error(data.message || 'Cập nhật giảng viên thất bại.');
+  return data.metadata;
+};
+
+export const apiGetAvailableAccountsForGiangVien = async (maGiangVien = '') => {
+  const url = maGiangVien 
+    ? `${API_BASE_URL}/giangvien/available-accounts?maGiangVien=${encodeURIComponent(maGiangVien)}`
+    : `${API_BASE_URL}/giangvien/available-accounts`;
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Lấy danh sách tài khoản khả dụng thất bại.');
+  return data.metadata;
+};
+
+export const apiLinkGiangVienAccount = async (maGiangVien, userId) => {
+  const response = await fetch(`${API_BASE_URL}/giangvien/${encodeURIComponent(maGiangVien)}/link-account`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ userId })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Thao tác liên kết tài khoản thất bại.');
+  return data.metadata;
+};
+
+export const apiCreateAndLinkGiangVienAccount = async (maGiangVien, { username, password, fullName, email }) => {
+  const response = await fetch(`${API_BASE_URL}/giangvien/${encodeURIComponent(maGiangVien)}/create-account`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ username, password, fullName, email })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Tạo tài khoản thất bại.');
   return data.metadata;
 };
 

@@ -14,7 +14,8 @@ import ThoiKhoaBieuScheduleModal from './ThoiKhoaBieuScheduleModal';
 
 import {
   Calendar, LayoutGrid, List, RefreshCw, CheckCircle2,
-  AlertCircle, Building2, School, Network, Filter, Search
+  AlertCircle, Building2, School, Network, Filter, Search,
+  FolderTree, PanelLeftClose, PanelLeftOpen
 } from 'lucide-react';
 import './ThoiKhoaBieuManagement.css';
 
@@ -31,7 +32,8 @@ export default function ThoiKhoaBieuManagement() {
   // 2. View mode: 'TABLE' (Dạng bảng) | 'GRID' (Dạng lưới ma trận)
   const [viewMode, setViewMode] = useState('TABLE');
 
-  // 3. TreeView Navigation states
+  // 3. TreeView Navigation states & collapse toggle
+  const [isTreeCollapsed, setIsTreeCollapsed] = useState(false);
   const [treeData, setTreeData] = useState([]);
   const [treeStats, setTreeStats] = useState({ total: 0, scheduled: 0, unscheduled: 0 });
   const [selectedKhoaId, setSelectedKhoaId] = useState('ALL');
@@ -266,6 +268,8 @@ export default function ThoiKhoaBieuManagement() {
           onSearchChange={setTreeSearchTerm}
           onRefresh={fetchTreeView}
           loading={loadingTree}
+          isCollapsed={isTreeCollapsed}
+          onToggleCollapse={() => setIsTreeCollapsed(prev => !prev)}
         />
 
         {/* RIGHT PANEL: MAIN CONTENT */}
@@ -274,6 +278,17 @@ export default function ThoiKhoaBieuManagement() {
           {/* Header Toolbar bên phải */}
           <div className="tkb-right-panel-toolbar">
             <div className="tkb-toolbar-left">
+              {/* Nút Ẩn / Hiện Cây Sơ đồ đào tạo */}
+              <button
+                type="button"
+                className={`tkb-btn-toggle-tree ${isTreeCollapsed ? 'collapsed' : ''}`}
+                onClick={() => setIsTreeCollapsed(prev => !prev)}
+                title={isTreeCollapsed ? 'Mở rộng Sơ đồ đào tạo' : 'Thu gọn Sơ đồ đào tạo để tăng diện tích bảng'}
+              >
+                {isTreeCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+                <span>{isTreeCollapsed ? 'Hiện Sơ Đồ' : 'Thu Gọn Sơ Đồ'}</span>
+              </button>
+
               <div className={`tkb-current-node-tag ${selectedKhoaId !== 'ALL' || selectedBoMonId !== 'ALL' || selectedLhpId ? 'filtered' : ''}`}>
                 {selectedKhoaId === 'ALL' && selectedBoMonId === 'ALL' && !selectedLhpId ? (
                   <School size={16} color="#2563eb" />

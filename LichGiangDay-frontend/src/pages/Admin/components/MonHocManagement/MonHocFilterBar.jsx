@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, X, RefreshCw, Layers, School, Network, BookOpen, Lock } from 'lucide-react';
+import { Search, X, RefreshCw, Layers, School, Network, BookOpen, Lock, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import './MonHocComponents.css';
 
 export default function MonHocFilterBar({
@@ -18,7 +18,9 @@ export default function MonHocFilterBar({
   onClearSelection,
   isBoMonRole = false,
   scopedBoMonId = '',
-  departmentFullName = ''
+  departmentFullName = '',
+  isTreeCollapsed = false,
+  onToggleTree
 }) {
   const availableBoMons = isBoMonRole && scopedBoMonId
     ? boMonList.filter(bm => bm.MaBoMon === scopedBoMonId)
@@ -50,6 +52,18 @@ export default function MonHocFilterBar({
       {/* 1. Context Breadcrumb */}
       <div className="mh-context-bar">
         <div className="mh-breadcrumb">
+          {onToggleTree && (
+            <button
+              type="button"
+              className={`mh-btn-toggle-tree ${isTreeCollapsed ? 'collapsed' : ''}`}
+              onClick={onToggleTree}
+              title={isTreeCollapsed ? 'Mở rộng Cây Môn Học' : 'Thu gọn Cây để tăng diện tích bảng'}
+            >
+              {isTreeCollapsed ? <PanelLeftOpen size={14} /> : <PanelLeftClose size={14} />}
+              <span>{isTreeCollapsed ? 'Hiện Cây' : 'Thu Gọn Cây'}</span>
+            </button>
+          )}
+
           <Layers size={15} style={{ color: '#3b82f6' }} />
           <span>Phạm vi hiển thị:</span>
 

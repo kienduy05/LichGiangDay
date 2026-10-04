@@ -50,6 +50,7 @@ export default function GiangVienManagement() {
   const [gvError, setGvError] = useState('');
 
   // ─── Bộ lọc & Tree selection ───
+  const [isTreeCollapsed, setIsTreeCollapsed] = useState(false);
   const [selectedKhoaId, setSelectedKhoaId] = useState('');
   const [selectedBoMonId, setSelectedBoMonId] = useState(scopedBoMonId);
   const [selectedGvId, setSelectedGvId] = useState('');
@@ -242,7 +243,8 @@ export default function GiangVienManagement() {
       hoTen: '',
       email: '',
       soDienThoai: '',
-      maBoMon: defaultBm
+      maBoMon: defaultBm,
+      userId: ''
     });
     setFormError('');
     setFormSuccess('');
@@ -257,7 +259,11 @@ export default function GiangVienManagement() {
       hoTen: item.HoTen,
       email: item.Email || '',
       soDienThoai: item.SoDienThoai || '',
-      maBoMon: isBoMonRole && scopedBoMonId ? scopedBoMonId : (item.MaBoMon || '')
+      maBoMon: isBoMonRole && scopedBoMonId ? scopedBoMonId : (item.MaBoMon || ''),
+      userId: item.UserId || '',
+      username: item.Username || '',
+      userFullName: item.UserFullName || '',
+      userRole: item.RoleName || item.UserRole || ''
     });
     setFormError('');
     setFormSuccess('');
@@ -295,7 +301,8 @@ export default function GiangVienManagement() {
           hoTen: formData.hoTen,
           email: formData.email,
           soDienThoai: formData.soDienThoai,
-          maBoMon: payload.maBoMon
+          maBoMon: payload.maBoMon,
+          userId: formData.userId || null
         });
         setFormSuccess('Cập nhật giảng viên thành công!');
         if (result?.warnLanhDao) {
@@ -475,6 +482,8 @@ export default function GiangVienManagement() {
           isBoMonRole={isBoMonRole}
           scopedBoMonId={scopedBoMonId}
           departmentFullName={departmentFullName}
+          isCollapsed={isTreeCollapsed}
+          onToggleCollapse={() => setIsTreeCollapsed(prev => !prev)}
         />
 
         {/* 2. RIGHT PANEL: Content Area (Filter Bar + Table / Detail View) */}
@@ -511,6 +520,8 @@ export default function GiangVienManagement() {
                 isBoMonRole={isBoMonRole}
                 scopedBoMonId={scopedBoMonId}
                 departmentFullName={departmentFullName}
+                isTreeCollapsed={isTreeCollapsed}
+                onToggleTree={() => setIsTreeCollapsed(prev => !prev)}
               />
 
               {/* Data Table */}
@@ -552,6 +563,7 @@ export default function GiangVienManagement() {
         warning={formWarn}
         isBoMonRole={isBoMonRole}
         scopedBoMonId={scopedBoMonId}
+        onRefresh={handleRefresh}
       />
 
       {/* ══════════ MODAL: Xác nhận Xóa Giảng Viên ══════════ */}

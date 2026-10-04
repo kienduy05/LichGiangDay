@@ -16,6 +16,11 @@ class GiangVienService {
         gv.SoDienThoai,
         gv.MaBoMon,
         gv.TrangThai,
+        gv.UserId,
+        u.Username,
+        u.FullName AS UserFullName,
+        u.Role AS UserRole,
+        r.RoleName,
         bm.TenBoMon,
         bm.MaKhoa,
         k.TenKhoa,
@@ -24,6 +29,7 @@ class GiangVienService {
       LEFT JOIN BoMon bm ON gv.MaBoMon = bm.MaBoMon
       LEFT JOIN Khoa k   ON bm.MaKhoa   = k.MaKhoa
       LEFT JOIN Users u  ON gv.UserId   = u.UserId
+      LEFT JOIN Roles r  ON u.Role     = r.RoleId
     `;
 
     const params = [];
@@ -54,9 +60,9 @@ class GiangVienService {
     }
 
     if (search && search.trim() !== '') {
-      conditions.push('(gv.HoTen LIKE ? OR gv.Email LIKE ? OR gv.MaGiangVien LIKE ?)');
+      conditions.push('(gv.HoTen LIKE ? OR gv.Email LIKE ? OR gv.MaGiangVien LIKE ? OR u.Username LIKE ?)');
       const keyword = `%${search.trim()}%`;
-      params.push(keyword, keyword, keyword);
+      params.push(keyword, keyword, keyword, keyword);
     }
 
     if (conditions.length > 0) {
@@ -82,10 +88,20 @@ class GiangVienService {
         gv.MaBoMon,
         gv.TrangThai,
         gv.UserId,
+        u.Username,
+        u.FullName AS UserFullName,
+        u.Email AS UserEmail,
+        u.Role AS UserRole,
+        r.RoleName,
         bm.TenBoMon,
+        bm.MaKhoa,
+        k.TenKhoa,
         CASE WHEN gv.UserId IS NOT NULL THEN 1 ELSE 0 END AS DaLienKetTaiKhoan
       FROM GiangVien gv
       LEFT JOIN BoMon bm ON gv.MaBoMon = bm.MaBoMon
+      LEFT JOIN Khoa k   ON bm.MaKhoa   = k.MaKhoa
+      LEFT JOIN Users u  ON gv.UserId   = u.UserId
+      LEFT JOIN Roles r  ON u.Role     = r.RoleId
       WHERE gv.MaGiangVien = ?
       LIMIT 1
     `, [maGiangVien]);
@@ -152,10 +168,10 @@ class GiangVienService {
   };
 
   /**
-   * 3. Cập nhật thông tin Giảng viên
+   * 3. Cập nhật thông tin Giảng viên (kèm liên kết tài khoản nếu có)
    * Trả thêm cờ warnLanhDao nếu đổi MaBoMon mà GV đang là TruongBoMon/TruongKhoa
    */
-  static update = async (maGiangVien, { hoTen, email, soDienThoai, maBoMon }) => {
+  static update = async (maGiangVien, { hoTen, email, soDienThoai, maBoMon, userId }) => {
     const existing = await this.getById(maGiangVien);
     if (!existing) {
       throw new Error(`Không tìm thấy giảng viên có mã '${maGiangVien}'.`);
@@ -192,13 +208,42 @@ class GiangVienService {
       }
     }
 
+    // Xử lý UserId liên kết tài khoản
+    let newUserId = existing.UserId;
+    if (userId !== undefined) {
+      if (!userId || userId === '' || userId === '__UNLINK__') {
+        newUserId = null;
+      } else {
+        const targetUserId = userId.trim();
+        const [userRows] = await db.query(
+          `SELECT UserId, Username, FullName FROM Users WHERE UserId = ? LIMIT 1`,
+          [targetUserId]
+        );
+        if (userRows.length === 0) {
+          throw new Error(`Không tìm thấy tài khoản người dùng '${targetUserId}'.`);
+        }
+
+        // Kiểm tra xem tài khoản này đã liên kết với giảng viên khác chưa
+        const [otherGv] = await db.query(
+          `SELECT MaGiangVien, HoTen FROM GiangVien WHERE UserId = ? AND MaGiangVien != ? LIMIT 1`,
+          [targetUserId, maGiangVien]
+        );
+        if (otherGv.length > 0) {
+          throw new Error(`Tài khoản '${userRows[0].Username}' đã được liên kết với giảng viên khác (${otherGv[0].HoTen} - ${otherGv[0].MaGiangVien}).`);
+        }
+
+        newUserId = targetUserId;
+      }
+    }
+
     await db.query(
-      `UPDATE GiangVien SET HoTen=?, Email=?, SoDienThoai=?, MaBoMon=? WHERE MaGiangVien=?`,
+      `UPDATE GiangVien SET HoTen=?, Email=?, SoDienThoai=?, MaBoMon=?, UserId=? WHERE MaGiangVien=?`,
       [
         hoTen.trim(),
         email && email.trim() !== '' ? email.trim() : null,
         soDienThoai && soDienThoai.trim() !== '' ? soDienThoai.trim() : null,
         newBoMon,
+        newUserId,
         maGiangVien
       ]
     );
@@ -220,6 +265,88 @@ class GiangVienService {
     }
 
     return { ...updated, warnLanhDao };
+  };
+
+  /**
+   * Lấy danh sách tài khoản người dùng khả dụng để liên kết
+   * (chưa liên kết với giảng viên nào, HOẶC đang liên kết với chính giảng viên này)
+   */
+  static getAvailableAccounts = async ({ maGiangVien = '' } = {}) => {
+    const [rows] = await db.query(`
+      SELECT 
+        u.UserId,
+        u.Username,
+        u.FullName,
+        u.Email,
+        u.Role,
+        r.RoleName,
+        u.IsActive,
+        CASE WHEN gv.MaGiangVien = ? THEN 1 ELSE 0 END AS IsCurrent
+      FROM Users u
+      LEFT JOIN Roles r ON u.Role = r.RoleId
+      LEFT JOIN GiangVien gv ON u.UserId = gv.UserId
+      WHERE u.IsActive = 1
+        AND (gv.MaGiangVien IS NULL OR gv.MaGiangVien = ?)
+      ORDER BY IsCurrent DESC, u.Role ASC, u.Username ASC
+    `, [maGiangVien, maGiangVien]);
+    return rows;
+  };
+
+  /**
+   * Liên kết hoặc hủy liên kết tài khoản cho Giảng viên
+   */
+  static linkAccount = async (maGiangVien, { userId }) => {
+    const existing = await this.getById(maGiangVien);
+    if (!existing) {
+      throw new Error(`Không tìm thấy giảng viên có mã '${maGiangVien}'.`);
+    }
+
+    let newUserId = null;
+    if (userId && userId !== '__UNLINK__') {
+      const targetUserId = userId.trim();
+      const [userRows] = await db.query(
+        `SELECT UserId, Username, FullName FROM Users WHERE UserId = ? LIMIT 1`,
+        [targetUserId]
+      );
+      if (userRows.length === 0) {
+        throw new Error(`Không tìm thấy tài khoản người dùng '${targetUserId}'.`);
+      }
+
+      const [otherGv] = await db.query(
+        `SELECT MaGiangVien, HoTen FROM GiangVien WHERE UserId = ? AND MaGiangVien != ? LIMIT 1`,
+        [targetUserId, maGiangVien]
+      );
+      if (otherGv.length > 0) {
+        throw new Error(`Tài khoản '${userRows[0].Username}' đã được liên kết với giảng viên khác (${otherGv[0].HoTen} - ${otherGv[0].MaGiangVien}).`);
+      }
+
+      newUserId = targetUserId;
+    }
+
+    await db.query(`UPDATE GiangVien SET UserId = ? WHERE MaGiangVien = ?`, [newUserId, maGiangVien]);
+    return await this.getById(maGiangVien);
+  };
+
+  /**
+   * Tạo tài khoản người dùng mới và liên kết ngay với Giảng viên
+   */
+  static createAndLinkAccount = async (maGiangVien, { username, password, fullName, email }) => {
+    const existing = await this.getById(maGiangVien);
+    if (!existing) {
+      throw new Error(`Không tìm thấy giảng viên có mã '${maGiangVien}'.`);
+    }
+
+    const UserService = require('./user.service');
+    const createdUser = await UserService.createUser({
+      username: username.trim(),
+      password: password || '123456',
+      fullName: fullName || existing.HoTen,
+      email: email || existing.Email,
+      role: 'GIANGVIEN',
+      maGiangVien
+    });
+
+    return await this.getById(maGiangVien);
   };
 
   /**

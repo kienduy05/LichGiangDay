@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import {
   Users, School, ChevronDown, ChevronRight,
-  Search, X, ChevronsDownUp, ChevronsUpDown, GraduationCap
+  Search, X, ChevronsDownUp, ChevronsUpDown, GraduationCap,
+  PanelLeftClose, PanelLeftOpen
 } from 'lucide-react';
 import './LopSinhVienComponents.css';
 
@@ -11,7 +12,9 @@ export default function LopSinhVienTreeView({
   selectedKhoaId = '',
   selectedLsvId = '',
   onSelectKhoa,
-  onSelectLsv
+  onSelectLsv,
+  isCollapsed = false,
+  onToggleCollapse
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedKhoas, setExpandedKhoas] = useState({});
@@ -79,6 +82,23 @@ export default function LopSinhVienTreeView({
 
   const isAllSelected = !selectedKhoaId && !selectedLsvId;
 
+  if (isCollapsed) {
+    return (
+      <aside
+        className="lsv-treeview-sidebar collapsed"
+        onClick={onToggleCollapse}
+        title="Nhấn để mở rộng Phân Cấp Khoa"
+      >
+        <button type="button" className="lsv-btn-expand-bar" aria-label="Mở rộng phân cấp khoa">
+          <GraduationCap size={16} />
+          <span className="lsv-collapsed-vertical-text">Phân Cấp Khoa</span>
+          <span className="lsv-collapsed-badge">{treeData.totalClasses || 0}</span>
+          <PanelLeftOpen size={16} className="lsv-collapsed-open-icon" />
+        </button>
+      </aside>
+    );
+  }
+
   return (
     <aside className="lsv-treeview-sidebar">
       {/* Header */}
@@ -86,7 +106,7 @@ export default function LopSinhVienTreeView({
         <div className="lsv-treeview-title-row">
           <div className="lsv-treeview-title">
             <GraduationCap size={16} color="#3b82f6" />
-            <span>Phân Cấp Khoa</span>
+            <span>Cơ Cấu Lớp Sinh Viên</span>
           </div>
           <div className="lsv-tree-actions">
             <button
@@ -105,6 +125,16 @@ export default function LopSinhVienTreeView({
             >
               <ChevronsDownUp size={14} />
             </button>
+            {onToggleCollapse && (
+              <button
+                type="button"
+                className="lsv-tree-action-btn collapse-btn"
+                onClick={onToggleCollapse}
+                title="Thu gọn cây khoa"
+              >
+                <PanelLeftClose size={14} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -113,7 +143,7 @@ export default function LopSinhVienTreeView({
           <Search size={14} className="lsv-tree-search-icon" />
           <input
             type="text"
-            placeholder="Lọc khoa, lớp sinh viên..."
+            placeholder="Tìm theo mã hoặc tên đơn vị..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />

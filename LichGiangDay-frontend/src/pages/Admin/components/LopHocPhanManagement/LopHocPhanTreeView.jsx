@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   BookMarked, School, Network, BookOpen, ChevronDown, ChevronRight,
-  Search, X, ChevronsDownUp, ChevronsUpDown
+  Search, X, ChevronsDownUp, ChevronsUpDown, PanelLeftClose, PanelLeftOpen
 } from 'lucide-react';
 import './LopHocPhanComponents.css';
 
@@ -18,7 +18,9 @@ export default function LopHocPhanTreeView({
   onSelectMonHoc,
   isBoMonRole = false,
   scopedBoMonId = '',
-  departmentFullName = ''
+  departmentFullName = '',
+  isCollapsed = false,
+  onToggleCollapse
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedKhoas, setExpandedKhoas] = useState({});
@@ -155,6 +157,23 @@ export default function LopHocPhanTreeView({
 
   const isAllSelected = !selectedKhoaId && (!selectedBoMonId || (isBoMonRole && selectedBoMonId === scopedBoMonId && !selectedMonHocId)) && !selectedMonHocId;
 
+  if (isCollapsed) {
+    return (
+      <aside
+        className="lhp-treeview-sidebar collapsed"
+        onClick={onToggleCollapse}
+        title="Nhấn để mở rộng Cây Môn Học Mở Lớp"
+      >
+        <button type="button" className="lhp-btn-expand-bar" aria-label="Mở rộng cây môn học">
+          <BookMarked size={16} />
+          <span className="lhp-collapsed-vertical-text">Cây Môn Học</span>
+          <span className="lhp-collapsed-badge">{treeData.totalLhps || 0}</span>
+          <PanelLeftOpen size={16} className="lhp-collapsed-open-icon" />
+        </button>
+      </aside>
+    );
+  }
+
   return (
     <aside className="lhp-treeview-sidebar">
       {/* Header */}
@@ -181,6 +200,16 @@ export default function LopHocPhanTreeView({
             >
               <ChevronsDownUp size={14} />
             </button>
+            {onToggleCollapse && (
+              <button
+                type="button"
+                className="lhp-tree-action-btn collapse-btn"
+                onClick={onToggleCollapse}
+                title="Thu gọn cây môn học"
+              >
+                <PanelLeftClose size={14} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -189,7 +218,7 @@ export default function LopHocPhanTreeView({
           <Search size={14} className="lhp-tree-search-icon" />
           <input
             type="text"
-            placeholder={isBoMonRole ? "Lọc môn học của bộ môn..." : "Lọc môn học có lớp..."}
+            placeholder={isBoMonRole ? "Tìm theo mã hoặc tên môn học..." : "Tìm theo mã hoặc tên đơn vị..."}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
