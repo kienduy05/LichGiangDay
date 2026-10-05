@@ -2057,7 +2057,7 @@ Khi Trưởng bộ môn mở đơn đổi ca, hệ thống kiểm tra cùng lúc
 
 ---
 
-### 3.6. Chức năng 6: Giám Sát Biến Động Toàn Trường & Can Thiệp Thu Hồi Dành Cho Admin/PĐT (Role `ADMIN`, `PDT` - Màn hình `LichBienDongMonitor`)
+### 3.6. Chức năng 6: Giám Sát Biến Động Toàn Trường & Can Thiệp Thu Hồi Dành Cho Admin/Phòng Đào Tạo (Role `ADMIN`, `PHONGDAOTAO` - Màn hình `LichBienDongMonitor`)
 
 - **Bảng dữ liệu tác động trong CSDL**: Toàn bộ các bảng biến động lịch (`BuoiHoc`, `YeuCauNghi`, `DangKyDayBu`, `PhanCongDayThay`).
 - **Resource ID kiểm tra quyền (`checkPermission`)**: `'GiangVien'` / `'ThoiKhoaBieu'` (`ADMIN`, `PHONGDAOTAO`).

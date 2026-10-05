@@ -36,7 +36,7 @@ export default function AdminSidebar({ activeTab, setActiveTab, isOpenMobile, on
   const hasSchedulePermissions = (
     hasPermission('ThoiKhoaBieu', 'CanRead') ||
     hasPermission('LopHocPhan', 'CanRead') ||
-    ['ADMIN', 'PHONGDAOTAO', 'PDT', 'BOMON'].includes(user?.role)
+    ['ADMIN', 'PHONGDAOTAO', 'BOMON'].includes(user?.role)
   );
 
   // Kiểm tra xem nhóm Cấu hình hệ thống có mục nào được xem không
@@ -241,15 +241,15 @@ export default function AdminSidebar({ activeTab, setActiveTab, isOpenMobile, on
               </div>
             )}
 
-            {/* GIÁM SÁT BIẾN ĐỘNG LỊCH (ADMIN / PHONGDAOTAO / PDT & BOMON) */}
-            {(['ADMIN', 'PHONGDAOTAO', 'PDT', 'BOMON'].includes(user?.role)) && (
+            {/* GIÁM SÁT BIẾN ĐỘNG LỊCH (ADMIN / PHONGDAOTAO & BOMON) */}
+            {(['ADMIN', 'PHONGDAOTAO', 'BOMON'].includes(user?.role)) && (
               <div
                 className={`admin-nav-item ${activeTab === 'biendonglich' ? 'active' : ''}`}
                 onClick={() => handleNavClick('biendonglich')}
               >
                 <Activity size={18} />
                 <span>Biến Động Lịch</span>
-                {['ADMIN', 'PHONGDAOTAO', 'PDT'].includes(user?.role) && (
+                {['ADMIN', 'PHONGDAOTAO'].includes(user?.role) && (
                   <span className="admin-nav-badge" style={{ background: '#3b82f6' }}>Toàn trường</span>
                 )}
               </div>
