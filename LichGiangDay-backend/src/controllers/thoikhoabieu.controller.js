@@ -306,18 +306,19 @@ class ThoiKhoaBieuController {
   // ================================================================
   getLecturerWeeklySchedule = async (req, res) => {
     try {
-      if (req.user?.role !== 'BOMON') {
+      const allowedRoles = ['BOMON', 'GIANGVIEN', 'ADMIN'];
+      if (!allowedRoles.includes(req.user?.role)) {
         return res.status(403).json({
           status: 'error', code: 403,
-          message: 'Quyền hạn bị từ chối: Chức năng này chỉ dành riêng cho Bộ Môn.'
+          message: 'Quyền hạn bị từ chối: Chức năng này dành cho Giảng Viên, Bộ Môn hoặc Quản Trị.'
         });
       }
 
-      const { maGiangVien, maHocKy } = req.query;
-      const maBoMon = req.user.username;
+      let { maGiangVien, maHocKy } = req.query;
+      const maBoMon = req.user?.role === 'BOMON' ? req.user.username : '';
 
       const result = await ThoiKhoaBieuService.getLecturerWeeklySchedule({
-        maGiangVien, maHocKy, maBoMon
+        maGiangVien, maHocKy, maBoMon, userId: req.user?.userId
       });
 
       return res.status(200).json({

@@ -3,7 +3,8 @@ import { useAuth } from '../../../context/AuthContext';
 import {
   LayoutDashboard, Building, Layers, School, Network, UserCheck,
   BookOpen, Users, BookMarked, CalendarDays, Clock,
-  Calendar, CalendarRange, ShieldCheck, KeyRound, GraduationCap, X
+  Calendar, CalendarRange, ShieldCheck, KeyRound, GraduationCap, X,
+  ClipboardCheck, Activity
 } from 'lucide-react';
 import './AdminSidebar.css';
 
@@ -216,7 +217,7 @@ export default function AdminSidebar({ activeTab, setActiveTab, isOpenMobile, on
               </div>
             )}
 
-            {/* PHÂN CÔNG GIẢNG VIÊN (ĐỘC QUYỀN ROLE BOMON) */}
+            {/* PHÂN CÔNG GIẢNG VIÊN (ROLE BOMON) */}
             {user?.role === 'BOMON' && (
               <div
                 className={`admin-nav-item ${activeTab === 'phanconggiangvien' ? 'active' : ''}`}
@@ -224,6 +225,32 @@ export default function AdminSidebar({ activeTab, setActiveTab, isOpenMobile, on
               >
                 <UserCheck size={18} />
                 <span>Phân Công Giảng Viên</span>
+              </div>
+            )}
+
+            {/* DUYỆT YÊU CẦU GIẢNG DẠY (ĐỘC QUYỀN ROLE BOMON) */}
+            {user?.role === 'BOMON' && (
+              <div
+                className={`admin-nav-item ${activeTab === 'duyetyeucau' ? 'active' : ''}`}
+                onClick={() => handleNavClick('duyetyeucau')}
+              >
+                <ClipboardCheck size={18} />
+                <span>Duyệt Yêu Cầu</span>
+                <span className="admin-nav-badge">4</span>
+              </div>
+            )}
+
+            {/* GIÁM SÁT BIẾN ĐỘNG LỊCH (ADMIN / PDT & BOMON) */}
+            {(user?.role === 'ADMIN' || user?.role === 'PDT' || user?.role === 'BOMON') && (
+              <div
+                className={`admin-nav-item ${activeTab === 'biendonglich' ? 'active' : ''}`}
+                onClick={() => handleNavClick('biendonglich')}
+              >
+                <Activity size={18} />
+                <span>Biến Động Lịch</span>
+                {user?.role === 'ADMIN' && (
+                  <span className="admin-nav-badge" style={{ background: '#3b82f6' }}>Toàn trường</span>
+                )}
               </div>
             )}
           </>

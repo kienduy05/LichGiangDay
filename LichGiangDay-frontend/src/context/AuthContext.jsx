@@ -40,7 +40,9 @@ export const AuthProvider = ({ children }) => {
               username: currentUser.username || currentUser.Username,
               fullName: currentUser.fullName || currentUser.FullName,
               email: currentUser.email || currentUser.Email,
-              role: currentUser.role || currentUser.Role
+              role: currentUser.role || currentUser.Role,
+              maGiangVien: currentUser.maGiangVien || currentUser.MaGiangVien || null,
+              tenGiangVien: currentUser.tenGiangVien || currentUser.TenGiangVien || null
             };
             setUser(normalizedUser);
             localStorage.setItem('user', JSON.stringify(normalizedUser));
@@ -69,7 +71,9 @@ export const AuthProvider = ({ children }) => {
       username: userData.username || userData.Username,
       fullName: userData.fullName || userData.FullName,
       email: userData.email || userData.Email,
-      role: userData.role || userData.Role
+      role: userData.role || userData.Role,
+      maGiangVien: userData.maGiangVien || userData.MaGiangVien || null,
+      tenGiangVien: userData.tenGiangVien || userData.TenGiangVien || null
     };
 
     localStorage.setItem('accessToken', tokens.accessToken);

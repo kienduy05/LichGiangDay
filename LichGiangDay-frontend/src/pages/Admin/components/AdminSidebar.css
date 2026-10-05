@@ -132,6 +132,22 @@
   color: #ffffff;
 }
 
+.admin-nav-badge {
+  margin-left: auto;
+  background: #ea580c;
+  color: #ffffff;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  line-height: 1.2;
+}
+
+.admin-nav-item.active .admin-nav-badge {
+  background: #ffffff;
+  color: #2563eb;
+}
+
 /* ==========================================================================
    RESPONSIVE MEDIA QUERIES (TABLET & MOBILE)
    ========================================================================== */

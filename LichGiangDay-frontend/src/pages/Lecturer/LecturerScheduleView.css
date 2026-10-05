@@ -1,0 +1,516 @@
+/* ================================================================
+   LECTURER SCHEDULE PORTAL - MODERN LIGHT DESIGN
+   ================================================================ */
+
+.lec-portal-layout {
+  min-height: 100vh;
+  width: 100%;
+  background-color: #f8fafc;
+  color: #0f172a;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ────────────────────────────────────────────────────────
+   TOP NAVIGATION
+   ──────────────────────────────────────────────────────── */
+.lec-portal-nav {
+  height: 68px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.lec-nav-left {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.lec-nav-logo-box {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #059669 0%, #0284c7 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(5, 150, 105, 0.25);
+}
+
+.lec-nav-brand-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.lec-nav-brand-sub {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.lec-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.lec-user-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.35rem 0.75rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+}
+
+.lec-user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.lec-user-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.lec-user-name {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.2;
+}
+
+.lec-user-role {
+  font-size: 0.71875rem;
+  color: #059669;
+  font-weight: 600;
+}
+
+.lec-btn-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.lec-btn-logout:hover {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+/* ────────────────────────────────────────────────────────
+   MAIN CONTENT
+   ──────────────────────────────────────────────────────── */
+.lec-portal-main {
+  flex: 1;
+  padding: 1.5rem 2rem 2.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 1600px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Profile Banner Card */
+.lec-banner-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1.25rem 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+}
+
+.lec-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 1.15rem;
+}
+
+.lec-profile-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #059669 0%, #0284c7 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 16px rgba(5, 150, 105, 0.25);
+  flex-shrink: 0;
+}
+
+.lec-welcome-text {
+  font-size: 0.78125rem;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.lec-profile-name {
+  margin: 0.15rem 0 0.35rem 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.lec-profile-tags {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.lec-tag-item {
+  font-size: 0.78125rem;
+  color: #475569;
+  background: #f1f5f9;
+  padding: 0.15rem 0.55rem;
+  border-radius: 6px;
+}
+
+.lec-tag-item strong {
+  color: #1e293b;
+}
+
+.lec-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.lec-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.lec-action-btn.btn-print {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+}
+
+.lec-action-btn.btn-print:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.lec-action-btn.btn-taodaybu {
+  background: linear-gradient(135deg, #059669 0%, #0d9488 100%);
+  border: none;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+}
+
+.lec-action-btn.btn-taodaybu:hover {
+  background: linear-gradient(135deg, #047857 0%, #0f766e 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(5, 150, 105, 0.35);
+}
+
+.lec-badge-ca-nghi {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+}
+
+/* Controls Bar */
+.lec-controls-bar {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+}
+
+.lec-controls-left {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.lec-select-group {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.lec-select-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.lec-select {
+  padding: 0.45rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  font-size: 0.84rem;
+  color: #1e293b;
+  outline: none;
+  cursor: pointer;
+}
+
+.lec-select:focus {
+  border-color: #059669;
+  background: #ffffff;
+}
+
+/* Week Navigator */
+.lec-week-navigator {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #f8fafc;
+  padding: 0.25rem 0.4rem;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.lec-nav-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.lec-nav-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.lec-nav-date-text {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #1e293b;
+  padding: 0 0.65rem;
+}
+
+.lec-btn-today {
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.78125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-left: 0.2rem;
+}
+
+.lec-btn-today:hover {
+  background: #dbeafe;
+}
+
+/* Stats Strip */
+.lec-stats-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.lec-stat-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8125rem;
+  color: #475569;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+}
+
+.lec-stat-pill strong {
+  color: #0f172a;
+}
+
+/* ────────────────────────────────────────────────────────
+   MATRIX WRAPPER
+   ──────────────────────────────────────────────────────── */
+.lec-matrix-container {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  overflow-x: auto;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+}
+
+.lec-loading-state {
+  padding: 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  color: #059669;
+  font-weight: 600;
+}
+
+/* Card Action Chips inside class card */
+.lec-card-action-chips {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
+  border-top: 1px dashed rgba(0, 0, 0, 0.08);
+}
+
+.lec-chip-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.25rem 0.2rem;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.btn-doi-ca {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.btn-doi-ca:hover {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.btn-bao-nghi {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.btn-bao-nghi:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.btn-day-thay {
+  background: #f5f3ff;
+  color: #7c3aed;
+  border: 1px solid #ddd6fe;
+}
+
+.btn-day-thay:hover {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+/* ────────────────────────────────────────────────────────
+   PRINT OPTIMIZATION
+   ──────────────────────────────────────────────────────── */
+@media print {
+  .lec-portal-nav,
+  .lec-banner-actions,
+  .lec-week-navigator button,
+  .lec-card-action-chips {
+    display: none !important;
+  }
+
+  .lec-portal-layout {
+    background: #ffffff !important;
+  }
+
+  .lec-matrix-container {
+    box-shadow: none !important;
+    border: 1px solid #000 !important;
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .lec-portal-nav {
+    padding: 0 1rem;
+  }
+
+  .lec-portal-main {
+    padding: 1rem;
+  }
+
+  .lec-banner-card {
+    padding: 1rem;
+  }
+
+  .lec-controls-bar {
+    padding: 0.85rem;
+  }
+}
