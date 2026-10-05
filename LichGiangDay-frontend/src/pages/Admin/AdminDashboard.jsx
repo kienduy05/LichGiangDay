@@ -25,6 +25,8 @@ import LopHocPhanManagement from './components/LopHocPhanManagement/LopHocPhanMa
 import ThoiKhoaBieuManagement from './components/ThoiKhoaBieuManagement/ThoiKhoaBieuManagement';
 import LichGiangDayManagement from './components/LichGiangDayManagement/LichGiangDayManagement';
 import PhanCongGiangVienManagement from './components/PhanCongGiangVienManagement/PhanCongGiangVienManagement';
+import DuyetYeuCauManagement from './components/DuyetYeuCauManagement/DuyetYeuCauManagement';
+import LichBienDongMonitor from './components/LichBienDongMonitor/LichBienDongMonitor';
 
 import './AdminDashboard.css';
 
@@ -197,6 +199,8 @@ export default function AdminDashboard() {
           {activeTab === 'lichgiangday' && <LichGiangDayManagement />}
           {activeTab === 'thoikhoabieu' && <ThoiKhoaBieuManagement />}
           {activeTab === 'phanconggiangvien' && <PhanCongGiangVienManagement />}
+          {activeTab === 'duyetyeucau' && <DuyetYeuCauManagement />}
+          {activeTab === 'biendonglich' && <LichBienDongMonitor />}
           {activeTab === 'roles' && <RolesManagement />}
           {activeTab === 'users' && <UsersManagement />}
           {activeTab === 'permissions' && <PermissionsManagement />}

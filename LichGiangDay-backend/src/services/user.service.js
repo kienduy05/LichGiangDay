@@ -5,7 +5,23 @@ class UserService {
   static findByUsername = async ({ username }) => {
     try {
       const [rows] = await db.query(
-        'SELECT * FROM Users WHERE Username = ? AND IsActive = 1 LIMIT 1',
+        `SELECT 
+           u.UserId, 
+           u.Username, 
+           u.PasswordHash,
+           u.FullName, 
+           u.Email, 
+           u.Role, 
+           r.RoleName, 
+           u.IsActive, 
+           u.CreatedAt, 
+           u.UpdatedAt,
+           gv.MaGiangVien,
+           gv.HoTen AS TenGiangVien
+         FROM Users u 
+         LEFT JOIN Roles r ON u.Role = r.RoleId 
+         LEFT JOIN GiangVien gv ON u.UserId = gv.UserId
+         WHERE u.Username = ? AND u.IsActive = 1 LIMIT 1`,
         [username]
       );
       return rows[0] || null;

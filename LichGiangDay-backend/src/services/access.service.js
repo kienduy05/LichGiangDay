@@ -53,7 +53,9 @@ class AccessService {
         username: foundUser.Username,
         fullName: foundUser.FullName,
         email: foundUser.Email,
-        role: foundUser.Role
+        role: foundUser.Role,
+        maGiangVien: foundUser.MaGiangVien || null,
+        tenGiangVien: foundUser.TenGiangVien || null
       },
       tokens
     };

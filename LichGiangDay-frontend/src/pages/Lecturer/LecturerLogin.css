@@ -1,0 +1,600 @@
+/* ================================================================
+   LECTURER PORTAL - MODERN LIGHT THEME LOGIN CSS
+   ================================================================ */
+
+.lec-login-wrapper {
+  min-height: 100vh;
+  width: 100%;
+  background: #f8fafc;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.08) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(5, 150, 105, 0.06) 0px, transparent 50%),
+    radial-gradient(at 50% 50%, rgba(241, 245, 249, 0.85) 0px, transparent 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.25rem;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: #0f172a;
+}
+
+/* Background floating decorative orbs */
+.lec-bg-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.65;
+}
+
+.lec-bg-orb.orb-1 {
+  width: 460px;
+  height: 460px;
+  background: rgba(191, 219, 254, 0.5);
+  top: -100px;
+  left: -80px;
+}
+
+.lec-bg-orb.orb-2 {
+  width: 400px;
+  height: 400px;
+  background: rgba(167, 243, 208, 0.4);
+  bottom: -80px;
+  right: -60px;
+}
+
+/* Shell */
+.lec-login-shell {
+  width: 100%;
+  max-width: 1120px;
+  min-height: 620px;
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 
+    0 25px 50px -12px rgba(15, 23, 42, 0.08),
+    0 0 0 1px rgba(226, 232, 240, 0.85),
+    0 8px 24px -4px rgba(37, 99, 235, 0.04);
+  display: grid;
+  grid-template-columns: 1.12fr 1fr;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+  animation: lecCardFadeUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes lecCardFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Left Hero */
+.lec-hero-panel {
+  background: linear-gradient(155deg, #f0fdf4 0%, #f8fafc 45%, #eff6ff 100%);
+  border-right: 1px solid #e2e8f0;
+  padding: 3rem 2.75rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.lec-hero-brand {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.lec-hero-logo-box {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #059669 0%, #0284c7 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 16px -2px rgba(5, 150, 105, 0.28);
+  flex-shrink: 0;
+}
+
+.lec-hero-subbrand {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #059669;
+  text-transform: uppercase;
+}
+
+.lec-hero-brandname {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.lec-hero-content {
+  margin: 2rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
+}
+
+.lec-hero-pill {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: #ffffff;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+  padding: 0.3rem 0.85rem;
+  border-radius: 9999px;
+  font-size: 0.78125rem;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.06);
+}
+
+.lec-hero-title {
+  margin: 0;
+  font-size: 1.95rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.28;
+  letter-spacing: -0.025em;
+}
+
+.lec-hero-desc {
+  margin: 0;
+  font-size: 0.925rem;
+  color: #475569;
+  line-height: 1.6;
+}
+
+.lec-feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+.lec-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  padding: 0.85rem 1.1rem;
+  border-radius: 14px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.lec-feature-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(5, 150, 105, 0.08);
+  border-color: #a7f3d0;
+}
+
+.lec-feature-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.icon-blue { background: #eff6ff; color: #2563eb; }
+.icon-sky { background: #f0f9ff; color: #0284c7; }
+.icon-emerald { background: #ecfdf5; color: #059669; }
+
+.lec-feature-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.lec-feature-text strong {
+  font-size: 0.875rem;
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.lec-feature-text span {
+  font-size: 0.78125rem;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.lec-hero-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 1.25rem;
+}
+
+.lec-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.78125rem;
+  font-weight: 600;
+  color: #059669;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  padding: 0.25rem 0.65rem;
+  border-radius: 6px;
+}
+
+.lec-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+.lec-version-text {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* Right Form Panel */
+.lec-form-panel {
+  background: #ffffff;
+  padding: 3rem 2.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lec-form-card {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+}
+
+.lec-form-header {
+  text-align: center;
+  margin-bottom: 1.75rem;
+}
+
+.lec-form-icon-bubble {
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #059669 0%, #0284c7 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem auto;
+  box-shadow: 0 8px 20px rgba(5, 150, 105, 0.25);
+  transition: transform 0.2s ease;
+}
+
+.lec-form-icon-bubble:hover {
+  transform: scale(1.05) rotate(-3deg);
+}
+
+.lec-form-title {
+  margin: 0;
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.lec-form-subtitle {
+  margin: 0.4rem 0 0 0;
+  font-size: 0.84rem;
+  color: #64748b;
+}
+
+/* Error Banner */
+.lec-error-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  font-size: 0.84rem;
+  margin-bottom: 1.25rem;
+  line-height: 1.45;
+}
+
+.lec-error-link {
+  display: inline-block;
+  color: #2563eb;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+/* Form */
+.lec-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.lec-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.lec-field-label {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.lec-input-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.lec-input-icon {
+  position: absolute;
+  left: 14px;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.lec-input {
+  width: 100%;
+  padding: 0.72rem 1rem 0.72rem 2.65rem;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+  font-size: 0.925rem;
+  font-family: inherit;
+  outline: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+.lec-input:hover {
+  background: #ffffff;
+  border-color: #94a3b8;
+}
+
+.lec-input:focus {
+  background: #ffffff;
+  border-color: #059669;
+  box-shadow: 0 0 0 3.5px rgba(5, 150, 105, 0.15);
+}
+
+.lec-btn-toggle-pw {
+  position: absolute;
+  right: 12px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+
+.lec-btn-toggle-pw:hover {
+  color: #334155;
+  background: #f1f5f9;
+}
+
+.lec-form-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: -0.25rem;
+}
+
+.lec-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8125rem;
+  color: #475569;
+  cursor: pointer;
+  user-select: none;
+}
+
+.lec-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: #059669;
+  cursor: pointer;
+}
+
+.lec-btn-submit {
+  width: 100%;
+  padding: 0.85rem 1.25rem;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #059669 0%, #0284c7 100%);
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.32);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  margin-top: 0.25rem;
+}
+
+.lec-btn-submit:hover:not(:disabled) {
+  background: linear-gradient(135deg, #047857 0%, #0369a1 100%);
+  box-shadow: 0 8px 20px rgba(5, 150, 105, 0.4);
+  transform: translateY(-1px);
+}
+
+.lec-btn-submit:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.lec-btn-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.lec-btn-arrow {
+  transition: transform 0.2s ease;
+}
+
+.lec-btn-submit:hover:not(:disabled) .lec-btn-arrow {
+  transform: translateX(4px);
+}
+
+/* Quick Demo Box */
+.lec-demo-box {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  margin-top: 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.lec-demo-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.lec-demo-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.71875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #059669;
+  letter-spacing: 0.03em;
+}
+
+.lec-btn-autofill {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #047857;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.lec-btn-autofill:hover {
+  background: #d1fae5;
+}
+
+.lec-demo-body {
+  font-size: 0.8125rem;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.lec-demo-body strong {
+  color: #0f172a;
+}
+
+/* Link to Admin */
+.lec-admin-portal-box {
+  margin-top: 1.25rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: #1e3a8a;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.lec-link-admin {
+  color: #2563eb;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.lec-link-admin:hover {
+  color: #1d4ed8;
+}
+
+.lec-form-footer {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.lec-form-footer p {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+@media (max-width: 960px) {
+  .lec-login-shell {
+    grid-template-columns: 1fr;
+    max-width: 520px;
+    border-radius: 20px;
+  }
+
+  .lec-hero-panel {
+    display: none;
+  }
+
+  .lec-form-panel {
+    padding: 2.5rem 1.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .lec-login-wrapper {
+    padding: 1rem 0.75rem;
+  }
+
+  .lec-form-panel {
+    padding: 2rem 1.25rem;
+  }
+
+  .lec-form-title {
+    font-size: 1.35rem;
+  }
+}

@@ -1299,12 +1299,24 @@ class ThoiKhoaBieuService {
   // ================================================================
   // 12. [BOMON ĐỘC QUYỀN] Xem trước Thời khóa biểu tuần của Giảng viên
   // ================================================================
-  static getLecturerWeeklySchedule = async ({ maGiangVien, maHocKy, maBoMon } = {}) => {
+  static getLecturerWeeklySchedule = async ({ maGiangVien, maHocKy, maBoMon, userId } = {}) => {
+    if (!maGiangVien && userId) {
+      const [gvFound] = await db.query('SELECT MaGiangVien FROM GiangVien WHERE UserId = ? LIMIT 1', [userId]);
+      if (gvFound.length > 0) {
+        maGiangVien = gvFound[0].MaGiangVien;
+      }
+    }
+
     if (!maGiangVien || !maGiangVien.trim()) {
       throw new Error('Vui lòng cung cấp mã giảng viên.');
     }
     if (!maHocKy || !maHocKy.trim()) {
-      throw new Error('Vui lòng chọn Học kỳ.');
+      const [hkRows] = await db.query('SELECT MaHocKy FROM HocKy ORDER BY NgayBatDau DESC LIMIT 1');
+      if (hkRows.length > 0) {
+        maHocKy = hkRows[0].MaHocKy;
+      } else {
+        throw new Error('Vui lòng chọn Học kỳ.');
+      }
     }
 
     const [gvRows] = await db.query(`
