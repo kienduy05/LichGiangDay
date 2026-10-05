@@ -62,7 +62,7 @@ export const AuthProvider = ({ children }) => {
     verifyUser();
   }, []);
 
-  const login = async (username, password) => {
+  const login = async (username, password, options = {}) => {
     const res = await apiLogin(username, password);
     const { user: userData, tokens } = res.metadata;
     const normalizedUser = {
@@ -75,6 +75,21 @@ export const AuthProvider = ({ children }) => {
       maGiangVien: userData.maGiangVien || userData.MaGiangVien || null,
       tenGiangVien: userData.tenGiangVien || userData.TenGiangVien || null
     };
+
+    // Kiểm tra chặn vai trò không hợp lệ trước khi lưu phiên đăng nhập
+    if (options.disallowRole && normalizedUser.role === options.disallowRole) {
+      const err = new Error(options.disallowMessage || `Tài khoản "${normalizedUser.username}" thuộc nhóm [${normalizedUser.role}], không có quyền truy cập.`);
+      err.roleBlocked = true;
+      err.role = normalizedUser.role;
+      throw err;
+    }
+
+    if (options.requiredRole && normalizedUser.role !== options.requiredRole) {
+      const err = new Error(options.requiredMessage || `Cổng này chỉ dành riêng cho [${options.requiredRole}].`);
+      err.roleBlocked = true;
+      err.role = normalizedUser.role;
+      throw err;
+    }
 
     localStorage.setItem('accessToken', tokens.accessToken);
     localStorage.setItem('refreshToken', tokens.refreshToken);

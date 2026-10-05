@@ -25,14 +25,14 @@ export default function LecturerLogin() {
     setLoading(true);
 
     try {
-      const authUser = await login(username.trim(), password);
-      // Kiểm tra nghiêm ngặt: chỉ tài khoản role GIANGVIEN mới được truy cập cổng này
-      if (authUser && authUser.role !== 'GIANGVIEN') {
-        await logout();
-        setErrorIsAdmin(true);
-        setError(`Tài khoản "${authUser.username}" có quyền [${authUser.role}]. Cổng này chỉ dành riêng cho Giảng viên.`);
-      }
+      await login(username.trim(), password, {
+        requiredRole: 'GIANGVIEN',
+        requiredMessage: 'Cổng này chỉ dành riêng cho Giảng viên. Tài khoản Quản trị vui lòng đăng nhập tại Cổng Quản trị (/admin).'
+      });
     } catch (err) {
+      if (err.roleBlocked) {
+        setErrorIsAdmin(true);
+      }
       setError(err.message || 'Tên đăng nhập hoặc mật khẩu không chính xác.');
     } finally {
       setLoading(false);

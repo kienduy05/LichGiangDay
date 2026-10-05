@@ -27,14 +27,14 @@ export default function AdminLogin() {
     setLoading(true);
 
     try {
-      const authUser = await login(username.trim(), password);
-      // Chặn tài khoản role GIANGVIEN không được đăng nhập tại cổng /admin
-      if (authUser && authUser.role === 'GIANGVIEN') {
-        await logout();
-        setErrorIsLecturer(true);
-        setError(`Tài khoản "${authUser.username}" thuộc nhóm [GIANGVIEN]. Cổng Quản trị (/admin) không cho phép tài khoản Giảng viên đăng nhập.`);
-      }
+      await login(username.trim(), password, {
+        disallowRole: 'GIANGVIEN',
+        disallowMessage: 'Tài khoản của bạn thuộc nhóm Giảng viên, không có quyền truy cập vào Cổng Quản trị (/admin).'
+      });
     } catch (err) {
+      if (err.roleBlocked || err.role === 'GIANGVIEN') {
+        setErrorIsLecturer(true);
+      }
       setError(err.message || 'Tên đăng nhập hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại.');
     } finally {
       setLoading(false);
