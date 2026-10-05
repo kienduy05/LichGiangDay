@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   GraduationCap, Calendar, Clock, BookOpen, Building2,
@@ -9,22 +10,30 @@ import {
 import './AdminLogin.css';
 
 export default function AdminLogin() {
-  const { login } = useAuth();
+  const { login, logout } = useAuth();
   const [username, setUsername] = useState('ADMIN.0001');
   const [password, setPassword] = useState('123456');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
+  const [errorIsLecturer, setErrorIsLecturer] = useState(false);
   const [loading, setLoading] = useState(false);
   const [forgotModalOpen, setForgotModalOpen] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setErrorIsLecturer(false);
     setLoading(true);
 
     try {
-      await login(username.trim(), password);
+      const authUser = await login(username.trim(), password);
+      // Chặn tài khoản role GIANGVIEN không được đăng nhập tại cổng /admin
+      if (authUser && authUser.role === 'GIANGVIEN') {
+        await logout();
+        setErrorIsLecturer(true);
+        setError(`Tài khoản "${authUser.username}" thuộc nhóm [GIANGVIEN]. Cổng Quản trị (/admin) không cho phép tài khoản Giảng viên đăng nhập.`);
+      }
     } catch (err) {
       setError(err.message || 'Tên đăng nhập hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại.');
     } finally {
@@ -36,6 +45,7 @@ export default function AdminLogin() {
     setUsername('ADMIN.0001');
     setPassword('123456');
     setError('');
+    setErrorIsLecturer(false);
   };
 
   return (
@@ -130,15 +140,38 @@ export default function AdminLogin() {
               </div>
               <h2 className="uni-form-title">Đăng Nhập Hệ Thống</h2>
               <p className="uni-form-subtitle">
-                Dành cho Cán bộ Quản trị, Ban Đào tạo & Giảng viên
+                Dành cho Cán bộ Quản trị, Ban Đào tạo & Trưởng Bộ môn
               </p>
             </div>
 
             {/* Error Notification */}
             {error && (
-              <div className="uni-error-banner">
-                <AlertCircle size={18} className="flex-shrink-0" />
-                <span>{error}</span>
+              <div className="uni-error-banner" style={errorIsLecturer ? { flexDirection: 'column', alignItems: 'flex-start', gap: '0.5rem' } : {}}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <AlertCircle size={18} className="flex-shrink-0" />
+                  <span>{error}</span>
+                </div>
+                {errorIsLecturer && (
+                  <Link
+                    to="/"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      fontSize: '0.8125rem',
+                      fontWeight: 600,
+                      color: '#047857',
+                      background: '#ecfdf5',
+                      padding: '0.35rem 0.75rem',
+                      borderRadius: '6px',
+                      textDecoration: 'none',
+                      marginTop: '0.25rem',
+                      border: '1px solid #a7f3d0'
+                    }}
+                  >
+                    👉 Bấm vào đây để chuyển sang Cổng Giảng Viên
+                  </Link>
+                )}
               </div>
             )}
 
@@ -255,6 +288,14 @@ export default function AdminLogin() {
                 <span>•</span>
                 <span>Mật khẩu: <strong>123456</strong></span>
               </div>
+            </div>
+
+            {/* Switch to Lecturer Portal link */}
+            <div style={{ textAlign: 'center', marginTop: '1rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1', fontSize: '0.8125rem' }}>
+              <span style={{ color: '#64748b' }}>Bạn là Giảng viên xem lịch dạy? </span>
+              <Link to="/" style={{ color: '#059669', fontWeight: 600, textDecoration: 'none' }}>
+                Đến Cổng Giảng Viên →
+              </Link>
             </div>
 
             {/* Form Footer */}

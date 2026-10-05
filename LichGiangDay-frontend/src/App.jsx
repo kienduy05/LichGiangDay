@@ -48,6 +48,11 @@ function AdminRoute() {
     return <AdminLogin />;
   }
 
+  // Chặn tài khoản GIANGVIEN truy cập cổng Quản trị (/admin) -> Chuyển về cổng Giảng viên
+  if (user.role === 'GIANGVIEN') {
+    return <Navigate to="/" replace />;
+  }
+
   return <AdminDashboard />;
 }
 
