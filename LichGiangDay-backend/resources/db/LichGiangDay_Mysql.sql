@@ -346,7 +346,7 @@ CREATE TABLE LopHocPhan_LopSinhVien (
 -- ============================================================
 
 CREATE TABLE ThoiKhoaBieu (
-    MaThoiKhoaBieu     VARCHAR(20)     NOT NULL,
+    MaThoiKhoaBieu     VARCHAR(120)    NOT NULL,
     MaLopHocPhan       VARCHAR(100)    NOT NULL,
     ThuTrongTuan       TINYINT         NOT NULL,
     MaTiet             TINYINT         NOT NULL,
@@ -376,7 +376,7 @@ CREATE TABLE ThoiKhoaBieu (
 
 CREATE TABLE BuoiHoc (
     MaBuoiHoc          VARCHAR(20)     NOT NULL,
-    MaThoiKhoaBieu     VARCHAR(20)     NULL,
+    MaThoiKhoaBieu     VARCHAR(120)    NULL,
     MaLopHocPhan       VARCHAR(100)    NOT NULL,
     NgayHoc            DATE            NOT NULL,
     MaTiet             TINYINT         NOT NULL,

@@ -140,3 +140,46 @@
   font-size: 0.9rem;
   border-top: 1px solid var(--border-color);
 }
+
+/* ==========================================
+   RESPONSIVE MEDIA QUERIES (HOME PAGE)
+   ========================================== */
+
+@media (max-width: 768px) {
+  .home-nav {
+    padding: 0 16px;
+    height: 64px;
+  }
+
+  .nav-brand {
+    font-size: 1.1rem;
+  }
+
+  .btn-nav-admin {
+    padding: 8px 14px;
+    font-size: 0.85rem;
+  }
+
+  .hero-section {
+    padding: 40px 16px 40px;
+  }
+
+  .hero-title {
+    font-size: 2.2rem;
+  }
+
+  .hero-subtitle {
+    font-size: 1rem;
+    margin-bottom: 24px;
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-top: 24px;
+  }
+
+  .feature-card {
+    padding: 20px;
+  }
+}

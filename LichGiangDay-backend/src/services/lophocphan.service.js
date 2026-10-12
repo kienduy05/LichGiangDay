@@ -29,6 +29,7 @@ class LopHocPhanService {
   // ================================================================
   static getAll = async ({
     maHocKy,
+    maKhoa = '',
     maBoMon = '',
     maMonHoc = '',
     loaiHoc = '',
@@ -44,6 +45,7 @@ class LopHocPhanService {
         lhp.TenLopHocPhan,
         lhp.MaMonHoc,
         mh.TenMonHoc,
+        mh.SoTinChi,
         lhp.MaHocKy,
         lhp.LoaiHoc,
         lhp.SiSoDuKien,
@@ -51,6 +53,8 @@ class LopHocPhanService {
         ${DATE_COLS},
         lhp.MaBoMon,
         bm.TenBoMon,
+        bm.MaKhoa,
+        k.TenKhoa,
         lhp.KhoaHoc,
         ksv.TenKhoaSinhVien,
         (SELECT COUNT(*) FROM LopHocPhan_LopSinhVien x
@@ -58,16 +62,27 @@ class LopHocPhanService {
       FROM LopHocPhan lhp
       LEFT JOIN MonHoc        mh  ON lhp.MaMonHoc = mh.MaMonHoc
       LEFT JOIN BoMon         bm  ON lhp.MaBoMon  = bm.MaBoMon
+      LEFT JOIN Khoa          k   ON bm.MaKhoa    = k.MaKhoa
       LEFT JOIN KhoaSinhVien  ksv ON lhp.KhoaHoc  = ksv.MaKhoaSinhVien
     `;
 
     const params = [maHocKy.trim()];
     const conditions = ['lhp.MaHocKy = ?'];
 
-    if (maBoMon && maBoMon.trim() !== '') {
+    if (maKhoa === '__NULL__') {
+      conditions.push('bm.MaKhoa IS NULL');
+    } else if (maKhoa && maKhoa.trim() !== '') {
+      conditions.push('bm.MaKhoa = ?');
+      params.push(maKhoa.trim());
+    }
+
+    if (maBoMon === '__NULL__') {
+      conditions.push('lhp.MaBoMon IS NULL');
+    } else if (maBoMon && maBoMon.trim() !== '') {
       conditions.push('lhp.MaBoMon = ?');
       params.push(maBoMon.trim());
     }
+
     if (maMonHoc && maMonHoc.trim() !== '') {
       conditions.push('lhp.MaMonHoc = ?');
       params.push(maMonHoc.trim());
@@ -83,7 +98,7 @@ class LopHocPhanService {
     }
 
     sql += ' WHERE ' + conditions.join(' AND ');
-    sql += ' ORDER BY lhp.MaBoMon ASC, lhp.MaMonHoc ASC, lhp.MaLopHocPhan ASC';
+    sql += ' ORDER BY bm.MaKhoa ASC, lhp.MaBoMon ASC, lhp.MaMonHoc ASC, lhp.MaLopHocPhan ASC';
 
     const [rows] = await db.query(sql, params);
     return rows;

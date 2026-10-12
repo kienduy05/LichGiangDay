@@ -11,11 +11,42 @@
   top: 0;
   z-index: 40;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  gap: 16px;
+}
+
+.admin-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Hamburger Toggle Button (Hidden on Desktop, Visible on Tablet/Mobile) */
+.admin-hamburger-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--admin-border, #cbd5e1);
+  background: #f8fafc;
+  color: var(--admin-text-main, #0f172a);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.admin-hamburger-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
 }
 
 .admin-search-wrapper {
   position: relative;
   width: 380px;
+  max-width: 100%;
   display: flex;
   align-items: center;
 }
@@ -66,7 +97,8 @@
 .admin-header-right {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
+  flex-shrink: 0;
 }
 
 .admin-icon-btn {
@@ -82,6 +114,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
+  flex-shrink: 0;
 }
 
 .admin-icon-btn:hover {
@@ -108,13 +141,14 @@
 .profile-trigger {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   padding: 5px 12px 5px 6px;
   border-radius: 12px;
   border: 1px solid var(--admin-border, #e2e8f0);
   background: #ffffff;
   cursor: pointer;
   transition: all 0.2s ease;
+  user-select: none;
 }
 
 .profile-trigger:hover {
@@ -123,17 +157,18 @@
 }
 
 .avatar-circle {
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: linear-gradient(135deg, #3b82f6, #8b5cf6);
   color: #ffffff;
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 0.95rem;
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+  flex-shrink: 0;
 }
 
 .profile-trigger-info {
@@ -143,14 +178,14 @@
 }
 
 .profile-name {
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 600;
   color: var(--admin-text-main, #0f172a);
   line-height: 1.2;
 }
 
 .profile-role-badge {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--admin-primary, #2563eb);
   font-weight: 600;
 }
@@ -158,14 +193,15 @@
 /* Dropdown Menu Popup */
 .profile-dropdown-menu {
   position: absolute;
-  top: calc(100% + 12px);
+  top: calc(100% + 10px);
   right: 0;
-  width: 320px;
+  width: 300px;
+  max-width: calc(100vw - 32px);
   background: #ffffff;
   border: 1px solid var(--admin-border, #e2e8f0);
   border-radius: 16px;
   box-shadow: 0 12px 32px -4px rgba(15, 23, 42, 0.15), 0 4px 12px -2px rgba(15, 23, 42, 0.08);
-  padding: 20px;
+  padding: 18px;
   z-index: 100;
   animation: dropdownFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -175,7 +211,6 @@
     opacity: 0;
     transform: translateY(-8px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
@@ -185,19 +220,19 @@
 .dropdown-header-card {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding-bottom: 16px;
+  gap: 12px;
+  padding-bottom: 14px;
   border-bottom: 1px solid #f1f5f9;
 }
 
 .dropdown-avatar {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: linear-gradient(135deg, #2563eb, #7c3aed);
   color: #ffffff;
   font-weight: 700;
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -208,13 +243,13 @@
 .dropdown-user-details {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   flex: 1;
   min-width: 0;
 }
 
 .dropdown-fullname {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: #0f172a;
   line-height: 1.3;
@@ -224,11 +259,13 @@
 }
 
 .dropdown-email {
-  font-size: 0.83rem;
+  font-size: 0.8rem;
   color: #64748b;
   display: flex;
   align-items: center;
   gap: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -241,11 +278,11 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 14px;
-  border-radius: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
   background: #f0f9ff;
   border: 1px solid #bae6fd;
-  margin: 16px 0 16px;
+  margin: 14px 0;
 }
 
 .role-icon {
@@ -257,7 +294,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.88rem;
+  font-size: 0.84rem;
 }
 
 .role-label {
@@ -283,13 +320,13 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 11px;
-  border-radius: 12px;
+  padding: 10px;
+  border-radius: 10px;
   background: #f1f5f9;
   border: 1px solid #e2e8f0;
   color: #334155;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -305,13 +342,13 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 11px;
-  border-radius: 12px;
+  padding: 10px;
+  border-radius: 10px;
   background: #fef2f2;
   border: 1px solid #fecaca;
   color: #dc2626;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -320,4 +357,45 @@
   background: #fee2e2;
   border-color: #fca5a5;
   color: #b91c1c;
+}
+
+/* ==========================================================================
+   RESPONSIVE MEDIA QUERIES (TOPBAR)
+   ========================================================================== */
+
+@media (max-width: 1024px) {
+  .admin-topbar {
+    padding: 0 20px;
+  }
+
+  .admin-hamburger-btn {
+    display: flex;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-topbar {
+    height: 64px;
+    padding: 0 14px;
+    gap: 10px;
+  }
+
+  .admin-search-wrapper {
+    width: 220px;
+  }
+
+  .profile-trigger-info {
+    display: none;
+  }
+
+  .profile-trigger {
+    padding: 4px 6px;
+    gap: 4px;
+  }
+}
+
+@media (max-width: 540px) {
+  .admin-search-wrapper {
+    display: none;
+  }
 }

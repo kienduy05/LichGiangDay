@@ -257,7 +257,7 @@ export default function ThoiKhoaBieuScheduleModal({
             <div>
               <h3 className="tkb-modal-title">Xếp Thời Khóa Biểu Lớp Học Phần</h3>
               <span className="tkb-modal-subtitle">
-                {lopHocPhan.TenMonHoc} ({lopHocPhan.MaLopHocPhan})
+                {lopHocPhan.TenLopHocPhan || lopHocPhan.TenMonHoc} • <code>{lopHocPhan.MaLopHocPhan}</code>
               </span>
             </div>
           </div>
@@ -281,15 +281,15 @@ export default function ThoiKhoaBieuScheduleModal({
             </div>
             <div className="info-badge-item">
               <Users size={14} className="info-icon" />
-              <span>Sĩ số dự kiến: <strong>{lopHocPhan.SiSoDuKien || 50}</strong> SV</span>
+              <span>Sĩ số: <strong>{lopHocPhan.SiSoDuKien || 50} SV</strong> {lopHocPhan.SiSoDangKy ? `(${lopHocPhan.SiSoDangKy} đk)` : ''}</span>
             </div>
             <div className="info-badge-item">
               <Calendar size={14} className="info-icon" />
-              <span>Giai đoạn: <strong>{lopHocPhan.NgayBatDau?.substring(0, 10)}</strong> $\rightarrow$ <strong>{lopHocPhan.NgayKetThuc?.substring(0, 10)}</strong></span>
+              <span>Giai đoạn: <strong>{lopHocPhan.NgayBatDau ? String(lopHocPhan.NgayBatDau).substring(0, 10) : '—'}</strong> → <strong>{lopHocPhan.NgayKetThuc ? String(lopHocPhan.NgayKetThuc).substring(0, 10) : '—'}</strong> ({lopHocPhan.SoTuan || 15} tuần)</span>
             </div>
             <div className="info-badge-item">
               <User size={14} className="info-icon" />
-              <span>Giảng viên: <em>{lopHocPhan.TenGiangVien || 'Chưa phân công (Bộ môn xếp sau)'}</em></span>
+              <span>Giảng viên: <em>{lopHocPhan.TenGiangVien || 'Chưa phân công'}</em></span>
             </div>
           </div>
 

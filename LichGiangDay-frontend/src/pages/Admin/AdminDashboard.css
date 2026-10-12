@@ -21,6 +21,25 @@
   min-height: 100vh;
   width: 100%;
   display: flex;
+  position: relative;
+}
+
+/* Backdrop Overlay for Mobile Sidebar Drawer */
+.admin-sidebar-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 990;
+  animation: fadeInBackdrop 0.25s ease;
+}
+
+@keyframes fadeInBackdrop {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* Scrollbar Overrides */
@@ -49,11 +68,14 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-width: 0;
+  transition: margin-left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .admin-body {
   padding: 32px;
   flex: 1;
+  min-width: 0;
 }
 
 .admin-card {
@@ -72,6 +94,7 @@
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
+  margin-bottom: 20px;
 }
 
 .page-title {
@@ -90,6 +113,7 @@
 .btn-primary-add {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   background: var(--admin-primary);
   color: #ffffff;
@@ -101,6 +125,7 @@
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .btn-primary-add:hover {
@@ -127,12 +152,14 @@
   justify-content: space-between;
   gap: 12px;
   background: #ffffff;
+  flex-wrap: wrap;
 }
 
 .search-box,
 .table-search-box {
   position: relative;
   flex: 1;
+  min-width: 200px;
   max-width: 420px;
   display: flex;
   align-items: center;
@@ -250,9 +277,9 @@ select.filter-select:focus {
 }
 
 .btn-refresh {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   border: 1px solid var(--admin-border);
   background: #ffffff;
   color: var(--admin-text-muted);
@@ -261,6 +288,7 @@ select.filter-select:focus {
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
 .btn-refresh:hover {
@@ -273,10 +301,12 @@ select.filter-select:focus {
   max-height: calc(100vh - 270px);
   overflow-x: auto;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .custom-data-table {
   width: 100%;
+  min-width: 600px;
   border-collapse: separate;
   border-spacing: 0;
   text-align: left;
@@ -358,24 +388,25 @@ select.filter-select:focus {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(15, 23, 42, 0.45);
+  background: rgba(15, 23, 42, 0.5);
   backdrop-filter: blur(6px);
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  z-index: 200;
-  padding: 32px 16px;
+  z-index: 1000;
+  padding: 16px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal-card {
   background: #ffffff;
   border-radius: 20px;
   width: 100%;
-  max-width: 480px;
-  max-height: calc(100vh - 64px);
+  max-width: 520px;
+  max-height: calc(100vh - 40px);
   overflow-y: auto;
-  padding: 32px;
+  padding: 28px;
   box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.25);
   border: 1px solid #e2e8f0;
   margin: auto;
@@ -385,11 +416,11 @@ select.filter-select:focus {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .modal-title {
-  font-size: 1.35rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: #0f172a;
 }
@@ -401,6 +432,9 @@ select.filter-select:focus {
   cursor: pointer;
   padding: 6px;
   border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.2s ease;
 }
 
@@ -410,26 +444,26 @@ select.filter-select:focus {
 }
 
 .modal-form-group {
-  margin-bottom: 18px;
+  margin-bottom: 16px;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
 .modal-label {
-  font-size: 0.88rem;
+  font-size: 0.86rem;
   font-weight: 600;
   color: #475569;
 }
 
 .modal-input {
   width: 100%;
-  padding: 11px 14px;
+  padding: 10px 14px;
   border-radius: 10px;
   background: #f8fafc;
   border: 1px solid #cbd5e1;
   color: #0f172a;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   outline: none;
   transition: all 0.2s ease;
 }
@@ -445,17 +479,18 @@ select.filter-select:focus {
   align-items: center;
   justify-content: flex-end;
   gap: 12px;
-  margin-top: 28px;
+  margin-top: 24px;
+  flex-wrap: wrap;
 }
 
 .btn-cancel {
-  padding: 11px 20px;
+  padding: 10px 18px;
   border-radius: 10px;
   background: #f1f5f9;
   border: 1px solid #e2e8f0;
   color: #475569;
   font-weight: 600;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -466,13 +501,13 @@ select.filter-select:focus {
 }
 
 .btn-save {
-  padding: 11px 24px;
+  padding: 10px 22px;
   border-radius: 10px;
   background: #2563eb;
   border: none;
   color: #ffffff;
   font-weight: 600;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
@@ -511,12 +546,8 @@ select.filter-select:focus {
 }
 
 @keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* Base Welcome Banner & Shared Stat Grid Cards */
@@ -524,12 +555,12 @@ select.filter-select:focus {
   background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%);
   border: 1px solid #dbeafe;
   border-radius: 16px;
-  padding: 32px;
-  margin-bottom: 28px;
+  padding: 28px;
+  margin-bottom: 24px;
 }
 
 .admin-welcome-title {
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   color: #1e3a8a;
   margin-bottom: 8px;
   font-weight: 700;
@@ -537,13 +568,13 @@ select.filter-select:focus {
 
 .admin-welcome-desc {
   color: #475569;
-  font-size: 1rem;
+  font-size: 0.95rem;
 }
 
 .admin-stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
+  gap: 18px;
   margin-bottom: 28px;
 }
 
@@ -551,10 +582,10 @@ select.filter-select:focus {
   background: var(--admin-card-bg);
   border: 1px solid var(--admin-border);
   border-radius: 14px;
-  padding: 24px;
+  padding: 20px;
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 16px;
   box-shadow: var(--admin-shadow);
   transition: transform 0.2s ease;
 }
@@ -564,23 +595,115 @@ select.filter-select:focus {
 }
 
 .admin-stat-icon-bg {
-  width: 50px;
-  height: 50px;
+  width: 48px;
+  height: 48px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .admin-stat-number {
-  font-size: 1.75rem;
+  font-size: 1.6rem;
   font-weight: 700;
   color: var(--admin-text-main);
   line-height: 1;
 }
 
 .admin-stat-text {
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   color: var(--admin-text-muted);
   margin-top: 4px;
+}
+
+/* ==========================================================================
+   RESPONSIVE MEDIA QUERIES (GLOBAL ADMIN SHELL)
+   ========================================================================== */
+
+@media (max-width: 1024px) {
+  .admin-main {
+    margin-left: 0;
+  }
+
+  .admin-body {
+    padding: 20px;
+  }
+
+  .admin-card {
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 14px;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-body {
+    padding: 14px;
+  }
+
+  .page-header-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .btn-primary-add {
+    width: 100%;
+  }
+
+  .table-filter-bar,
+  .roles-filter-bar {
+    padding: 12px 14px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .search-box,
+  .table-search-box {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .admin-welcome-banner {
+    padding: 20px 16px;
+  }
+
+  .admin-welcome-title {
+    font-size: 1.35rem;
+  }
+
+  .admin-stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+  }
+
+  .admin-stat-item {
+    padding: 16px 14px;
+    gap: 12px;
+  }
+
+  .admin-stat-number {
+    font-size: 1.35rem;
+  }
+
+  .modal-card {
+    padding: 20px 16px;
+    border-radius: 16px;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+  }
+
+  .modal-footer button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-stats-grid {
+    grid-template-columns: 1fr;
+  }
 }

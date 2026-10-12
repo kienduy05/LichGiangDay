@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../../../context/AuthContext';
 import {
   apiGetThoiKhoaBieuTreeView,
   apiGetThoiKhoaBieuList,
@@ -13,11 +14,16 @@ import ThoiKhoaBieuScheduleModal from './ThoiKhoaBieuScheduleModal';
 
 import {
   Calendar, LayoutGrid, List, RefreshCw, CheckCircle2,
-  AlertCircle, Building2, School, Network, Filter, Search
+  AlertCircle, Building2, School, Network, Filter, Search,
+  FolderTree, PanelLeftClose, PanelLeftOpen
 } from 'lucide-react';
 import './ThoiKhoaBieuManagement.css';
 
 export default function ThoiKhoaBieuManagement() {
+  const { user } = useAuth();
+  const isBoMonRole = user?.role === 'BOMON';
+  const scopedBoMonId = isBoMonRole ? (user?.username || '') : '';
+
   // 1. Học kỳ states
   const [hocKyList, setHocKyList] = useState([]);
   const [selectedHocKy, setSelectedHocKy] = useState('');
@@ -26,11 +32,12 @@ export default function ThoiKhoaBieuManagement() {
   // 2. View mode: 'TABLE' (Dạng bảng) | 'GRID' (Dạng lưới ma trận)
   const [viewMode, setViewMode] = useState('TABLE');
 
-  // 3. TreeView Navigation states
+  // 3. TreeView Navigation states & collapse toggle
+  const [isTreeCollapsed, setIsTreeCollapsed] = useState(false);
   const [treeData, setTreeData] = useState([]);
   const [treeStats, setTreeStats] = useState({ total: 0, scheduled: 0, unscheduled: 0 });
   const [selectedKhoaId, setSelectedKhoaId] = useState('ALL');
-  const [selectedBoMonId, setSelectedBoMonId] = useState('ALL');
+  const [selectedBoMonId, setSelectedBoMonId] = useState(isBoMonRole ? scopedBoMonId : 'ALL');
   const [selectedLhpId, setSelectedLhpId] = useState(null);
   const [treeSearchTerm, setTreeSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL'); // 'ALL' | 'SCHEDULED' | 'UNSCHEDULED'
@@ -183,32 +190,34 @@ export default function ThoiKhoaBieuManagement() {
             <span className="tkb-title-icon-badge">
               <Calendar size={22} />
             </span>
-            Xếp Thời Khóa Biểu
+            Tạo & Xếp Thời Khóa Biểu
           </h2>
           <p>Phân bổ Thứ học, Tiết học (Ca học) và Phòng học cho các Lớp học phần</p>
         </div>
 
         <div className="tkb-header-controls">
-          {/* Học kỳ Selector */}
-          <div className="tkb-semester-select-box">
-            <label><Calendar size={15} /> Học kỳ:</label>
-            <select
-              value={selectedHocKy}
-              onChange={(e) => {
-                setSelectedHocKy(e.target.value);
-                setSelectedKhoaId('ALL');
-                setSelectedBoMonId('ALL');
-                setSelectedLhpId(null);
-              }}
-              disabled={loadingHocKy}
-            >
-              {hocKyList.map(hk => (
-                <option key={hk.MaHocKy} value={hk.MaHocKy}>
-                  {hk.TenHocKy} {hk.NamHoc ? `(${hk.NamHoc})` : ''}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Học kỳ Selector (Chỉ hiển thị khi ở chế độ Dạng Danh Sách) */}
+          {viewMode === 'TABLE' && (
+            <div className="tkb-semester-select-box">
+              <label><Calendar size={15} /> Học kỳ:</label>
+              <select
+                value={selectedHocKy}
+                onChange={(e) => {
+                  setSelectedHocKy(e.target.value);
+                  setSelectedKhoaId('ALL');
+                  setSelectedBoMonId('ALL');
+                  setSelectedLhpId(null);
+                }}
+                disabled={loadingHocKy}
+              >
+                {hocKyList.map(hk => (
+                  <option key={hk.MaHocKy} value={hk.MaHocKy}>
+                    {hk.TenHocKy} {hk.NamHoc ? `(${hk.NamHoc})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Chuyển đổi View Mode */}
           <div className="tkb-view-mode-group">
@@ -259,6 +268,8 @@ export default function ThoiKhoaBieuManagement() {
           onSearchChange={setTreeSearchTerm}
           onRefresh={fetchTreeView}
           loading={loadingTree}
+          isCollapsed={isTreeCollapsed}
+          onToggleCollapse={() => setIsTreeCollapsed(prev => !prev)}
         />
 
         {/* RIGHT PANEL: MAIN CONTENT */}
@@ -267,6 +278,17 @@ export default function ThoiKhoaBieuManagement() {
           {/* Header Toolbar bên phải */}
           <div className="tkb-right-panel-toolbar">
             <div className="tkb-toolbar-left">
+              {/* Nút Ẩn / Hiện Cây Sơ đồ đào tạo */}
+              <button
+                type="button"
+                className={`tkb-btn-toggle-tree ${isTreeCollapsed ? 'collapsed' : ''}`}
+                onClick={() => setIsTreeCollapsed(prev => !prev)}
+                title={isTreeCollapsed ? 'Mở rộng Sơ đồ đào tạo' : 'Thu gọn Sơ đồ đào tạo để tăng diện tích bảng'}
+              >
+                {isTreeCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+                <span>{isTreeCollapsed ? 'Hiện Sơ Đồ' : 'Thu Gọn Sơ Đồ'}</span>
+              </button>
+
               <div className={`tkb-current-node-tag ${selectedKhoaId !== 'ALL' || selectedBoMonId !== 'ALL' || selectedLhpId ? 'filtered' : ''}`}>
                 {selectedKhoaId === 'ALL' && selectedBoMonId === 'ALL' && !selectedLhpId ? (
                   <School size={16} color="#2563eb" />
@@ -327,7 +349,6 @@ export default function ThoiKhoaBieuManagement() {
             />
           ) : (
             <ThoiKhoaBieuGrid
-              maHocKy={selectedHocKy}
               onScheduleClick={handleOpenScheduleModal}
             />
           )}

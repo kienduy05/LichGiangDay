@@ -23,6 +23,10 @@ import HocKyManagement from './components/HocKyManagement/HocKyManagement';
 import TietHocManagement from './components/TietHocManagement/TietHocManagement';
 import LopHocPhanManagement from './components/LopHocPhanManagement/LopHocPhanManagement';
 import ThoiKhoaBieuManagement from './components/ThoiKhoaBieuManagement/ThoiKhoaBieuManagement';
+import LichGiangDayManagement from './components/LichGiangDayManagement/LichGiangDayManagement';
+import PhanCongGiangVienManagement from './components/PhanCongGiangVienManagement/PhanCongGiangVienManagement';
+import DuyetYeuCauManagement from './components/DuyetYeuCauManagement/DuyetYeuCauManagement';
+import LichBienDongMonitor from './components/LichBienDongMonitor/LichBienDongMonitor';
 
 import './AdminDashboard.css';
 
@@ -133,10 +137,38 @@ export default function AdminDashboard() {
     }
   };
 
+  // Mobile sidebar state
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  // Close mobile sidebar on window resize if larger than 1024px
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 1024) {
+        setIsMobileSidebarOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <div className="admin-light-theme">
+      {/* Mobile Sidebar Backdrop Overlay */}
+      {isMobileSidebarOpen && (
+        <div
+          className="admin-sidebar-backdrop"
+          onClick={() => setIsMobileSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Sidebar Navigation */}
-      <AdminSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <AdminSidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        isOpenMobile={isMobileSidebarOpen}
+        onCloseMobile={() => setIsMobileSidebarOpen(false)}
+      />
 
       {/* Main Content Area */}
       <div className="admin-main">
@@ -147,6 +179,7 @@ export default function AdminDashboard() {
           setIsProfileOpen={setIsProfileOpen}
           onOpenEditModal={handleOpenEditModal}
           onOpenPasswordModal={handleOpenPasswordModal}
+          onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
         />
 
         {/* Main Body Dynamic View Switching */}
@@ -163,7 +196,11 @@ export default function AdminDashboard() {
           {activeTab === 'hocky' && <HocKyManagement />}
           {activeTab === 'tiethoc' && <TietHocManagement />}
           {activeTab === 'lophocphan' && <LopHocPhanManagement />}
+          {activeTab === 'lichgiangday' && <LichGiangDayManagement />}
           {activeTab === 'thoikhoabieu' && <ThoiKhoaBieuManagement />}
+          {activeTab === 'phanconggiangvien' && <PhanCongGiangVienManagement />}
+          {activeTab === 'duyetyeucau' && <DuyetYeuCauManagement />}
+          {activeTab === 'biendonglich' && <LichBienDongMonitor />}
           {activeTab === 'roles' && <RolesManagement />}
           {activeTab === 'users' && <UsersManagement />}
           {activeTab === 'permissions' && <PermissionsManagement />}

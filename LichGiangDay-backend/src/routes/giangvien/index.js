@@ -13,6 +13,10 @@ router.use(authentication);
 // GET /v1/api/giangvien?maBoMon=__NULL__   (chỉ GV chưa phân bộ môn)
 router.get('/', checkPermission('GiangVien', 'CanRead'), giangVienController.getAll);
 
+// --- Danh sách tài khoản người dùng khả dụng để liên kết ---
+// GET /v1/api/giangvien/available-accounts?maGiangVien=...
+router.get('/available-accounts', checkPermission('GiangVien', 'CanRead'), giangVienController.getAvailableAccounts);
+
 // --- Chi tiết Giảng viên kèm lịch sử hoạt động ---
 // GET /v1/api/giangvien/:maGiangVien/chitiet
 router.get('/:maGiangVien/chitiet', checkPermission('GiangVien', 'CanRead'), giangVienController.getChiTiet);
@@ -28,8 +32,18 @@ router.post('/', checkPermission('GiangVien', 'CanCreate'), giangVienController.
 
 // --- Cập nhật thông tin Giảng viên ---
 // PUT /v1/api/giangvien/:maGiangVien
-// Body: { hoTen, email?, soDienThoai?, maBoMon? }
+// Body: { hoTen, email?, soDienThoai?, maBoMon?, userId? }
 router.put('/:maGiangVien', checkPermission('GiangVien', 'CanUpdate'), giangVienController.update);
+
+// --- Liên kết / Hủy liên kết tài khoản cho Giảng viên ---
+// PUT /v1/api/giangvien/:maGiangVien/link-account
+// Body: { userId: 'USR...' | null }
+router.put('/:maGiangVien/link-account', checkPermission('GiangVien', 'CanUpdate'), giangVienController.linkAccount);
+
+// --- Tạo nhanh và liên kết tài khoản người dùng cho Giảng viên ---
+// POST /v1/api/giangvien/:maGiangVien/create-account
+// Body: { username, password?, fullName?, email? }
+router.post('/:maGiangVien/create-account', checkPermission('GiangVien', 'CanUpdate'), giangVienController.createAndLinkAccount);
 
 // --- Toggle Trạng thái: Active ↔ Inactive ---
 // PATCH /v1/api/giangvien/:maGiangVien/toggle-trangthai

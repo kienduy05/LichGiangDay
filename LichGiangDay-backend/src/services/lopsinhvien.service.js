@@ -24,7 +24,9 @@ class LopSinhVienService {
     const params = [];
     const conditions = [];
 
-    if (maKhoa && maKhoa.trim() !== '') {
+    if (maKhoa === '__NULL__') {
+      conditions.push('lsv.MaKhoa IS NULL');
+    } else if (maKhoa && maKhoa.trim() !== '') {
       conditions.push('lsv.MaKhoa = ?');
       params.push(maKhoa.trim());
     }
@@ -60,13 +62,48 @@ class LopSinhVienService {
         k.TenKhoa,
         COUNT(DISTINCT lhl.MaLopHocPhan) AS SoLopHocPhan
       FROM LopSinhVien lsv
-      INNER JOIN Khoa k ON lsv.MaKhoa = k.MaKhoa
+      LEFT JOIN Khoa k ON lsv.MaKhoa = k.MaKhoa
       LEFT JOIN LopHocPhan_LopSinhVien lhl ON lsv.MaLopSinhVien = lhl.MaLopSinhVien
       WHERE lsv.MaLopSinhVien = ?
       GROUP BY lsv.MaLopSinhVien, lsv.TenLopSinhVien, lsv.MaKhoa, k.TenKhoa
       LIMIT 1
     `, [maLopSinhVien]);
     return rows[0] || null;
+  };
+
+  /**
+   * Lấy chi tiết Lớp sinh viên kèm danh sách Lớp học phần tham gia
+   */
+  static getChiTiet = async (maLopSinhVien) => {
+    const lopSinhVien = await this.getById(maLopSinhVien);
+    if (!lopSinhVien) {
+      throw new Error(`Không tìm thấy lớp sinh viên có mã '${maLopSinhVien}'.`);
+    }
+
+    const [lopHocPhanList] = await db.query(`
+      SELECT
+        lhp.MaLopHocPhan,
+        lhp.TenLopHocPhan,
+        lhp.MaMonHoc,
+        mh.TenMonHoc,
+        mh.SoTinChi,
+        lhp.LoaiHoc,
+        lhp.MaHocKy,
+        hk.TenHocKy,
+        hk.NamHoc,
+        lhp.MaGiangVien,
+        gv.HoTen AS TenGiangVien,
+        lhp.TrangThaiPhanCong
+      FROM LopHocPhan_LopSinhVien lhl
+      INNER JOIN LopHocPhan lhp ON lhl.MaLopHocPhan = lhp.MaLopHocPhan
+      LEFT JOIN MonHoc      mh  ON lhp.MaMonHoc     = mh.MaMonHoc
+      LEFT JOIN HocKy       hk  ON lhp.MaHocKy      = hk.MaHocKy
+      LEFT JOIN GiangVien   gv  ON lhp.MaGiangVien  = gv.MaGiangVien
+      WHERE lhl.MaLopSinhVien = ?
+      ORDER BY lhp.MaLopHocPhan ASC
+    `, [maLopSinhVien]);
+
+    return { lopSinhVien, lopHocPhanList };
   };
 
   /**

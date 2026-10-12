@@ -1,0 +1,293 @@
+/* ==========================================================================
+   LICH BIEN DONG MONITOR - PHÂN HỆ PHÒNG ĐÀO TẠO & ADMIN
+   ========================================================================== */
+
+.lbd-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  background: #f8fafc;
+  min-height: calc(100vh - 72px);
+}
+
+/* Header */
+.lbd-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  background: #ffffff;
+  padding: 1.25rem 1.5rem;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.lbd-header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.lbd-header-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+  flex-shrink: 0;
+}
+
+.lbd-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.lbd-subtitle {
+  margin: 0.15rem 0 0 0;
+  font-size: 0.8125rem;
+  color: #64748b;
+}
+
+.lbd-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.lbd-btn-export {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1rem;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.lbd-btn-export:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+/* KPI Cards Strip */
+.lbd-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem;
+}
+
+.lbd-kpi-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.lbd-kpi-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lbd-kpi-card.kpi-total .lbd-kpi-icon { background: #eff6ff; color: #2563eb; }
+.lbd-kpi-card.kpi-absence .lbd-kpi-icon { background: #fef2f2; color: #dc2626; }
+.lbd-kpi-card.kpi-makeup-rate .lbd-kpi-icon { background: #ecfdf5; color: #059669; }
+.lbd-kpi-card.kpi-substitute .lbd-kpi-icon { background: #f5f3ff; color: #7c3aed; }
+.lbd-kpi-card.kpi-warning .lbd-kpi-icon { background: #fff7ed; color: #ea580c; }
+
+.lbd-kpi-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.lbd-kpi-value {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.lbd-kpi-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* Filter Card */
+.lbd-filter-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.15rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.lbd-filter-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.lbd-filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1;
+  min-width: 170px;
+}
+
+.lbd-filter-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.lbd-filter-select,
+.lbd-filter-input {
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  font-size: 0.8125rem;
+  color: #0f172a;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.lbd-filter-select:focus,
+.lbd-filter-input:focus {
+  border-color: #2563eb;
+  background: #ffffff;
+}
+
+/* Table */
+.lbd-table-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.lbd-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.8125rem;
+}
+
+.lbd-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 700;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.lbd-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+  vertical-align: middle;
+}
+
+.lbd-table tr:hover {
+  background: #f8fafc;
+}
+
+/* Badges */
+.lbd-badge-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.lbd-badge-type.absence { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+.lbd-badge-type.substitute { background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; }
+.lbd-badge-type.swap { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.lbd-badge-type.makeup { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+
+.lbd-badge-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+}
+
+.lbd-badge-status.pending { background: #fff7ed; color: #c2410c; }
+.lbd-badge-status.approved { background: #ecfdf5; color: #047857; }
+.lbd-badge-status.rejected { background: #fef2f2; color: #b91c1c; }
+.lbd-badge-status.revoked { background: #f1f5f9; color: #64748b; text-decoration: line-through; }
+
+/* Action Buttons */
+.lbd-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  transition: all 0.15s;
+}
+
+.lbd-action-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.lbd-action-btn.btn-revoke {
+  border-color: #fecaca;
+  color: #dc2626;
+  background: #fef2f2;
+}
+
+.lbd-action-btn.btn-revoke:hover {
+  background: #dc2626;
+  color: #ffffff;
+}

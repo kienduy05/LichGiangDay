@@ -43,5 +43,34 @@ router.post('/', checkPermission('ThoiKhoaBieu', 'CanUpdate'), thoiKhoaBieuContr
 // GET /v1/api/thoikhoabieu?maHocKy=...&maKhoa=...&maBoMon=...
 router.get('/', checkPermission('ThoiKhoaBieu', 'CanRead'), thoiKhoaBieuController.getAll);
 
+// ================================================================
+// BOMON ĐỘC QUYỀN: CÁC ROUTE PHÂN CÔNG GIẢNG VIÊN
+// ================================================================
+
+// 10. Lấy danh sách Lớp học phần cần phân công của Bộ môn
+// GET /v1/api/thoikhoabieu/bomon/assignable-classes?maHocKy=...&search=...&filterStatus=...
+router.get('/bomon/assignable-classes', thoiKhoaBieuController.getBomonAssignableClasses);
+
+// 11. Quét kiểm tra tình trạng khả dụng của GV cho 1 lớp
+// GET /v1/api/thoikhoabieu/bomon/lecturer-availability?maLopHocPhan=...
+router.get('/bomon/lecturer-availability', thoiKhoaBieuController.getLecturerAvailability);
+
+// 12. Xem trước Thời khóa biểu tuần của Giảng viên
+// GET /v1/api/thoikhoabieu/bomon/lecturer-weekly-schedule?maGiangVien=...&maHocKy=...
+router.get('/bomon/lecturer-weekly-schedule', thoiKhoaBieuController.getLecturerWeeklySchedule);
+
+// 13. Thống kê Tải Giảng Dạy toàn bộ Giảng viên trong Bộ môn
+// GET /v1/api/thoikhoabieu/bomon/workload-summary?maHocKy=...
+router.get('/bomon/workload-summary', thoiKhoaBieuController.getBomonWorkloadSummary);
+
+// 14. Thực hiện Phân công Giảng viên vào Lớp HP
+// POST /v1/api/thoikhoabieu/bomon/assign-lecturer
+router.post('/bomon/assign-lecturer', thoiKhoaBieuController.assignLecturerToClass);
+
+// 15. Hủy phân công Giảng viên khỏi Lớp HP
+// POST /v1/api/thoikhoabieu/bomon/unassign-lecturer
+router.post('/bomon/unassign-lecturer', thoiKhoaBieuController.unassignLecturerFromClass);
+
 module.exports = router;
+
 

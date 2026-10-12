@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   FolderTree, School, Network, BookOpen, ChevronDown,
   ChevronRight, Search, RefreshCw, Layers, CheckCircle2,
-  AlertCircle, Sparkles, Filter
+  AlertCircle, Sparkles, Filter, PanelLeftClose, PanelLeftOpen
 } from 'lucide-react';
 import './ThoiKhoaBieuComponents.css';
 
@@ -20,7 +20,9 @@ export default function ThoiKhoaBieuTreeView({
   searchTerm = '',
   onSearchChange,
   onRefresh,
-  loading = false
+  loading = false,
+  isCollapsed = false,
+  onToggleCollapse
 }) {
   // State quản lý việc đóng/mở rộng các node Khoa và Bộ môn
   const [expandedKhoas, setExpandedKhoas] = useState({});
@@ -65,24 +67,47 @@ export default function ThoiKhoaBieuTreeView({
 
   const isAllSelected = selectedKhoaId === 'ALL' && selectedBoMonId === 'ALL' && !selectedLhpId;
 
+  // Nếu đang ở trạng thái thu gọn
+  if (isCollapsed) {
+    return (
+      <div
+        className="tkb-treeview-panel collapsed"
+        onClick={onToggleCollapse}
+        title="Nhấn để mở rộng Sơ đồ đào tạo"
+      >
+        <button type="button" className="btn-tree-expand-bar" aria-label="Mở rộng sơ đồ">
+          <FolderTree size={16} />
+          <span className="collapsed-vertical-text">Sơ Đồ Đào Tạo</span>
+          <span className="collapsed-badge">{stats.total || 0}</span>
+          <PanelLeftOpen size={16} className="collapsed-open-icon" />
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="tkb-treeview-panel">
       {/* 1. Header TreeView */}
       <div className="tkb-treeview-header">
         <div className="tkb-treeview-title-group">
-          <FolderTree size={18} className="tree-header-icon" />
+          <FolderTree size={16} className="tree-header-icon" />
           <span>Sơ Đồ Đào Tạo</span>
         </div>
         <div className="tree-header-actions">
           <button className="btn-tree-tool" title="Mở rộng tất cả" onClick={handleExpandAll}>
-            <ChevronDown size={14} />
+            <ChevronDown size={13} />
           </button>
           <button className="btn-tree-tool" title="Thu gọn tất cả" onClick={handleCollapseAll}>
-            <ChevronRight size={14} />
+            <ChevronRight size={13} />
           </button>
           <button className="btn-tree-tool" title="Làm mới" onClick={onRefresh} disabled={loading}>
-            <RefreshCw size={14} className={loading ? 'spinning' : ''} />
+            <RefreshCw size={13} className={loading ? 'spinning' : ''} />
           </button>
+          {onToggleCollapse && (
+            <button className="btn-tree-tool collapse-btn" title="Thu gọn sơ đồ" onClick={onToggleCollapse}>
+              <PanelLeftClose size={13} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -121,7 +146,7 @@ export default function ThoiKhoaBieuTreeView({
         <Search size={14} className="tree-search-icon" />
         <input
           type="text"
-          placeholder="Lọc Khoa, Bộ môn, LHP..."
+          placeholder="Tìm theo mã hoặc tên đơn vị..."
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
         />
@@ -246,11 +271,30 @@ export default function ThoiKhoaBieuTreeView({
 
                                       <div className="lhp-item-info">
                                         <div className="lhp-item-title-row">
-                                          <span className="lhp-item-name" title={lhp.TenMonHoc}>
-                                            {lhp.TenMonHoc || lhp.MaMonHoc}
+                                          <span
+                                            className="lhp-item-name"
+                                            title={lhp.TenLopHocPhan || lhp.TenMonHoc || lhp.MaLopHocPhan}
+                                          >
+                                            {lhp.TenLopHocPhan || lhp.TenMonHoc || lhp.MaMonHoc}
                                           </span>
-                                          <span className="lhp-item-code">{lhp.MaLopHocPhan}</span>
+                                          <span className="lhp-item-code" title={lhp.MaLopHocPhan}>{lhp.MaLopHocPhan}</span>
                                         </div>
+                                        {lhp.TenMonHoc && lhp.TenLopHocPhan && lhp.TenLopHocPhan !== lhp.TenMonHoc && (
+                                          <div
+                                            className="lhp-item-subject-row"
+                                            style={{
+                                              fontSize: '0.72rem',
+                                              color: '#64748b',
+                                              overflow: 'hidden',
+                                              textOverflow: 'ellipsis',
+                                              whiteSpace: 'nowrap',
+                                              marginTop: '1px'
+                                            }}
+                                            title={lhp.TenMonHoc}
+                                          >
+                                            {lhp.TenMonHoc}
+                                          </div>
+                                        )}
                                         <div className="lhp-item-sub-row">
                                           <span className={`lhp-schedule-pill ${hasSchedule ? 'scheduled' : 'unscheduled'}`}>
                                             {scheduleSummary}

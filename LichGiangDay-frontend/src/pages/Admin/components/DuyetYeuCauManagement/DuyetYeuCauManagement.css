@@ -1,0 +1,384 @@
+/* ==========================================================================
+   DUYET YEU CAU MANAGEMENT - PHÂN HỆ TRƯỞNG BỘ MÔN
+   ========================================================================== */
+
+.dyc-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  background: #f8fafc;
+  min-height: calc(100vh - 72px);
+}
+
+/* Header */
+.dyc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  background: #ffffff;
+  padding: 1.25rem 1.5rem;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.dyc-header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.dyc-header-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #059669 0%, #0284c7 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+  flex-shrink: 0;
+}
+
+.dyc-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.dyc-subtitle {
+  margin: 0.15rem 0 0 0;
+  font-size: 0.8125rem;
+  color: #64748b;
+}
+
+.dyc-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* KPI Cards Strip */
+.dyc-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.dyc-kpi-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.dyc-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.dyc-kpi-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.kpi-pending .dyc-kpi-icon { background: #fff7ed; color: #ea580c; }
+.kpi-approved .dyc-kpi-icon { background: #ecfdf5; color: #059669; }
+.kpi-absence .dyc-kpi-icon { background: #fef2f2; color: #dc2626; }
+.kpi-substitute .dyc-kpi-icon { background: #f5f3ff; color: #7c3aed; }
+
+.dyc-kpi-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.dyc-kpi-value {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.dyc-kpi-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* Control Filter Bar */
+.dyc-filter-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.dyc-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #f1f5f9;
+  padding: 0.3rem;
+  border-radius: 10px;
+  overflow-x: auto;
+}
+
+.dyc-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.dyc-tab-btn:hover {
+  color: #0f172a;
+}
+
+.dyc-tab-btn.active {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.dyc-tab-badge {
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 0.6875rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.dyc-tab-btn.active .dyc-tab-badge {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.dyc-filter-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.dyc-search-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  padding: 0.45rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+}
+
+.dyc-search-input input {
+  border: none;
+  background: transparent;
+  outline: none;
+  color: #0f172a;
+  width: 180px;
+}
+
+.dyc-select {
+  padding: 0.45rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  font-size: 0.8125rem;
+  color: #1e293b;
+  outline: none;
+  cursor: pointer;
+}
+
+/* Table Area */
+.dyc-table-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.dyc-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.8125rem;
+}
+
+.dyc-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 700;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.dyc-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+  vertical-align: middle;
+}
+
+.dyc-table tr:hover {
+  background: #f8fafc;
+}
+
+/* Badges */
+.badge-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.badge-type.type-absence { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+.badge-type.type-substitute { background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; }
+.badge-type.type-swap { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.badge-type.type-makeup { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+
+.badge-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+}
+
+.badge-status.status-pending { background: #fff7ed; color: #c2410c; }
+.badge-status.status-approved { background: #ecfdf5; color: #047857; }
+.badge-status.status-rejected { background: #fef2f2; color: #b91c1c; }
+
+/* Table Action Buttons */
+.dyc-action-group {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.dyc-btn-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s;
+}
+
+.btn-approve {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.btn-approve:hover {
+  background: #059669;
+  color: #ffffff;
+}
+
+.btn-reject {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.btn-reject:hover {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.btn-inspect {
+  background: #f8fafc;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+.btn-inspect:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+/* Empty State */
+.dyc-empty-state {
+  padding: 3rem 1rem;
+  text-align: center;
+  color: #64748b;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+}
+
+/* Pre-approval Conflict Box */
+.conflict-box {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.conflict-box.safe {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+}
+
+.conflict-box.warning {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+}
+
+.conflict-box.danger {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}

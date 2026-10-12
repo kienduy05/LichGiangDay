@@ -1,0 +1,586 @@
+/* ==========================================================================
+   LỚP SINH VIÊN MANAGEMENT & TREEVIEW STYLES
+   ========================================================================== */
+
+.lsv-page-layout {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  margin-top: 16px;
+}
+
+/* ==========================================================================
+   TREEVIEW SIDEBAR (LEFT) - 1 CẤP LÀ KHOA
+   ========================================================================== */
+
+.lsv-treeview-sidebar {
+  width: 285px;
+  min-width: 275px;
+  max-width: 305px;
+  background: var(--admin-card-bg, #ffffff);
+  border: 1px solid var(--admin-card-border, #e2e8f0);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 80px;
+  max-height: calc(100vh - 100px);
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Collapsed State Mini Bar */
+.lsv-treeview-sidebar.collapsed {
+  width: 48px;
+  min-width: 48px;
+  max-width: 48px;
+  background: #ffffff;
+  cursor: pointer;
+  padding: 12px 6px;
+  border: 1px dashed #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.lsv-treeview-sidebar.collapsed:hover {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  border-style: solid;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.12);
+}
+
+.lsv-btn-expand-bar {
+  background: none;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #2563eb;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+}
+
+.lsv-collapsed-vertical-text {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #475569;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.lsv-collapsed-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  padding: 2px 6px;
+  border-radius: 9999px;
+}
+
+.lsv-collapsed-open-icon {
+  margin-top: auto;
+  color: #94a3b8;
+  transition: transform 0.2s ease;
+}
+
+.lsv-treeview-sidebar.collapsed:hover .lhp-collapsed-open-icon {
+  transform: translateX(2px);
+  color: #2563eb;
+}
+
+/* Toggle Tree button in filter bar */
+.lsv-btn-toggle-tree {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #475569;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  margin-right: 6px;
+}
+
+.lsv-btn-toggle-tree:hover {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+}
+
+.lsv-btn-toggle-tree.collapsed {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #3b82f6;
+}
+
+.lsv-treeview-header {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--admin-card-border, #e2e8f0);
+  background: var(--admin-header-bg, #fafbfc);
+}
+
+.lsv-treeview-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.lsv-treeview-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--admin-text-main, #0f172a);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lsv-tree-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.lsv-tree-action-btn {
+  background: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 4px;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.lsv-tree-action-btn:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+  border-color: #cbd5e1;
+}
+
+.lsv-tree-action-btn.collapse-btn {
+  color: #64748b;
+}
+
+.lsv-tree-action-btn.collapse-btn:hover {
+  background: #fee2e2;
+  color: #ef4444;
+  border-color: #fca5a5;
+}
+
+.lsv-tree-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.lsv-tree-search-box input {
+  width: 100%;
+  padding: 7px 10px 7px 32px;
+  font-size: 0.84rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1e293b;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.lsv-tree-search-box input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+.lsv-tree-search-icon {
+  position: absolute;
+  left: 10px;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.lsv-tree-clear-btn {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  padding: 2px;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.lsv-tree-clear-btn:hover {
+  color: #475569;
+}
+
+/* TreeView Body */
+.lsv-treeview-body {
+  padding: 10px 8px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.lsv-treeview-body::-webkit-scrollbar {
+  width: 5px;
+}
+
+.lsv-treeview-body::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+/* Tree Nodes */
+.lsv-tree-node {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  margin-bottom: 2px;
+  gap: 8px;
+}
+
+.lsv-tree-node:hover {
+  background: #f8fafc;
+}
+
+.lsv-tree-node.active {
+  background: #eff6ff;
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.lsv-tree-node-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  min-width: 0;
+  flex: 1;
+}
+
+.lsv-tree-expand-btn {
+  background: none;
+  border: none;
+  padding: 2px;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.lsv-tree-expand-btn:hover {
+  color: #1e293b;
+  background: #e2e8f0;
+}
+
+.lsv-tree-node-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.lsv-tree-node-icon.root { color: #3b82f6; }
+.lsv-tree-node-icon.khoa { color: #8b5cf6; }
+.lsv-tree-node-icon.class { color: #0284c7; }
+
+.lsv-tree-node-text {
+  font-size: 0.81rem;
+  line-height: 1.35;
+  color: var(--admin-text-main, #1e293b);
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex: 1;
+}
+
+.lsv-tree-node-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  background: #f1f5f9;
+  color: #64748b;
+  flex-shrink: 0;
+  margin-top: 1px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.lsv-tree-node.active .lsv-tree-node-badge {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.lsv-tree-node.level-1 {
+  padding-left: 8px;
+}
+
+/* Class item inside Khoa */
+.lsv-tree-class-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 5px 8px 5px 26px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-bottom: 1px;
+  gap: 6px;
+}
+
+.lsv-tree-class-item:hover {
+  background: #f8fafc;
+}
+
+.lsv-tree-class-item.active {
+  background: #eff6ff;
+  border-left: 3px solid #2563eb;
+}
+
+.lsv-tree-class-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  min-width: 0;
+  flex: 1;
+}
+
+.lsv-tree-class-icon-wrap {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  background: #e0f2fe;
+  color: #0284c7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.lsv-tree-class-name {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--admin-text-main, #1e293b);
+  line-height: 1.3;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.lsv-tree-class-code {
+  font-size: 0.7rem;
+  font-family: monospace;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 1px 4px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.lsv-tree-lhp-pill {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 1px 5px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ==========================================================================
+   MAIN CONTENT AREA (RIGHT)
+   ========================================================================== */
+
+.lsv-main-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Breadcrumb / Active Context Bar */
+.lsv-context-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--admin-card-bg, #ffffff);
+  border: 1px solid var(--admin-card-border, #e2e8f0);
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 0.85rem;
+}
+
+.lsv-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #64748b;
+  flex-wrap: wrap;
+}
+
+.lsv-breadcrumb-item {
+  color: var(--admin-text-main, #0f172a);
+  font-weight: 600;
+}
+
+.lsv-breadcrumb-clear {
+  margin-left: 8px;
+  font-size: 0.76rem;
+  color: #ef4444;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  padding: 2px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lsv-breadcrumb-clear:hover {
+  background: #fee2e2;
+}
+
+/* Table Enhancements */
+.lsv-icon-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  color: #1d4ed8;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.lsv-name-title {
+  font-weight: 600;
+  color: var(--admin-text-main, #0f172a);
+  font-size: 0.9rem;
+}
+
+.lsv-code-pill {
+  font-family: monospace;
+  font-size: 0.74rem;
+  color: #475569;
+  background: #f1f5f9;
+  padding: 1px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-top: 2px;
+}
+
+.lsv-khoa-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: #6b21a8;
+  background: #faf5ff;
+  border: 1px solid #e9d5ff;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.lsv-classes-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 2px 8px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lsv-classes-badge:hover {
+  background: #dbeafe;
+}
+
+.lsv-classes-badge.empty {
+  color: #94a3b8;
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  cursor: default;
+}
+
+/* Responsive breakpoint */
+@media (max-width: 1024px) {
+  .lsv-page-layout {
+    flex-direction: column;
+  }
+  .lsv-treeview-sidebar {
+    width: 100%;
+    max-width: 100%;
+    position: static;
+    max-height: 400px;
+  }
+  .lsv-treeview-sidebar.collapsed {
+    width: 100%;
+    max-width: 100%;
+    height: 44px;
+    min-height: 44px;
+    padding: 8px 16px;
+  }
+  .lsv-treeview-sidebar.collapsed .lsv-btn-expand-bar {
+    flex-direction: row;
+    gap: 10px;
+  }
+  .lsv-treeview-sidebar.collapsed .lsv-collapsed-vertical-text {
+    writing-mode: horizontal-tb;
+    transform: none;
+  }
+  .lsv-treeview-sidebar.collapsed .lsv-collapsed-open-icon {
+    margin-top: 0;
+    margin-left: auto;
+  }
+}

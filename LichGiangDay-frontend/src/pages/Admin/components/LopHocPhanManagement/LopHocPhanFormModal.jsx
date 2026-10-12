@@ -1,20 +1,25 @@
-import { X, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import React, { useMemo } from 'react';
+import { X, Loader2, AlertCircle, CheckCircle2, Network, BookOpen, Lock, Calendar, Layers, Hash, School } from "lucide-react";
+import './LopHocPhanComponents.css';
 
 export default function LopHocPhanFormModal({
   isOpen,
   mode,
   formData,
   setFormData,
-  boMonList,
-  monHocList,
-  hocKyList,
-  khoaSinhVienList,
+  boMonList = [],
+  monHocList = [],
+  hocKyList = [],
+  khoaSinhVienList = [],
   onSubmit,
   onClose,
   formLoading,
   formError,
   setFormError,
   formSuccess,
+  isBoMonRole = false,
+  scopedBoMonId = '',
+  departmentFullName = ''
 }) {
   if (!isOpen) return null;
 
@@ -24,6 +29,35 @@ export default function LopHocPhanFormModal({
     if (setFormError) setFormError("");
   };
 
+  // Xác định mã bộ môn hiệu lực
+  const effectiveBoMon = isBoMonRole && scopedBoMonId ? scopedBoMonId : formData.maBoMon;
+
+  // Lọc danh sách môn học theo bộ môn được chọn
+  const availableMonHocs = useMemo(() => {
+    if (!effectiveBoMon) return [];
+    return (monHocList || []).filter(mh => mh.MaBoMon === effectiveBoMon);
+  }, [monHocList, effectiveBoMon]);
+
+  // Bộ môn hiện tại
+  const currentBmObj = boMonList.find(b => b.MaBoMon === effectiveBoMon);
+
+  // Xử lý khi đổi bộ môn
+  const handleBoMonChange = (e) => {
+    clearErr();
+    const newBm = e.target.value;
+    setFormData(prev => {
+      const currentMh = monHocList.find(m => m.MaMonHoc === prev.maMonHoc);
+      const isMhValidForNewBm = currentMh && currentMh.MaBoMon === newBm;
+      return {
+        ...prev,
+        maBoMon: newBm,
+        maMonHoc: isMhValidForNewBm ? prev.maMonHoc : '',
+        tenLopHocPhan: isMhValidForNewBm ? prev.tenLopHocPhan : ''
+      };
+    });
+  };
+
+  // Xử lý khi chọn môn học
   const handleMonHocChange = (e) => {
     clearErr();
     const selectedMaMonHoc = e.target.value;
@@ -88,11 +122,25 @@ export default function LopHocPhanFormModal({
 
   return (
     <div className="modal-overlay">
-      <div className="modal-card wide">
+      <div className="modal-card wide" style={{ maxWidth: '640px' }}>
         <div className="modal-header">
-          <h3 className="modal-title">
-            {isEdit ? "Cập Nhật Lớp Học Phần" : "Mở Lớp Học Phần"}
-          </h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              background: '#eff6ff',
+              color: '#2563eb',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Layers size={18} />
+            </div>
+            <h3 className="modal-title" style={{ margin: 0 }}>
+              {isEdit ? "Cập Nhật Lớp Học Phần" : "Mở Lớp Học Phần Mới"}
+            </h3>
+          </div>
           <button onClick={onClose} className="modal-close-btn">
             <X size={20} />
           </button>
@@ -124,28 +172,97 @@ export default function LopHocPhanFormModal({
         )}
 
         <form onSubmit={onSubmit}>
-          {/* Row 1: Môn học + Mã lớp học phần */}
+          {/* ══════════ KHỐI 1: BỘ MÔN VÀ MÔN HỌC (CHỌN BỘ MÔN TRƯỚC) ══════════ */}
           <div className="lhp-form-row">
-            {!isEdit && (
-              <div className="modal-form-group">
-                <label className="modal-label">
-                  Môn học <span style={{ color: "#ef4444" }}>*</span>
-                </label>
+            {/* 1. Bộ môn */}
+            <div className="modal-form-group">
+              <label className="modal-label">
+                <Network size={13} style={{ display: 'inline', marginRight: '4px', verticalAlign: '-2px', color: '#0ea5e9' }} />
+                Bộ môn quản lý <span style={{ color: "#ef4444" }}>*</span>
+              </label>
+              {!isBoMonRole && !isEdit ? (
+                <select
+                  className="modal-input"
+                  value={formData.maBoMon}
+                  onChange={handleBoMonChange}
+                  required
+                >
+                  <option value="">— Chọn Bộ môn trước —</option>
+                  {boMonList.map((bm) => (
+                    <option key={bm.MaBoMon} value={bm.MaBoMon}>
+                      {bm.TenBoMon} ({bm.MaBoMon})
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div style={{
+                  padding: '9px 12px',
+                  background: isBoMonRole ? '#f0f9ff' : '#f8fafc',
+                  border: isBoMonRole ? '1px solid #bae6fd' : '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  color: isBoMonRole ? '#0369a1' : '#475569',
+                  fontSize: '0.85rem',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}>
+                  <span>{departmentFullName || currentBmObj?.TenBoMon || effectiveBoMon || 'Chưa chọn'}</span>
+                  <Lock size={13} color={isBoMonRole ? '#0284c7' : '#94a3b8'} />
+                </div>
+              )}
+            </div>
+
+            {/* 2. Môn học (Load theo Bộ môn) */}
+            <div className="modal-form-group">
+              <label className="modal-label">
+                <BookOpen size={13} style={{ display: 'inline', marginRight: '4px', verticalAlign: '-2px', color: '#2563eb' }} />
+                Môn học <span style={{ color: "#ef4444" }}>*</span>
+              </label>
+              {!isEdit ? (
                 <select
                   className="modal-input"
                   value={formData.maMonHoc}
                   onChange={handleMonHocChange}
+                  disabled={!effectiveBoMon}
                   required
+                  style={!effectiveBoMon ? { background: '#f8fafc', color: '#94a3b8', cursor: 'not-allowed' } : {}}
                 >
-                  <option value="">— Chọn môn học —</option>
-                  {monHocList.map((mh) => (
-                    <option key={mh.MaMonHoc} value={mh.MaMonHoc}>
-                      {mh.MaMonHoc} — {mh.TenMonHoc}
-                    </option>
-                  ))}
+                  {!effectiveBoMon ? (
+                    <option value="">— Vui lòng chọn Bộ môn trước —</option>
+                  ) : (
+                    <>
+                      <option value="">— Chọn môn học ({availableMonHocs.length} môn) —</option>
+                      {availableMonHocs.map((mh) => (
+                        <option key={mh.MaMonHoc} value={mh.MaMonHoc}>
+                          {mh.MaMonHoc} — {mh.TenMonHoc} ({mh.SoTinChi || 0} TC)
+                        </option>
+                      ))}
+                    </>
+                  )}
                 </select>
-              </div>
-            )}
+              ) : (
+                <div style={{
+                  padding: '9px 12px',
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  color: '#334155',
+                  fontSize: '0.85rem',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}>
+                  <span>{formData.maMonHoc} — {monHocList.find(m => m.MaMonHoc === formData.maMonHoc)?.TenMonHoc || formData.tenLopHocPhan}</span>
+                  <Lock size={13} color="#94a3b8" />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ══════════ KHỐI 2: MÃ & TÊN LỚP HỌC PHẦN ══════════ */}
+          <div className="lhp-form-row">
             <div className="modal-form-group">
               <label className="modal-label">
                 Mã lớp học phần <span style={{ color: "#ef4444" }}>*</span>
@@ -171,23 +288,21 @@ export default function LopHocPhanFormModal({
                 }
               />
             </div>
+            <div className="modal-form-group">
+              <label className="modal-label">Tên Lớp Học Phần</label>
+              <input
+                type="text"
+                className="modal-input"
+                placeholder="VD: An ninh mạng - 1-25 (QT01)"
+                value={formData.tenLopHocPhan}
+                onChange={(e) =>
+                  setFormData({ ...formData, tenLopHocPhan: e.target.value })
+                }
+              />
+            </div>
           </div>
 
-          {/* Tên LHP */}
-          <div className="modal-form-group">
-            <label className="modal-label">Tên Lớp Học Phần</label>
-            <input
-              type="text"
-              className="modal-input"
-              placeholder="VD: An ninh mạng - 1-25 (QT01)"
-              value={formData.tenLopHocPhan}
-              onChange={(e) =>
-                setFormData({ ...formData, tenLopHocPhan: e.target.value })
-              }
-            />
-          </div>
-
-          {/* Row 2: Học kỳ + Loại học */}
+          {/* ══════════ KHỐI 3: HỌC KỲ & LOẠI HỌC ══════════ */}
           <div className="lhp-form-row">
             {!isEdit ? (
               <div className="modal-form-group">
@@ -236,7 +351,7 @@ export default function LopHocPhanFormModal({
                 }
                 required
               >
-                <option value="">— Chọn —</option>
+                <option value="">— Chọn Loại học —</option>
                 <option value="LT">LT — Lý thuyết</option>
                 <option value="BT">BT — Bài tập</option>
                 <option value="TH">TH — Thực hành</option>
@@ -245,28 +360,8 @@ export default function LopHocPhanFormModal({
             </div>
           </div>
 
-          {/* Row 3: Bộ môn + Khóa SV */}
+          {/* ══════════ KHỐI 4: KHÓA SV & SĨ SỐ ══════════ */}
           <div className="lhp-form-row">
-            <div className="modal-form-group">
-              <label className="modal-label">
-                Bộ môn <span style={{ color: "#ef4444" }}>*</span>
-              </label>
-              <select
-                className="modal-input"
-                value={formData.maBoMon}
-                onChange={(e) =>
-                  setFormData({ ...formData, maBoMon: e.target.value })
-                }
-                required
-              >
-                <option value="">— Chọn Bộ môn —</option>
-                {boMonList.map((bm) => (
-                  <option key={bm.MaBoMon} value={bm.MaBoMon}>
-                    {bm.TenBoMon} ({bm.MaBoMon})
-                  </option>
-                ))}
-              </select>
-            </div>
             <div className="modal-form-group">
               <label className="modal-label">Khóa sinh viên</label>
               <select
@@ -284,10 +379,6 @@ export default function LopHocPhanFormModal({
                 ))}
               </select>
             </div>
-          </div>
-
-          {/* Row 4: Sĩ số DK + ĐK */}
-          <div className="lhp-form-row">
             <div className="modal-form-group">
               <label className="modal-label">Sinh viên dự kiến</label>
               <input
@@ -316,7 +407,7 @@ export default function LopHocPhanFormModal({
             </div>
           </div>
 
-          {/* Row 5: Ngày bắt đầu + Kết thúc + Số tuần */}
+          {/* ══════════ KHỐI 5: THỜI GIAN & SỐ TUẦN ══════════ */}
           <div className="lhp-form-row">
             <div className="modal-form-group">
               <label className="modal-label">
@@ -342,26 +433,25 @@ export default function LopHocPhanFormModal({
                 required
               />
             </div>
+            <div className="modal-form-group">
+              <label className="modal-label">
+                Số tuần <span style={{ color: "#ef4444" }}>*</span>
+              </label>
+              <input
+                type="number"
+                className="modal-input"
+                min="1"
+                placeholder="VD: 15"
+                value={formData.soTuan}
+                onChange={(e) =>
+                  setFormData({ ...formData, soTuan: e.target.value })
+                }
+                required
+              />
+            </div>
           </div>
 
-          <div className="modal-form-group" style={{ maxWidth: "200px" }}>
-            <label className="modal-label">
-              Số tuần <span style={{ color: "#ef4444" }}>*</span>
-            </label>
-            <input
-              type="number"
-              className="modal-input"
-              min="1"
-              placeholder="VD: 15"
-              value={formData.soTuan}
-              onChange={(e) =>
-                setFormData({ ...formData, soTuan: e.target.value })
-              }
-              required
-            />
-          </div>
-
-          <div className="modal-footer">
+          <div className="modal-footer" style={{ marginTop: '20px' }}>
             <button type="button" onClick={onClose} className="btn-cancel">
               Hủy
             </button>
