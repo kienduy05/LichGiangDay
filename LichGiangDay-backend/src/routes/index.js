@@ -53,4 +53,7 @@ router.use('/v1/api/lophocphan', require('./lophocphan'));
 // Schedule (ThoiKhoaBieu) management routes
 router.use('/v1/api/thoikhoabieu', require('./thoikhoabieu'));
 
+// Dashboard statistics routes
+router.use('/v1/api/dashboard', require('./dashboard'));
+
 module.exports = router;

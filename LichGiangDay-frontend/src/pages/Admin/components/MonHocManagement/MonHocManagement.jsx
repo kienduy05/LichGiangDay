@@ -21,12 +21,15 @@ import MonHocFormModal from './MonHocFormModal';
 import './MonHocManagement.css';
 import './MonHocComponents.css';
 
+const PAGE_SIZE = 5;
+
 export default function MonHocManagement() {
   const { user, hasPermission } = useAuth();
 
   // ─── Phân quyền dữ liệu theo vai trò Bộ môn (Role: BOMON) ───
   const isBoMonRole = user?.role === 'BOMON';
   const scopedBoMonId = isBoMonRole ? (user?.username || '') : '';
+  const [currentPage, setCurrentPage] = useState(1);
 
   // ─── View mode: 'list' | 'detail' ───
   const [view, setView] = useState('list');
