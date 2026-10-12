@@ -885,3 +885,19 @@ export const apiDeleteTietHoc = async (maTiet) => {
   if (!response.ok) throw new Error(data.message || 'Xóa tiết học thất bại.');
   return data.metadata;
 };
+
+// ==========================================
+// DASHBOARD (THỐNG KÊ DỮ LIỆU NỀN) API SERVICES
+// ==========================================
+
+export const apiGetDashboardMasterData = async ({ maHocKy, maKhoa, sections } = {}) => {
+  const params = new URLSearchParams();
+  if (maHocKy) params.append('maHocKy', maHocKy);
+  if (maKhoa) params.append('maKhoa', maKhoa);
+  if (sections) params.append('sections', sections);
+  const url = `${API_BASE_URL}/dashboard/master-data${params.toString() ? '?' + params.toString() : ''}`;
+  const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Lấy số liệu dashboard thất bại.');
+  return data.metadata;
+};

@@ -175,12 +175,14 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
     - Nếu đã có $\rightarrow$ Trả lỗi: _"Mã phòng học 'A1-101' đã tồn tại trong hệ thống."_ (HTTP 400).
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - **Tạo mới 1 dòng bản ghi trong bảng `PhongHoc`**:
+
     ```sql
     INSERT INTO PhongHoc (MaPhong, TenPhong, MaToaNha, SucChua, LoaiPhong, TrangThai)
     VALUES (?, ?, ?, ?, ?, ?);
     ```
 
     - `TrangThai`: Mặc định CSDL tự động gán giá trị chuỗi là **`'Ready'`** (Sẵn sàng phục vụ giảng dạy).
+
 - **Kết quả hiển thị (UI Response)**:
   - Đóng Modal, hiển thị phòng học mới trên danh sách với trạng thái **Ready (Sẵn sàng)**.
 
@@ -229,24 +231,30 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
   - Kiểm tra quyền `CanDelete` trên Resource `PhongHoc`.
   - **Kiểm tra ràng buộc toàn vẹn CSDL (3 tầng liên kết)**:
     1. **Kiểm tra Thời khóa biểu (`ThoiKhoaBieu`)**:
+
        ```sql
        SELECT COUNT(*) AS total FROM ThoiKhoaBieu WHERE MaPhong = ?;
        ```
 
        - Nếu `total > 0` $\rightarrow$ **CHẶN XÓA**: _"Không thể xóa phòng học 'X' vì đang có N lịch học (Thời khóa biểu) được xếp tại phòng này."_
+
     2. **Kiểm tra Buổi học (`BuoiHoc`)**:
+
        ```sql
        SELECT COUNT(*) AS total FROM BuoiHoc WHERE MaPhong = ?;
        ```
 
        - Nếu `total > 0` $\rightarrow$ **CHẶN XÓA**: _"Không thể xóa phòng học 'X' vì đang có N buổi học được gán cho phòng này."_
+
     3. **Kiểm tra Đăng ký dạy bù (`DangKyDayBu`)**:
+
        ```sql
        SELECT COUNT(*) AS total FROM DangKyDayBu WHERE MaPhong = ?;
        ```
 
        - Nếu `total > 0` $\rightarrow$ **CHẶN XÓA**: _"Không thể xóa phòng học 'X' vì đang có N đơn đăng ký dạy bù tại phòng này."_
     - **Trường hợp cả 3 điều kiện đều bằng 0**: Cho phép xóa.
+
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - **Trường hợp xóa thành công**: Bản ghi bị **XÓA VĨNH VIỄN** khỏi bảng `PhongHoc`:
     ```sql
@@ -310,12 +318,15 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
   - **Validation 1**: `MaKhoa` và `TenKhoa` không được để trống.
   - **Validation 2**: Chuẩn hóa `MaKhoa` (Viết hoa `UPPERCASE`, xóa khoảng trắng thừa).
   - **Validation 3 (Check trùng mã)**:
+
     ```sql
     SELECT MaKhoa FROM Khoa WHERE MaKhoa = ? LIMIT 1;
     ```
 
     - Nếu đã tồn tại $\rightarrow$ Trả lỗi: _"Mã khoa 'CNTT' đã tồn tại trong hệ thống."_ (HTTP 400).
+
   - Cột `MaTruongKhoa` tự động gán giá trị mặc định `NULL`.
+
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - **Tạo mới 1 dòng bản ghi trong bảng `Khoa`**:
     ```sql
@@ -404,12 +415,14 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
 - **Nghiệp vụ xử lý (Business Logic)**:
   - Kiểm tra quyền `CanDelete` trên Resource `Khoa`.
   - **Kiểm tra ràng buộc Bộ môn (`BoMon`)**:
+
     ```sql
     SELECT COUNT(*) AS total FROM BoMon WHERE MaKhoa = ?;
     ```
 
     - **Trường hợp `total > 0`**: **CHẶN XÓA HOÀN TOÀN**. Trả lỗi HTTP 400: _"Không thể xóa Khoa 'CNTT' vì đang chứa N bộ môn trực thuộc. Vui lòng xóa hoặc chuyển các bộ môn sang khoa khác trước."_
     - **Trường hợp `total == 0`**: Cho phép xóa.
+
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - **Trường hợp đủ điều kiện xóa**: Bản ghi bị **XÓA VĨNH VIỄN** khỏi bảng `Khoa`:
     ```sql
@@ -481,12 +494,15 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
   - **Validation 2**: Chuẩn hóa `MaBoMon` (Tự động viết hoa `UPPERCASE`, xóa khoảng trắng thừa).
   - **Validation 3 (Kiểm tra khóa ngoại `MaKhoa`)**: Khoa được chọn phải tồn tại trong bảng `Khoa`.
   - **Validation 4 (Check trùng mã)**:
+
     ```sql
     SELECT MaBoMon FROM BoMon WHERE MaBoMon = ? LIMIT 1;
     ```
 
     - Nếu đã tồn tại $\rightarrow$ Trả lỗi: _"Mã bộ môn 'CNPM' đã tồn tại."_ (HTTP 400).
+
   - Cột `MaTruongBoMon` tự động gán `NULL`.
+
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - **Tạo mới 1 dòng bản ghi trong bảng `BoMon`**:
     ```sql
@@ -552,24 +568,30 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
   - Kiểm tra quyền `CanDelete` trên Resource `BoMon`.
   - **Kiểm tra tuần tự 3 ràng buộc toàn vẹn CSDL**:
     1. **Kiểm tra Giảng viên (`GiangVien`)**:
+
        ```sql
        SELECT COUNT(*) AS total FROM GiangVien WHERE MaBoMon = ?;
        ```
 
        - Nếu `total > 0` $\rightarrow$ **CHẶN XÓA**: _"Không thể xóa Bộ môn 'X' vì đang có N giảng viên trực thuộc. Vui lòng chuyển giảng viên sang bộ môn khác trước."_
+
     2. **Kiểm tra Môn học (`MonHoc`)**:
+
        ```sql
        SELECT COUNT(*) AS total FROM MonHoc WHERE MaBoMon = ?;
        ```
 
        - Nếu `total > 0` $\rightarrow$ **CHẶN XÓA**: _"Không thể xóa Bộ môn 'X' vì đang có N môn học trực thuộc. Vui lòng xóa hoặc chuyển các môn học trước."_
+
     3. **Kiểm tra Tệp nhập liệu (`TepNhap`)**:
+
        ```sql
        SELECT COUNT(*) AS total FROM TepNhap WHERE MaBoMon = ?;
        ```
 
        - Nếu `total > 0` $\rightarrow$ **CHẶN XÓA**: _"Không thể xóa Bộ môn 'X' vì đang có N tệp nhập liệu liên quan để bảo toàn lịch sử."_
     - Chỉ khi cả 3 điều kiện đều bằng 0 mới cho phép xóa.
+
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - **Trường hợp xóa thành công**: Bản ghi bị **XÓA VĨNH VIỄN** khỏi bảng `BoMon`:
     ```sql
@@ -641,14 +663,17 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
   - **Validation 1**: `MaGiangVien` và `HoTen` bắt buộc không được để trống.
   - **Validation 2**: Chuẩn hóa `MaGiangVien` (Viết hoa `UPPERCASE`, xóa khoảng trắng thừa).
   - **Validation 3 (Check trùng mã)**:
+
     ```sql
     SELECT MaGiangVien FROM GiangVien WHERE MaGiangVien = ? LIMIT 1;
     ```
 
     - Nếu đã tồn tại $\rightarrow$ Trả lỗi: _"Mã giảng viên đã tồn tại."_ (HTTP 400).
+
   - **Validation 4 (Kiểm tra khóa ngoại `MaBoMon`)**: Nếu có chọn Bộ môn, Bộ môn đó phải tồn tại trong bảng `BoMon`; nếu không chọn thì lưu giá trị `NULL`.
   - **Validation 5**: Kiểm tra đúng định dạng Email và Số điện thoại hợp lệ nếu người dùng có nhập.
   - CSDL tự động gán `TrangThai = 'Active'` và `UserId = NULL`.
+
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - **Tạo mới 1 dòng bản ghi trong bảng `GiangVien`**:
     ```sql
@@ -833,13 +858,16 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
   - **Validation 1**: `MaMonHoc`, `TenMonHoc`, `MaBoMon` bắt buộc không được để trống.
   - **Validation 2**: Chuẩn hóa `MaMonHoc` (Viết hoa `UPPERCASE`, xóa khoảng trắng thừa).
   - **Validation 3 (Check trùng mã)**:
+
     ```sql
     SELECT MaMonHoc FROM MonHoc WHERE MaMonHoc = ? LIMIT 1;
     ```
 
     - Nếu đã tồn tại $\rightarrow$ Trả lỗi: _"Mã môn học 'INT1001' đã tồn tại."_ (HTTP 400).
+
   - **Validation 4 (Kiểm tra khóa ngoại `MaBoMon`)**: Bộ môn được chọn phải tồn tại trong bảng `BoMon`.
   - **Validation 5**: `SoTinChi` nếu nhập phải là số nguyên dương $> 0$.
+
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - **Tạo mới 1 dòng bản ghi trong bảng `MonHoc`**:
     ```sql
@@ -908,12 +936,14 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
 - **Nghiệp vụ xử lý (Business Logic)**:
   - Kiểm tra quyền `CanDelete` trên Resource `MonHoc`.
   - **Kiểm tra ràng buộc Lớp học phần (`LopHocPhan`)**:
+
     ```sql
     SELECT COUNT(*) AS total FROM LopHocPhan WHERE MaMonHoc = ?;
     ```
 
     - **Trường hợp `total > 0`**: **CHẶN XÓA HOÀN TOÀN**: _"Không thể xóa môn học 'X' vì đang có N lớp học phần được mở cho môn này."_
     - **Trường hợp `total == 0`**: Cho phép xóa.
+
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - **Trường hợp xóa thành công**: Bản ghi bị **XÓA VĨNH VIỄN** khỏi bảng `MonHoc`:
     ```sql
@@ -975,12 +1005,15 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
   - **Validation 1**: Cả 3 trường `MaLopSinhVien`, `TenLopSinhVien`, `MaKhoa` không được để trống.
   - **Validation 2**: Chuẩn hóa `MaLopSinhVien` (Viết hoa `UPPERCASE`, xóa khoảng trắng thừa).
   - **Validation 3 (Check trùng mã)**:
+
     ```sql
     SELECT MaLopSinhVien FROM LopSinhVien WHERE MaLopSinhVien = ? LIMIT 1;
     ```
 
     - Nếu đã tồn tại $\rightarrow$ Trả lỗi: _"Mã lớp sinh viên 'CNTT1-K63' đã tồn tại."_ (HTTP 400).
+
   - **Validation 4 (Khóa ngoại `MaKhoa`)**: Khoa được chọn phải tồn tại trong bảng `Khoa`.
+
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - **Tạo mới 1 dòng bản ghi trong bảng `LopSinhVien`**:
     ```sql
@@ -1017,12 +1050,14 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
 - **Nghiệp vụ xử lý (Business Logic)**:
   - Kiểm tra quyền `CanDelete` trên Resource `LopSinhVien`.
   - **Kiểm tra ràng buộc liên kết Lớp học phần (`LopHocPhan_LopSinhVien`)**:
+
     ```sql
     SELECT COUNT(*) AS total FROM LopHocPhan_LopSinhVien WHERE MaLopSinhVien = ?;
     ```
 
     - **Trường hợp `total > 0`**: **CHẶN XÓA HOÀN TOÀN**: _"Không thể xóa lớp sinh viên 'X' vì đang tham gia N lớp học phần."_
     - **Trường hợp `total == 0`**: Cho phép xóa.
+
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - **Trường hợp xóa thành công**: Bản ghi bị **XÓA VĨNH VIỄN** khỏi bảng `LopSinhVien`:
     ```sql
@@ -1081,11 +1116,13 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
   - **Validation 1**: `MaKhoaSinhVien` và `TenKhoaSinhVien` không được để trống.
   - **Validation 2**: Chuẩn hóa mã (Viết hoa `UPPERCASE`, xóa khoảng trắng thừa).
   - **Validation 3 (Check trùng mã)**:
+
     ```sql
     SELECT MaKhoaSinhVien FROM KhoaSinhVien WHERE MaKhoaSinhVien = ? LIMIT 1;
     ```
 
     - Nếu đã tồn tại $\rightarrow$ Trả lỗi: _"Mã khóa sinh viên 'K66' đã tồn tại."_ (HTTP 400).
+
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - **Tạo mới 1 dòng bản ghi trong bảng `KhoaSinhVien`**:
     ```sql
@@ -1122,12 +1159,14 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
 - **Nghiệp vụ xử lý (Business Logic)**:
   - Kiểm tra quyền `CanDelete` trên Resource `KhoaSinhVien`.
   - **Kiểm tra ràng buộc Lớp học phần (`LopHocPhan.KhoaHoc`)**:
+
     ```sql
     SELECT COUNT(*) AS total FROM LopHocPhan WHERE KhoaHoc = ?;
     ```
 
     - **Trường hợp `total > 0`**: **CHẶN XÓA HOÀN TOÀN**: _"Không thể xóa khóa sinh viên 'K65' vì đang có N lớp học phần gắn với niên khóa này."_
     - **Trường hợp `total == 0`**: Cho phép xóa.
+
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - **Trường hợp xóa thành công**: Bản ghi bị **XÓA VĨNH VIỄN** khỏi bảng `KhoaSinhVien`:
     ```sql
@@ -1191,6 +1230,7 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
   - **Validation 2 (Check trùng mã)**: Truy vấn kiểm tra `MaHocKy` đã tồn tại trong bảng `HocKy` chưa.
   - **Validation 3**: `NgayBatDau` phải nhỏ hơn `NgayKetThuc`.
   - **Validation 4 (Kiểm tra chồng lấn khoảng ngày - Overlap Check)**:
+
     ```sql
     SELECT MaHocKy, TenHocKy, NgayBatDau, NgayKetThuc
     FROM HocKy
@@ -1198,6 +1238,7 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
     ```
 
     - Nếu có học kỳ bị chồng lấn thời gian $\rightarrow$ Backend trả kèm cờ cảnh báo `overlapWarning` để Admin xác nhận.
+
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - **Tạo mới 1 dòng bản ghi trong bảng `HocKy`**:
     ```sql
@@ -1237,6 +1278,7 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
     ```sql
     SELECT COUNT(*) AS total FROM LopHocPhan WHERE MaHocKy = ?;
     ```
+
     - **Trường hợp `total > 0`**: **CHẶN XÓA HOÀN TOÀN**: _"Không thể xóa học kỳ 'X' vì đang có N lớp học phần thuộc học kỳ này."_
     - **Trường hợp `total == 0`**: Cho phép xóa.
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
@@ -1272,18 +1314,20 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
   - Backend kiểm tra quyền `CanRead` trên Resource `TietHoc` và trả về danh sách ca học.
 
 #### 1.10.2. Thêm mới Tiết học
+
 - **Nghiệp vụ xử lý**: Kiểm tra `CanCreate`, kiểm tra trùng mã và chồng lấn giờ.
 
 #### 1.10.3. Cập nhật Tiết học
+
 - **Nghiệp vụ xử lý**: Kiểm tra `CanUpdate`, cập nhật tên tiết và khung giờ.
 
 #### 1.10.4. Xóa Tiết học
+
 - **Nghiệp vụ xử lý**: Kiểm tra ràng buộc `ThoiKhoaBieu` và `BuoiHoc` trước khi xóa.
 
 ---
 
 ### 1.11. Chức năng 11: Quản lý Lớp học phần (`LopHocPhan`)
-
 
 - **Bảng dữ liệu tác động trong CSDL**: **`LopHocPhan`** (`MaLopHocPhan`, `TenLopHocPhan`, `MaMonHoc`, `MaHocKy`, `LoaiHoc`, `SiSoDuKien`, `SiSoDangKy`, `TrangThaiPhanCong`, `MaGiangVien`, `MaBoMon`, `KhoaHoc`, `NgayBatDau`, `NgayKetThuc`, `SoTuan`).
 - **Bảng liên quan (Ràng buộc FK)**:
@@ -1514,9 +1558,27 @@ Phân hệ **Thời khóa biểu** (Course Scheduling) cho phép người quản
     {
       "maLopHocPhan": "INT1001.01",
       "schedules": [
-        { "thuTrongTuan": 2, "maTiet": 1, "maPhong": "A1-101", "ngayBatDau": "2026-09-01", "ngayKetThuc": "2026-12-15" },
-        { "thuTrongTuan": 4, "maTiet": 1, "maPhong": "A1-101", "ngayBatDau": "2026-09-01", "ngayKetThuc": "2026-12-15" },
-        { "thuTrongTuan": 6, "maTiet": 1, "maPhong": "A1-102", "ngayBatDau": "2026-09-01", "ngayKetThuc": "2026-12-15" }
+        {
+          "thuTrongTuan": 2,
+          "maTiet": 1,
+          "maPhong": "A1-101",
+          "ngayBatDau": "2026-09-01",
+          "ngayKetThuc": "2026-12-15"
+        },
+        {
+          "thuTrongTuan": 4,
+          "maTiet": 1,
+          "maPhong": "A1-101",
+          "ngayBatDau": "2026-09-01",
+          "ngayKetThuc": "2026-12-15"
+        },
+        {
+          "thuTrongTuan": 6,
+          "maTiet": 1,
+          "maPhong": "A1-102",
+          "ngayBatDau": "2026-09-01",
+          "ngayKetThuc": "2026-12-15"
+        }
       ]
     }
     ```
@@ -1553,8 +1615,8 @@ Phân hệ **Thời khóa biểu** (Course Scheduling) cho phép người quản
     ```
 - **Kết quả hiển thị (UI Response)**:
   - Làm mới dữ liệu bảng và TreeView, trạng thái lớp chuyển về chấm cam 🟠 (**Chưa xếp lịch**).
-ieu` có cùng `MaLopHocPhan` nhưng khác `ThuTrongTuan` (hoặc khác `MaTiet`, `MaPhong`).
-> - **Tách biệt phân công Giảng viên**: Ở bước xếp thời khóa biểu, giảng viên được giữ nguyên ở trạng thái `Unassigned` để Bộ môn thực hiện phân công sau.
+    ieu`có cùng`MaLopHocPhan`nhưng khác`ThuTrongTuan`(hoặc khác`MaTiet`, `MaPhong`).
+    > - **Tách biệt phân công Giảng viên**: Ở bước xếp thời khóa biểu, giảng viên được giữ nguyên ở trạng thái `Unassigned` để Bộ môn thực hiện phân công sau.
 
 #### 2.1.1. Điều hướng theo Cây Phân cấp (TreeView Navigation)
 
@@ -1620,9 +1682,27 @@ ieu` có cùng `MaLopHocPhan` nhưng khác `ThuTrongTuan` (hoặc khác `MaTiet`
     {
       "maLopHocPhan": "INT1001.01",
       "schedules": [
-        { "thuTrongTuan": 2, "maTiet": 1, "maPhong": "A1-101", "ngayBatDau": "2026-09-01", "ngayKetThuc": "2026-12-15" },
-        { "thuTrongTuan": 4, "maTiet": 1, "maPhong": "A1-101", "ngayBatDau": "2026-09-01", "ngayKetThuc": "2026-12-15" },
-        { "thuTrongTuan": 6, "maTiet": 1, "maPhong": "A1-102", "ngayBatDau": "2026-09-01", "ngayKetThuc": "2026-12-15" }
+        {
+          "thuTrongTuan": 2,
+          "maTiet": 1,
+          "maPhong": "A1-101",
+          "ngayBatDau": "2026-09-01",
+          "ngayKetThuc": "2026-12-15"
+        },
+        {
+          "thuTrongTuan": 4,
+          "maTiet": 1,
+          "maPhong": "A1-101",
+          "ngayBatDau": "2026-09-01",
+          "ngayKetThuc": "2026-12-15"
+        },
+        {
+          "thuTrongTuan": 6,
+          "maTiet": 1,
+          "maPhong": "A1-102",
+          "ngayBatDau": "2026-09-01",
+          "ngayKetThuc": "2026-12-15"
+        }
       ]
     }
     ```
@@ -1661,6 +1741,7 @@ ieu` có cùng `MaLopHocPhan` nhưng khác `ThuTrongTuan` (hoặc khác `MaTiet`
   - Làm mới dữ liệu bảng và TreeView, trạng thái lớp chuyển về chấm cam 🟠 (**Chưa xếp lịch**).
 
 =======
+
 ## PHÂN HỆ: QUẢN LÝ LỚP HỌC PHẦN (LopHocPhan) — Dữ liệu nền (bản sửa đúng)
 
 Bảng tác động chính: LopHocPhan (chỉ 6 trường nghiệp vụ dùng ở giai đoạn này: MaLopHocPhan, MaMonHoc, LoaiHoc, SiSoDuKien, SiSoDangKy, KhoaHoc, cộng với MaHocKy, MaBoMon là bắt buộc theo CSDL nhưng không hiện trong bảng tổng hợp của bạn vì cố định theo ngữ cảnh đang nhập — tức khi nhập 116 lớp của bộ môn MHT học kỳ 1 2025-2026 thì MaBoMon='MHT', MaHocKy='HK1_2025_2026' áp dụng chung cho cả lô).
@@ -1668,27 +1749,120 @@ Bảng cha bắt buộc: MonHoc, HocKy, BoMon.
 ResourceId: 'LopHocPhan'
 
 1. Lọc & Hiển thị danh sách
-Chọn Học kỳ (bắt buộc) và Bộ môn (bắt buộc hoặc mặc định "Tất cả"), lọc thêm theo Môn học, Kiểu học, hoặc tìm theo MaLopHocPhan.
-Backend JOIN MonHoc lấy TenMonHoc, JOIN BoMon lấy TenBoMon.
-Hiển thị: Mã lớp môn tín chỉ, Tên môn học, Kiểu học, SV dự kiến/đăng ký, Khóa. Không có cột Giảng viên, không có badge số giai đoạn lịch.
+   Chọn Học kỳ (bắt buộc) và Bộ môn (bắt buộc hoặc mặc định "Tất cả"), lọc thêm theo Môn học, Kiểu học, hoặc tìm theo MaLopHocPhan.
+   Backend JOIN MonHoc lấy TenMonHoc, JOIN BoMon lấy TenBoMon.
+   Hiển thị: Mã lớp môn tín chỉ, Tên môn học, Kiểu học, SV dự kiến/đăng ký, Khóa. Không có cột Giảng viên, không có badge số giai đoạn lịch.
 2. Thêm mới thủ công
-Nhập MaLopHocPhan trực tiếp (chính là "mã lớp môn tín chỉ", ví dụ "An ninh mạng-1-1-25(N01)"), chọn MaMonHoc, LoaiHoc, nhập SiSoDuKien, SiSoDangKy (không bắt buộc), chọn KhoaHoc (không bắt buộc). MaHocKy, MaBoMon lấy theo ngữ cảnh màn hình đang chọn (không hỏi lại mỗi lần thêm).
-Validate: MaLopHocPhan, MaMonHoc, LoaiHoc không trống; check trùng MaLopHocPhan; LoaiHoc theo danh mục Kiểu học (xem mục Dữ liệu danh mục bên dưới); môn học tồn tại.
-NgayBatDau/NgayKetThuc/SoTuan (vẫn NOT NULL trong CSDL) tự động gán bằng đúng khoảng ngày của HocKy đang chọn làm giá trị khởi tạo — không có ô nhập tay ở form này nữa (sẽ được ghi đè chính xác khi làm module Thời khóa biểu sau).
-MaGiangVien luôn NULL, TrangThaiPhanCong mặc định 'Unassigned', không có ô nào liên quan tới giảng viên trên form.
+   Nhập MaLopHocPhan trực tiếp (chính là "mã lớp môn tín chỉ", ví dụ "An ninh mạng-1-1-25(N01)"), chọn MaMonHoc, LoaiHoc, nhập SiSoDuKien, SiSoDangKy (không bắt buộc), chọn KhoaHoc (không bắt buộc). MaHocKy, MaBoMon lấy theo ngữ cảnh màn hình đang chọn (không hỏi lại mỗi lần thêm).
+   Validate: MaLopHocPhan, MaMonHoc, LoaiHoc không trống; check trùng MaLopHocPhan; LoaiHoc theo danh mục Kiểu học (xem mục Dữ liệu danh mục bên dưới); môn học tồn tại.
+   NgayBatDau/NgayKetThuc/SoTuan (vẫn NOT NULL trong CSDL) tự động gán bằng đúng khoảng ngày của HocKy đang chọn làm giá trị khởi tạo — không có ô nhập tay ở form này nữa (sẽ được ghi đè chính xác khi làm module Thời khóa biểu sau).
+   MaGiangVien luôn NULL, TrangThaiPhanCong mặc định 'Unassigned', không có ô nào liên quan tới giảng viên trên form.
 3. Cập nhật thông tin cơ bản
-Sửa LoaiHoc, SiSoDuKien, SiSoDangKy, KhoaHoc. MaLopHocPhan, MaMonHoc khóa cứng (đổi coi như tạo lớp khác).
+   Sửa LoaiHoc, SiSoDuKien, SiSoDangKy, KhoaHoc. MaLopHocPhan, MaMonHoc khóa cứng (đổi coi như tạo lớp khác).
 4. Xem chi tiết
-Chỉ hiển thị thông tin cơ bản đã nhập. Không có tab Lịch học, không có tab Lớp sinh viên ghép ở giai đoạn này.
+   Chỉ hiển thị thông tin cơ bản đã nhập. Không có tab Lịch học, không có tab Lớp sinh viên ghép ở giai đoạn này.
 5. Xóa
-Vì chưa có ThoiKhoaBieu/BuoiHoc, điều kiện xóa gần như luôn thỏa mãn — chỉ cần kiểm tra chưa bị ChiTietNhap.MaLopHocPhanDaTao trỏ tới dở dang (nếu có, cảnh báo trước khi xóa).
+   Vì chưa có ThoiKhoaBieu/BuoiHoc, điều kiện xóa gần như luôn thỏa mãn — chỉ cần kiểm tra chưa bị ChiTietNhap.MaLopHocPhanDaTao trỏ tới dở dang (nếu có, cảnh báo trước khi xóa).
 6. Import từ file tổng hợp (Excel/Word dữ liệu nền)
 
 Theo đúng cấu trúc tài liệu Du_lieu_nen_bo_mon_MHT.docx bạn gửi, một lần import phục vụ đúng 1 Bộ môn + 1 Học kỳ (khớp cơ chế TepNhap), đọc bảng "LỚP HỌC PHẦN" với 6 cột: Mã lớp môn tín chỉ → MaLopHocPhan (dùng thẳng), Mã học phần → MaMonHoc, Kiểu học → LoaiHoc, SV dự kiến → SiSoDuKien, SV đăng ký → SiSoDangKy, Khóa → KhoaHoc.
 
 Trước khi import danh sách lớp, phải import hoặc có sẵn 4 bảng danh mục nền khác trước: Bộ môn, Học kỳ, Môn học, Phòng học, Khóa sinh viên — đúng thứ tự xuất hiện trong tài liệu của bạn (mục 1-7 trước khi tới mục 8 Lớp học phần). Nếu Môn học trong dòng Lớp học phần chưa tồn tại → báo lỗi, không tự tạo ngầm.
 Không có bước map Giảng viên (vì cột này không tồn tại trong nguồn dữ liệu nền).
-Mỗi dòng độc lập, 1 dòng = 1 LopHocPhan, không có khái niệm "dòng nối tiếp/giai đoạn bổ sung" ở bước này (khác với Import Excel TKB sau này) — vì bảng nguồn không có khái niệm đó.
-7. Export ra Excel
+Mỗi dòng độc lập, 1 dòng = 1 LopHocPhan, không có khái niệm "dòng nối tiếp/giai đoạn bổ sung" ở bước này (khác với Import Excel TKB sau này) — vì bảng nguồn không có khái niệm đó. 7. Export ra Excel
 Xuất đúng 6 cột đã import, theo Bộ môn + Học kỳ đã chọn, dùng để đối chiếu dữ liệu nền.
->>>>>>> 2115174d52aa64b09de60797f3c0cf01168099f5
+
+> > > > > > > 2115174d52aa64b09de60797f3c0cf01168099f5
+
+## Ý tưởng Dashboard thống kê Dữ liệu nền
+
+1. Bố cục Dashboard (4 khu vực)
+   Khu vực Nội dung
+   A. Thẻ số liệu (KPI) Tổng quan số lượng từng danh mục
+   B. Biểu đồ tròn Cơ cấu, tỷ lệ
+   C. Biểu đồ cột So sánh số lượng giữa các nhóm
+   D. Cảnh báo chất lượng dữ liệu Những chỗ dữ liệu nền còn thiếu hoặc chưa hợp lý
+   Bộ lọc chung ở đầu trang gồm Học kỳ (cho các biểu đồ về Lớp học phần) và Khoa (tùy chọn, thu hẹp các biểu đồ theo Bộ môn, Giảng viên, Môn học). Chọn bộ lọc xong thì cả trang cập nhật cùng lúc.
+
+---
+
+2. Khu vực A: Thẻ số liệu
+   Mỗi thẻ là một con số, bấm vào thì chuyển sang màn hình quản lý tương ứng.
+   • Tổng số Tòa nhà, Phòng học, Khoa, Bộ môn, Giảng viên, Môn học, Lớp sinh viên, Khóa sinh viên.
+   • Tổng số Lớp học phần của học kỳ đang chọn.
+   • Tổng sức chứa toàn bộ phòng học (cộng SucChua).
+
+---
+
+3. Khu vực B: Biểu đồ tròn
+
+# Biểu đồ Nguồn dữ liệu Ý nghĩa
+
+B1 Phòng học theo trạng thái PhongHoc.TrangThai (Ready / Maintenance) Bao nhiêu phòng sẵn sàng, bao nhiêu đang bảo trì
+B2 Phòng học theo loại phòng PhongHoc.LoaiPhong (5 loại chuẩn) Cơ cấu cơ sở vật chất
+B3 Giảng viên theo trạng thái GiangVien.TrangThai (Active / Inactive) Đội ngũ đang công tác
+B4 Giảng viên đã / chưa có tài khoản GiangVien.UserId NULL hay không Tiến độ cấp tài khoản đăng nhập
+B5 Lớp học phần theo kiểu học LopHocPhan.LoaiHoc (LT / BT / TH / BTL) Cơ cấu LT, BT, TH trong học kỳ
+B6 Môn học theo số tín chỉ MonHoc.SoTinChi (nhóm 1, 2, 3, 4, chưa khai báo) Phân bố khối lượng môn
+B7 Lớp học phần theo khóa sinh viên LopHocPhan.KhoaHoc (K62 đến K65, chưa gán) Mỗi niên khóa có bao nhiêu lớp
+
+---
+
+4. Khu vực C: Biểu đồ cột
+
+# Biểu đồ Trục X → Trục Y Gợi ý
+
+C1 Số phòng theo tòa nhà Tòa nhà → số phòng Cột đơn
+C2 Tổng sức chứa theo tòa nhà Tòa nhà → tổng SucChua Có thể ghép với C1
+C3 Số bộ môn theo khoa Khoa → số bộ môn Cột đơn
+C4 Số giảng viên theo bộ môn Bộ môn → số giảng viên Lấy top 10, kèm cột “Chưa phân bộ môn”
+C5 Số môn học theo bộ môn Bộ môn → số môn học Cột đơn
+C6 Số lớp sinh viên theo khoa Khoa → số lớp sinh viên Cột đơn
+C7 Số lớp học phần theo môn học Môn học → số lớp Top 10 môn mở nhiều lớp nhất. Trùng với cột “Tổng lớp” trong tài liệu BA nên dùng để đối chiếu
+C8 Số lớp học phần theo bộ môn Bộ môn → số lớp Chỉ tính trong học kỳ đang chọn
+C9 Sĩ số dự kiến so với đăng ký Môn học → 2 cột cạnh nhau (SiSoDuKien, SiSoDangKy) Phát hiện lớp đăng ký thấp hơn nhiều so với dự kiến
+C10 Phòng học theo sức chứa Nhóm sức chứa (dưới 40, 40-60, 60-100, trên 100) → số phòng Giúp nhìn ra thiếu phòng lớn
+
+---
+
+5. Khu vực D: Cảnh báo chất lượng dữ liệu
+   Dạng danh sách số đếm, bấm vào thì mở màn hình quản lý đã lọc sẵn các dòng có vấn đề.
+   • Khoa chưa có Trưởng khoa.
+   • Bộ môn chưa có Trưởng bộ môn.
+   • Bộ môn chưa có giảng viên nào.
+   • Giảng viên chưa phân bộ môn.
+   • Môn học chưa gán bộ môn.
+   • Môn học chưa mở lớp nào trong học kỳ đang chọn.
+   • Phòng học đang bảo trì.
+   • Lớp học phần chưa gắn khóa sinh viên.
+
+---
+
+6. Gom toàn bộ API vào một file
+   Nguyên tắc
+   Chỉ một endpoint duy nhất trả về toàn bộ số liệu dashboard. Giao diện gọi một lần khi mở trang, không gọi riêng từng biểu đồ.
+   • Endpoint: GET /v1/api/dashboard/master-data?maHocKy=...&maKhoa=...
+   • Quyền: qua authentication, sau đó checkPermission('Dashboard', 'CanRead'). Cần thêm ResourceId = 'Dashboard' vào bảng Resources và cấp quyền cho các role cần xem.
+   • File: một module dashboard gồm router, controller và một service duy nhất chứa tất cả hàm thống kê.
+   Cấu trúc dữ liệu trả về (chia theo khu vực)
+   Nhóm Nội dung Tương ứng
+   generatedAt Thời điểm tạo số liệu Hiển thị “Cập nhật lúc...”
+   kpi Các con số tổng Khu vực A
+   pie Mỗi biểu đồ tròn là một danh sách nhãn và giá trị B1 đến B7
+   bar Mỗi biểu đồ cột là một danh sách nhãn và giá trị (C9 có 2 chuỗi) C1 đến C10
+   warnings Các số đếm cảnh báo Khu vực D
+   Mỗi biểu đồ có cùng một dạng gồm danh sách phần tử {nhãn, giá trị}, nên giao diện chỉ cần một component biểu đồ dùng chung.
+   Cách tránh gọi lại và truy vấn nhanh
+1. Chạy song song phía backend: service gom khoảng 20 câu GROUP BY / COUNT, chạy đồng thời (kiểu Promise.all) rồi ghép thành một kết quả. Các bảng nền nhỏ nên mỗi câu rất nhanh.
+1. Cache phía server: lưu kết quả theo khóa gồm bộ lọc (ví dụ dashboard:HK1_2025_2026:ALL), thời gian sống khoảng 5 phút (bộ nhớ trong hoặc Redis).
+1. Xóa cache khi dữ liệu nền thay đổi: mọi thao tác thêm, sửa, xóa ở các phân hệ nền (Tòa nhà, Phòng học, Khoa, Bộ môn, Giảng viên, Môn học, Lớp sinh viên, Khóa sinh viên, Học kỳ, Tiết học, Lớp học phần) đều xóa các khóa cache bắt đầu bằng dashboard:. Nhờ vậy số liệu luôn đúng mà không cần tính lại mỗi lần mở trang.
+1. Cache phía giao diện: lưu kết quả vào state toàn cục hoặc thư viện cache truy vấn (kiểu React Query) với cùng khóa bộ lọc. Chuyển tab rồi quay lại thì không gọi lại API. Có nút “Làm mới” để buộc gọi lại.
+1. Chỉ gọi lại khi đổi bộ lọc: đổi Học kỳ hoặc Khoa thì mới gọi lại, vẫn là một lần gọi.
+1. Chỉ mục (index) cho các cột khóa ngoại hay dùng để GROUP BY và JOIN: PhongHoc.MaToaNha, BoMon.MaKhoa, GiangVien.MaBoMon, MonHoc.MaBoMon, LopSinhVien.MaKhoa, LopHocPhan.MaHocKy, LopHocPhan.MaMonHoc, LopHocPhan.MaBoMon. Một số cột đã có sẵn index trong file SQL, nên kiểm tra lại các cột còn thiếu.
+1. Tùy chọn tải từng phần: thêm tham số sections=kpi,pie nếu sau này muốn tải riêng một nhóm. Mặc định vẫn trả đủ.
+
+---
+
+7. Hạn chế hiện tại cần biết
+   • Lớp sinh viên không có cột khóa sinh viên trong CSDL, nên chưa thống kê được “số lớp sinh viên theo niên khóa”. Biểu đồ này chỉ làm được nếu bổ sung cột MaKhoaSinhVien cho LopSinhVien, như Hướng A đã nêu trước đó.
+   • Chưa có thống kê về phân công giảng viên, lịch dạy, mức sử dụng phòng: những số liệu này thuộc module Thời khóa biểu làm sau. Lúc đó có thể thêm khu vực E (ví dụ phòng được dùng nhiều nhất, giảng viên có nhiều giờ dạy nhất) vào cùng endpoint, không cần tạo API mới.

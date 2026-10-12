@@ -151,7 +151,7 @@ export default function AdminDashboard() {
 
         {/* Main Body Dynamic View Switching */}
         <main className="admin-body">
-          {activeTab === 'dashboard' && <DashboardOverview />}
+          {activeTab === 'dashboard' && <DashboardOverview setActiveTab={setActiveTab} />}
           {activeTab === 'toanha' && <ToaNhaManagement />}
           {activeTab === 'phonghoc' && <PhongHocManagement />}
           {activeTab === 'khoa' && <KhoaManagement />}

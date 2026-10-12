@@ -14,10 +14,10 @@ import {
   apiGetBoMonList
 } from '../../../../utils/api';
 import './MonHocManagement.css';
-
+const PAGE_SIZE = 5;
 export default function MonHocManagement() {
   const { hasPermission } = useAuth();
-
+  const [currentPage, setCurrentPage] = useState(1);
   // ── View ──
   const [view, setView] = useState('list'); // 'list' | 'detail'
   const [detailData, setDetailData] = useState(null);
@@ -77,9 +77,12 @@ export default function MonHocManagement() {
   };
 
   useEffect(() => {
+  const timer = setTimeout(() => {
+    setCurrentPage(1);
     fetchMhList();
-    fetchBoMonList();
-  }, []);
+  }, 300);
+  return () => clearTimeout(timer);
+}, [filterBoMon, searchQuery]);
 
   useEffect(() => {
     const timer = setTimeout(() => fetchMhList(), 300);
@@ -337,7 +340,7 @@ export default function MonHocManagement() {
           </button>
         )}
       </div>
-
+        
       {/* KPI Stats */}
       <div className="admin-stats-grid" style={{ marginBottom: '20px' }}>
         <div className="admin-stat-item">
