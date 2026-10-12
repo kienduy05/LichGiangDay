@@ -175,12 +175,14 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
     - Nếu đã có $\rightarrow$ Trả lỗi: _"Mã phòng học 'A1-101' đã tồn tại trong hệ thống."_ (HTTP 400).
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - **Tạo mới 1 dòng bản ghi trong bảng `PhongHoc`**:
+
     ```sql
     INSERT INTO PhongHoc (MaPhong, TenPhong, MaToaNha, SucChua, LoaiPhong, TrangThai)
     VALUES (?, ?, ?, ?, ?, ?);
     ```
 
     - `TrangThai`: Mặc định CSDL tự động gán giá trị chuỗi là **`'Ready'`** (Sẵn sàng phục vụ giảng dạy).
+
 - **Kết quả hiển thị (UI Response)**:
   - Đóng Modal, hiển thị phòng học mới trên danh sách với trạng thái **Ready (Sẵn sàng)**.
 
@@ -229,24 +231,30 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
   - Kiểm tra quyền `CanDelete` trên Resource `PhongHoc`.
   - **Kiểm tra ràng buộc toàn vẹn CSDL (3 tầng liên kết)**:
     1. **Kiểm tra Thời khóa biểu (`ThoiKhoaBieu`)**:
+
        ```sql
        SELECT COUNT(*) AS total FROM ThoiKhoaBieu WHERE MaPhong = ?;
        ```
 
        - Nếu `total > 0` $\rightarrow$ **CHẶN XÓA**: _"Không thể xóa phòng học 'X' vì đang có N lịch học (Thời khóa biểu) được xếp tại phòng này."_
+
     2. **Kiểm tra Buổi học (`BuoiHoc`)**:
+
        ```sql
        SELECT COUNT(*) AS total FROM BuoiHoc WHERE MaPhong = ?;
        ```
 
        - Nếu `total > 0` $\rightarrow$ **CHẶN XÓA**: _"Không thể xóa phòng học 'X' vì đang có N buổi học được gán cho phòng này."_
+
     3. **Kiểm tra Đăng ký dạy bù (`DangKyDayBu`)**:
+
        ```sql
        SELECT COUNT(*) AS total FROM DangKyDayBu WHERE MaPhong = ?;
        ```
 
        - Nếu `total > 0` $\rightarrow$ **CHẶN XÓA**: _"Không thể xóa phòng học 'X' vì đang có N đơn đăng ký dạy bù tại phòng này."_
     - **Trường hợp cả 3 điều kiện đều bằng 0**: Cho phép xóa.
+
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - **Trường hợp xóa thành công**: Bản ghi bị **XÓA VĨNH VIỄN** khỏi bảng `PhongHoc`:
     ```sql
@@ -310,12 +318,15 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
   - **Validation 1**: `MaKhoa` và `TenKhoa` không được để trống.
   - **Validation 2**: Chuẩn hóa `MaKhoa` (Viết hoa `UPPERCASE`, xóa khoảng trắng thừa).
   - **Validation 3 (Check trùng mã)**:
+
     ```sql
     SELECT MaKhoa FROM Khoa WHERE MaKhoa = ? LIMIT 1;
     ```
 
     - Nếu đã tồn tại $\rightarrow$ Trả lỗi: _"Mã khoa 'CNTT' đã tồn tại trong hệ thống."_ (HTTP 400).
+
   - Cột `MaTruongKhoa` tự động gán giá trị mặc định `NULL`.
+
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - **Tạo mới 1 dòng bản ghi trong bảng `Khoa`**:
     ```sql
@@ -404,12 +415,14 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
 - **Nghiệp vụ xử lý (Business Logic)**:
   - Kiểm tra quyền `CanDelete` trên Resource `Khoa`.
   - **Kiểm tra ràng buộc Bộ môn (`BoMon`)**:
+
     ```sql
     SELECT COUNT(*) AS total FROM BoMon WHERE MaKhoa = ?;
     ```
 
     - **Trường hợp `total > 0`**: **CHẶN XÓA HOÀN TOÀN**. Trả lỗi HTTP 400: _"Không thể xóa Khoa 'CNTT' vì đang chứa N bộ môn trực thuộc. Vui lòng xóa hoặc chuyển các bộ môn sang khoa khác trước."_
     - **Trường hợp `total == 0`**: Cho phép xóa.
+
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - **Trường hợp đủ điều kiện xóa**: Bản ghi bị **XÓA VĨNH VIỄN** khỏi bảng `Khoa`:
     ```sql
@@ -481,12 +494,15 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
   - **Validation 2**: Chuẩn hóa `MaBoMon` (Tự động viết hoa `UPPERCASE`, xóa khoảng trắng thừa).
   - **Validation 3 (Kiểm tra khóa ngoại `MaKhoa`)**: Khoa được chọn phải tồn tại trong bảng `Khoa`.
   - **Validation 4 (Check trùng mã)**:
+
     ```sql
     SELECT MaBoMon FROM BoMon WHERE MaBoMon = ? LIMIT 1;
     ```
 
     - Nếu đã tồn tại $\rightarrow$ Trả lỗi: _"Mã bộ môn 'CNPM' đã tồn tại."_ (HTTP 400).
+
   - Cột `MaTruongBoMon` tự động gán `NULL`.
+
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - **Tạo mới 1 dòng bản ghi trong bảng `BoMon`**:
     ```sql
@@ -552,24 +568,30 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
   - Kiểm tra quyền `CanDelete` trên Resource `BoMon`.
   - **Kiểm tra tuần tự 3 ràng buộc toàn vẹn CSDL**:
     1. **Kiểm tra Giảng viên (`GiangVien`)**:
+
        ```sql
        SELECT COUNT(*) AS total FROM GiangVien WHERE MaBoMon = ?;
        ```
 
        - Nếu `total > 0` $\rightarrow$ **CHẶN XÓA**: _"Không thể xóa Bộ môn 'X' vì đang có N giảng viên trực thuộc. Vui lòng chuyển giảng viên sang bộ môn khác trước."_
+
     2. **Kiểm tra Môn học (`MonHoc`)**:
+
        ```sql
        SELECT COUNT(*) AS total FROM MonHoc WHERE MaBoMon = ?;
        ```
 
        - Nếu `total > 0` $\rightarrow$ **CHẶN XÓA**: _"Không thể xóa Bộ môn 'X' vì đang có N môn học trực thuộc. Vui lòng xóa hoặc chuyển các môn học trước."_
+
     3. **Kiểm tra Tệp nhập liệu (`TepNhap`)**:
+
        ```sql
        SELECT COUNT(*) AS total FROM TepNhap WHERE MaBoMon = ?;
        ```
 
        - Nếu `total > 0` $\rightarrow$ **CHẶN XÓA**: _"Không thể xóa Bộ môn 'X' vì đang có N tệp nhập liệu liên quan để bảo toàn lịch sử."_
     - Chỉ khi cả 3 điều kiện đều bằng 0 mới cho phép xóa.
+
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - **Trường hợp xóa thành công**: Bản ghi bị **XÓA VĨNH VIỄN** khỏi bảng `BoMon`:
     ```sql
@@ -641,14 +663,17 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
   - **Validation 1**: `MaGiangVien` và `HoTen` bắt buộc không được để trống.
   - **Validation 2**: Chuẩn hóa `MaGiangVien` (Viết hoa `UPPERCASE`, xóa khoảng trắng thừa).
   - **Validation 3 (Check trùng mã)**:
+
     ```sql
     SELECT MaGiangVien FROM GiangVien WHERE MaGiangVien = ? LIMIT 1;
     ```
 
     - Nếu đã tồn tại $\rightarrow$ Trả lỗi: _"Mã giảng viên đã tồn tại."_ (HTTP 400).
+
   - **Validation 4 (Kiểm tra khóa ngoại `MaBoMon`)**: Nếu có chọn Bộ môn, Bộ môn đó phải tồn tại trong bảng `BoMon`; nếu không chọn thì lưu giá trị `NULL`.
   - **Validation 5**: Kiểm tra đúng định dạng Email và Số điện thoại hợp lệ nếu người dùng có nhập.
   - CSDL tự động gán `TrangThai = 'Active'` và `UserId = NULL`.
+
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - **Tạo mới 1 dòng bản ghi trong bảng `GiangVien`**:
     ```sql
@@ -833,13 +858,16 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
   - **Validation 1**: `MaMonHoc`, `TenMonHoc`, `MaBoMon` bắt buộc không được để trống.
   - **Validation 2**: Chuẩn hóa `MaMonHoc` (Viết hoa `UPPERCASE`, xóa khoảng trắng thừa).
   - **Validation 3 (Check trùng mã)**:
+
     ```sql
     SELECT MaMonHoc FROM MonHoc WHERE MaMonHoc = ? LIMIT 1;
     ```
 
     - Nếu đã tồn tại $\rightarrow$ Trả lỗi: _"Mã môn học 'INT1001' đã tồn tại."_ (HTTP 400).
+
   - **Validation 4 (Kiểm tra khóa ngoại `MaBoMon`)**: Bộ môn được chọn phải tồn tại trong bảng `BoMon`.
   - **Validation 5**: `SoTinChi` nếu nhập phải là số nguyên dương $> 0$.
+
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - **Tạo mới 1 dòng bản ghi trong bảng `MonHoc`**:
     ```sql
@@ -908,12 +936,14 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
 - **Nghiệp vụ xử lý (Business Logic)**:
   - Kiểm tra quyền `CanDelete` trên Resource `MonHoc`.
   - **Kiểm tra ràng buộc Lớp học phần (`LopHocPhan`)**:
+
     ```sql
     SELECT COUNT(*) AS total FROM LopHocPhan WHERE MaMonHoc = ?;
     ```
 
     - **Trường hợp `total > 0`**: **CHẶN XÓA HOÀN TOÀN**: _"Không thể xóa môn học 'X' vì đang có N lớp học phần được mở cho môn này."_
     - **Trường hợp `total == 0`**: Cho phép xóa.
+
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - **Trường hợp xóa thành công**: Bản ghi bị **XÓA VĨNH VIỄN** khỏi bảng `MonHoc`:
     ```sql
@@ -975,12 +1005,15 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
   - **Validation 1**: Cả 3 trường `MaLopSinhVien`, `TenLopSinhVien`, `MaKhoa` không được để trống.
   - **Validation 2**: Chuẩn hóa `MaLopSinhVien` (Viết hoa `UPPERCASE`, xóa khoảng trắng thừa).
   - **Validation 3 (Check trùng mã)**:
+
     ```sql
     SELECT MaLopSinhVien FROM LopSinhVien WHERE MaLopSinhVien = ? LIMIT 1;
     ```
 
     - Nếu đã tồn tại $\rightarrow$ Trả lỗi: _"Mã lớp sinh viên 'CNTT1-K63' đã tồn tại."_ (HTTP 400).
+
   - **Validation 4 (Khóa ngoại `MaKhoa`)**: Khoa được chọn phải tồn tại trong bảng `Khoa`.
+
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - **Tạo mới 1 dòng bản ghi trong bảng `LopSinhVien`**:
     ```sql
@@ -1017,12 +1050,14 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
 - **Nghiệp vụ xử lý (Business Logic)**:
   - Kiểm tra quyền `CanDelete` trên Resource `LopSinhVien`.
   - **Kiểm tra ràng buộc liên kết Lớp học phần (`LopHocPhan_LopSinhVien`)**:
+
     ```sql
     SELECT COUNT(*) AS total FROM LopHocPhan_LopSinhVien WHERE MaLopSinhVien = ?;
     ```
 
     - **Trường hợp `total > 0`**: **CHẶN XÓA HOÀN TOÀN**: _"Không thể xóa lớp sinh viên 'X' vì đang tham gia N lớp học phần."_
     - **Trường hợp `total == 0`**: Cho phép xóa.
+
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - **Trường hợp xóa thành công**: Bản ghi bị **XÓA VĨNH VIỄN** khỏi bảng `LopSinhVien`:
     ```sql
@@ -1081,11 +1116,13 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
   - **Validation 1**: `MaKhoaSinhVien` và `TenKhoaSinhVien` không được để trống.
   - **Validation 2**: Chuẩn hóa mã (Viết hoa `UPPERCASE`, xóa khoảng trắng thừa).
   - **Validation 3 (Check trùng mã)**:
+
     ```sql
     SELECT MaKhoaSinhVien FROM KhoaSinhVien WHERE MaKhoaSinhVien = ? LIMIT 1;
     ```
 
     - Nếu đã tồn tại $\rightarrow$ Trả lỗi: _"Mã khóa sinh viên 'K66' đã tồn tại."_ (HTTP 400).
+
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - **Tạo mới 1 dòng bản ghi trong bảng `KhoaSinhVien`**:
     ```sql
@@ -1122,12 +1159,14 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
 - **Nghiệp vụ xử lý (Business Logic)**:
   - Kiểm tra quyền `CanDelete` trên Resource `KhoaSinhVien`.
   - **Kiểm tra ràng buộc Lớp học phần (`LopHocPhan.KhoaHoc`)**:
+
     ```sql
     SELECT COUNT(*) AS total FROM LopHocPhan WHERE KhoaHoc = ?;
     ```
 
     - **Trường hợp `total > 0`**: **CHẶN XÓA HOÀN TOÀN**: _"Không thể xóa khóa sinh viên 'K65' vì đang có N lớp học phần gắn với niên khóa này."_
     - **Trường hợp `total == 0`**: Cho phép xóa.
+
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - **Trường hợp xóa thành công**: Bản ghi bị **XÓA VĨNH VIỄN** khỏi bảng `KhoaSinhVien`:
     ```sql
@@ -1191,6 +1230,7 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
   - **Validation 2 (Check trùng mã)**: Truy vấn kiểm tra `MaHocKy` đã tồn tại trong bảng `HocKy` chưa.
   - **Validation 3**: `NgayBatDau` phải nhỏ hơn `NgayKetThuc`.
   - **Validation 4 (Kiểm tra chồng lấn khoảng ngày - Overlap Check)**:
+
     ```sql
     SELECT MaHocKy, TenHocKy, NgayBatDau, NgayKetThuc
     FROM HocKy
@@ -1198,6 +1238,7 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
     ```
 
     - Nếu có học kỳ bị chồng lấn thời gian $\rightarrow$ Backend trả kèm cờ cảnh báo `overlapWarning` để Admin xác nhận.
+
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - **Tạo mới 1 dòng bản ghi trong bảng `HocKy`**:
     ```sql
@@ -1237,6 +1278,7 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
     ```sql
     SELECT COUNT(*) AS total FROM LopHocPhan WHERE MaHocKy = ?;
     ```
+
     - **Trường hợp `total > 0`**: **CHẶN XÓA HOÀN TOÀN**: _"Không thể xóa học kỳ 'X' vì đang có N lớp học phần thuộc học kỳ này."_
     - **Trường hợp `total == 0`**: Cho phép xóa.
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
@@ -1272,12 +1314,15 @@ Phân hệ **Dữ liệu nền** (Base Data) quản lý toàn bộ các danh m�
   - Backend kiểm tra quyền `CanRead` trên Resource `TietHoc` và trả về danh sách ca học.
 
 #### 1.10.2. Thêm mới Tiết học
+
 - **Nghiệp vụ xử lý**: Kiểm tra `CanCreate`, kiểm tra trùng mã và chồng lấn giờ.
 
 #### 1.10.3. Cập nhật Tiết học
+
 - **Nghiệp vụ xử lý**: Kiểm tra `CanUpdate`, cập nhật tên tiết và khung giờ.
 
 #### 1.10.4. Xóa Tiết học
+
 - **Nghiệp vụ xử lý**: Kiểm tra ràng buộc `ThoiKhoaBieu` và `BuoiHoc` trước khi xóa.
 
 ---
@@ -1543,9 +1588,27 @@ Phân hệ **Thời khóa biểu** (Course Scheduling) cho phép người quản
     {
       "maLopHocPhan": "INT1001.01",
       "schedules": [
-        { "thuTrongTuan": 2, "maTiet": 1, "maPhong": "A1-101", "ngayBatDau": "2026-09-01", "ngayKetThuc": "2026-12-15" },
-        { "thuTrongTuan": 4, "maTiet": 1, "maPhong": "A1-101", "ngayBatDau": "2026-09-01", "ngayKetThuc": "2026-12-15" },
-        { "thuTrongTuan": 6, "maTiet": 1, "maPhong": "A1-102", "ngayBatDau": "2026-09-01", "ngayKetThuc": "2026-12-15" }
+        {
+          "thuTrongTuan": 2,
+          "maTiet": 1,
+          "maPhong": "A1-101",
+          "ngayBatDau": "2026-09-01",
+          "ngayKetThuc": "2026-12-15"
+        },
+        {
+          "thuTrongTuan": 4,
+          "maTiet": 1,
+          "maPhong": "A1-101",
+          "ngayBatDau": "2026-09-01",
+          "ngayKetThuc": "2026-12-15"
+        },
+        {
+          "thuTrongTuan": 6,
+          "maTiet": 1,
+          "maPhong": "A1-102",
+          "ngayBatDau": "2026-09-01",
+          "ngayKetThuc": "2026-12-15"
+        }
       ]
     }
     ```
@@ -1582,171 +1645,10 @@ Phân hệ **Thời khóa biểu** (Course Scheduling) cho phép người quản
     ```
 - **Kết quả hiển thị (UI Response)**:
   - Làm mới dữ liệu bảng và TreeView, trạng thái lớp chuyển về chấm cam 🟠 (**Chưa xếp lịch**).
+ieu` có cùng `MaLopHocPhan` nhưng khác `ThuTrongTuan` (hoặc khác `MaTiet`, `MaPhong`).
+> - **Tách biệt phân công Giảng viên**: Ở bước xếp thời khóa biểu, giảng viên được giữ nguyên ở trạng thái `Unassigned` để Bộ môn thực hiện phân công sau.
 
----
-
-## 3. PHÂN HỆ 3: PHÂN HỆ BIẾN ĐỘNG LỊCH & DUYỆT YÊU CẦU GIẢNG DẠY (BÁO NGHỈ, ĐỔI CA, DẠY THAY, DẠY BÙ)
-
-Phân hệ **Biến động lịch & Duyệt yêu cầu giảng dạy** (Schedule Exceptions & Approval Workflow) quản lý toàn bộ các phát sinh thực tế trong quá trình thực hiện kế hoạch giảng dạy của học kỳ. Phân hệ kết nối 3 đối tượng tác nhân:
-1. **Giảng viên (`GIANGVIEN`)**: Khởi tạo yêu cầu Báo nghỉ, Nhờ dạy thay, Đổi ca học, và Đăng ký lịch dạy bù cho các ca đã nghỉ.
-2. **Trưởng Bộ môn (`BOMON`)**: Thẩm định tính hợp lệ, kiểm tra xung đột thời khóa biểu và ra quyết định Phê duyệt / Từ chối đơn theo đúng phân cấp quản lý học thuật.
-3. **Quản trị viên & Phòng Đào Tạo (`ADMIN` / `PHONGDAOTAO`)**: Giám sát tổng thể biến động lịch toàn trường, theo dõi tiến độ bù giờ giảng, điều phối tài nguyên phòng học và có thẩm quyền can thiệp thu hồi (Override/Revoke) khi cần thiết.
-
----
-
-### SƠ ĐỒ CHU TRÌNH CHUYỂN ĐỔI TRẠNG THÁI (STATE MACHINE)
-
-```mermaid
-stateDiagram-v2
-    direction TB
-
-    state "Lịch Giảng Dạy Gốc (BuoiHoc: Normal)" as S0
-    state "Ca Báo Nghỉ Chờ Duyệt (Absence_Pending)" as S1
-    state "Ca Đã Duyệt Nghỉ (Absent)" as S2
-    state "Chờ Duyệt Dạy Thay (Substitute_Pending)" as S3
-    state "Đã Phân Công Dạy Thay (Substituted)" as S4
-    state "Chờ Duyệt Đổi Ca (Swap_Pending)" as S5
-    state "Đã Đổi Ca Thành Công (Swapped)" as S6
-    state "Đăng Ký Dạy Bù Chờ Duyệt (Pending_Makeup)" as S7
-    state "Buổi Dạy Bù Mới (LoaiBuoiHoc: Makeup, Normal)" as S8
-
-    S0 --> S1: Giảng viên gửi Báo Nghỉ (POST /yeucaunghi)
-    S1 --> S2: Trưởng BM Chấp Thuận (PUT /yeucaunghi/:id/duyet)
-    S1 --> S0: Trưởng BM Từ Chối (Kèm lý do)
-
-    S0 --> S3: Giảng viên gửi Nhờ Dạy Thay (POST /yeucaunghi)
-    S3 --> S4: Trưởng BM Phê Duyệt (Sau kiểm tra trùng lịch)
-    S3 --> S0: Trưởng BM Từ Chối
-
-    S0 --> S5: Giảng viên gửi Đổi Ca (POST /yeucaunghi)
-    S5 --> S6: Trưởng BM Phê Duyệt (Phòng & ca mới trống)
-    S5 --> S0: Trưởng BM Từ Chối
-
-    S2 --> S7: Giảng viên chọn Ca Nghỉ -> Đăng ký Dạy Bù (POST /dangkydaybu)
-    S7 --> S8: Trưởng BM Duyệt / Hệ thống tạo Buổi học mới (BuoiHoc.LoaiBuoiHoc = 'Makeup')
-    S7 --> S2: Từ chối phòng/thời gian -> Cho phép chọn lại ca khác
-    S8 --> S2: Phòng Đào Tạo can thiệp Thu hồi (POST /biendong-lich/:id/revoke)
-```
-
----
-
-### THIẾT KẾ CƠ SỞ DỮ LIỆU & BẢNG ÁNH XẠ CỐT LÕI
-
-Phân hệ sử dụng và liên kết chặt chẽ giữa 4 bảng dữ liệu trong CSDL MySQL:
-
-#### 1. Bảng `BuoiHoc` (Chi tiết từng buổi học cụ thể theo từng ngày)
-```sql
-CREATE TABLE BuoiHoc (
-    MaBuoiHoc          VARCHAR(20)     NOT NULL, -- PK: Mã buổi học (VD: BH_20261015_01)
-    MaThoiKhoaBieu     VARCHAR(120)    NULL,     -- FK tham chiếu khung TKB tuần
-    MaLopHocPhan       VARCHAR(100)    NOT NULL, -- FK LopHocPhan(MaLopHocPhan)
-    NgayHoc            DATE            NOT NULL, -- Ngày diễn ra buổi học thực tế (YYYY-MM-DD)
-    MaTiet             TINYINT         NOT NULL, -- FK TietHoc(MaTiet) (1: Tiết 1-3, 2: Tiết 4-6, ...)
-    MaPhong            VARCHAR(30)     NOT NULL, -- FK PhongHoc(MaPhong)
-    MaGiangVien        VARCHAR(10)     NOT NULL, -- Giảng viên thực dạy buổi này (FK GiangVien)
-    MaGiangVienGoc     VARCHAR(10)     NULL,     -- Giảng viên gốc ban đầu (nếu buổi này có người dạy thay)
-    LoaiBuoiHoc        VARCHAR(20)     NOT NULL DEFAULT 'Regular', 
-    -- 'Regular' (Chính khóa), 'Makeup' (Dạy bù), 'Exam' (Thi)
-    TrangThai          VARCHAR(30)     NOT NULL DEFAULT 'Normal',
-    -- 'Normal'             : Bình thường, đang hoạt động theo TKB
-    -- 'Absence_Pending'    : Đang chờ duyệt nghỉ
-    -- 'Absent'             : Đã duyệt nghỉ (ca này không học, phòng được giải phóng tạm)
-    -- 'Substitute_Pending' : Đang chờ duyệt dạy thay
-    -- 'Substituted'        : Đã có giảng viên khác dạy thay
-    -- 'Swap_Pending'       : Đang chờ duyệt đổi ca
-    -- 'Swapped'            : Đã chuyển sang thời gian khác
-    MaBuoiHocGoc       VARCHAR(20)     NULL,     -- Tham chiếu MaBuoiHoc gốc nếu là buổi Dạy Bù
-    DaDayBu            TINYINT(1)      NOT NULL DEFAULT 0, -- 1 nếu ca nghỉ đã được xếp lịch dạy bù
-    GhiChu             VARCHAR(255)    NULL,
-
-    PRIMARY KEY (MaBuoiHoc),
-    FOREIGN KEY (MaLopHocPhan) REFERENCES LopHocPhan(MaLopHocPhan),
-    FOREIGN KEY (MaPhong) REFERENCES PhongHoc(MaPhong),
-    FOREIGN KEY (MaGiangVien) REFERENCES GiangVien(MaGiangVien)
-);
-```
-
-#### 2. Bảng `YeuCauNghi` (Đơn xin Nghỉ, Đổi ca, Dạy thay)
-```sql
-CREATE TABLE YeuCauNghi (
-    MaYeuCauNghi       VARCHAR(20)     NOT NULL, -- PK: Mã đơn (VD: YCN_2026_001)
-    MaBuoiHoc          VARCHAR(20)     NOT NULL, -- FK BuoiHoc(MaBuoiHoc)
-    MaGiangVien        VARCHAR(10)     NOT NULL, -- Giảng viên nộp đơn (FK GiangVien)
-    LoaiYeuCau         VARCHAR(20)     NOT NULL, 
-    -- 'Absence' (Báo nghỉ), 'Swap' (Đổi ca), 'Substitute' (Dạy thay)
-    LyDo               VARCHAR(255)    NOT NULL, -- Lý do gửi đơn
-    MinhChungUrl       VARCHAR(500)    NULL,     -- Link file đính kèm/giấy triệu tập (nếu có)
-    ThoiGianGui        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    TrangThai          VARCHAR(20)     NOT NULL DEFAULT 'Pending', 
-    -- 'Pending' (Chờ duyệt), 'Approved' (Chấp thuận), 'Rejected' (Từ chối), 'Cancelled' (Hủy)
-    MaGiangVienDuyet   VARCHAR(10)     NULL,     -- Trưởng bộ môn phê duyệt (FK GiangVien)
-    ThoiGianDuyet      DATETIME        NULL,
-    LyDoTuChoi         VARCHAR(255)    NULL,     -- Bắt buộc khi TrangThai = 'Rejected'
-    
-    -- Dữ liệu đề xuất (áp dụng khi LoaiYeuCau = 'Swap')
-    NgayDeXuat         DATE            NULL,
-    MaTietDeXuat       TINYINT         NULL,
-    MaPhongDeXuat      VARCHAR(30)     NULL,
-
-    PRIMARY KEY (MaYeuCauNghi),
-    FOREIGN KEY (MaBuoiHoc) REFERENCES BuoiHoc(MaBuoiHoc),
-    FOREIGN KEY (MaGiangVien) REFERENCES GiangVien(MaGiangVien),
-    FOREIGN KEY (MaGiangVienDuyet) REFERENCES GiangVien(MaGiangVien)
-);
-```
-
-#### 3. Bảng `PhanCongDayThay` (Chi tiết phân công dạy thay)
-```sql
-CREATE TABLE PhanCongDayThay (
-    MaPhanCongDayThay  VARCHAR(20)     NOT NULL, -- PK: Mã phân công (VD: PCDT_001)
-    MaYeuCauNghi       VARCHAR(20)     NOT NULL, -- FK YeuCauNghi(MaYeuCauNghi)
-    MaBuoiHoc          VARCHAR(20)     NOT NULL, -- FK BuoiHoc(MaBuoiHoc)
-    MaGiangVienDayThay VARCHAR(10)     NOT NULL, -- FK GiangVien(MaGiangVien)
-    ThoiGianPhanCong   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    TrangThai          VARCHAR(20)     NOT NULL DEFAULT 'Pending', 
-    -- 'Pending' (Chờ duyệt), 'Assigned' (Đã duyệt phân công), 'Rejected' (Bị từ chối)
-
-    PRIMARY KEY (MaPhanCongDayThay),
-    FOREIGN KEY (MaYeuCauNghi) REFERENCES YeuCauNghi(MaYeuCauNghi),
-    FOREIGN KEY (MaGiangVienDayThay) REFERENCES GiangVien(MaGiangVien)
-);
-```
-
-#### 4. Bảng `DangKyDayBu` (Đăng ký bố trí ca dạy bù)
-```sql
-CREATE TABLE DangKyDayBu (
-    MaDangKyDayBu      VARCHAR(20)     NOT NULL, -- PK: Mã đăng ký (VD: DKDB_001)
-    MaYeuCauNghi       VARCHAR(20)     NOT NULL, -- FK YeuCauNghi(MaYeuCauNghi) (Ca nghỉ đã duyệt)
-    MaGiangVien        VARCHAR(10)     NOT NULL, -- Giảng viên đăng ký (FK GiangVien)
-    MaLopHocPhan       VARCHAR(100)    NOT NULL, -- FK LopHocPhan(MaLopHocPhan)
-    ThoiGianDangKy     DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    NgayDeXuat         DATE            NOT NULL, -- Ngày dạy bù đề xuất (YYYY-MM-DD)
-    MaTiet             TINYINT         NOT NULL, -- FK TietHoc(MaTiet)
-    MaPhong            VARCHAR(30)     NOT NULL, -- FK PhongHoc(MaPhong)
-    TrangThai          VARCHAR(30)     NOT NULL DEFAULT 'Pending', 
-    -- 'Pending' (Chờ duyệt), 'Confirmed' (Đã duyệt), 'Rejected' (Từ chối)
-    LyDoTuChoi         VARCHAR(255)    NULL,
-    ThoiGianXacNhan    DATETIME        NULL,
-    NguoiXacNhan       VARCHAR(15)     NULL,     -- Trưởng bộ môn hoặc Quản trị viên duyệt
-    MaBuoiHocTao       VARCHAR(20)     NULL,     -- FK BuoiHoc (Bản ghi buổi học mới được tạo ra)
-
-    PRIMARY KEY (MaDangKyDayBu),
-    FOREIGN KEY (MaYeuCauNghi) REFERENCES YeuCauNghi(MaYeuCauNghi),
-    FOREIGN KEY (MaGiangVien) REFERENCES GiangVien(MaGiangVien),
-    FOREIGN KEY (MaLopHocPhan) REFERENCES LopHocPhan(MaLopHocPhan),
-    FOREIGN KEY (MaPhong) REFERENCES PhongHoc(MaPhong)
-);
-```
-
----
-
-### 3.1. Chức năng 1: Quản lý Yêu cầu Báo Nghỉ Dạy (`YeuCauNghi` - LoaiYeuCau: `'Absence'`)
-
-- **Bảng dữ liệu tác động trong CSDL**: **`YeuCauNghi`**, **`BuoiHoc`**, **`ThongBao`**.
-- **Bảng liên quan (Ràng buộc FK)**: `BuoiHoc`, `GiangVien`, `LopHocPhan`, `BoMon`.
-- **Resource ID kiểm tra quyền (`checkPermission`)**: `'YeuCauNghi'` (`CanCreate` cho Giảng viên; `CanUpdate`, `CanApprove` cho Trưởng bộ môn).
-
-#### 3.1.1. Giảng viên gửi Đơn Báo Nghỉ Dạy
+#### 2.1.1. Điều hướng theo Cây Phân cấp (TreeView Navigation)
 
 - **Thao tác người dùng (User Action)**:
   - Trên màn hình Lịch Giảng Viên, người dùng tìm đến buổi học dự kiến nghỉ.
@@ -1911,15 +1813,26 @@ CREATE TABLE DangKyDayBu (
   - Chọn **Ngày học mới** (`ngayDeXuat`), **Tiết học mới** (`maTietDeXuat`), và **Phòng học mong muốn** (`maPhongDeXuat`).
   - Nhập lý do đổi ca $\rightarrow$ Bấm **"Gửi Yêu Cầu Đổi Ca"**.
 - **Nghiệp vụ xử lý (Business Logic)**:
-  - Endpoint: `POST /v1/api/yeucaunghi` với `loaiYeuCau = 'SWAP'`.
-  - Mở Transaction:
-    ```sql
-    INSERT INTO YeuCauNghi (MaYeuCauNghi, MaBuoiHoc, MaGiangVien, LoaiYeuCau, LyDo, 
-                            NgayDeXuat, MaTietDeXuat, MaPhongDeXuat, TrangThai)
-    VALUES (?, ?, ?, 'Swap', ?, ?, ?, ?, 'Pending');
-
-    UPDATE BuoiHoc SET TrangThai = 'Swap_Pending' WHERE MaBuoiHoc = ?;
+  - Client gửi request `POST /v1/api/thoikhoabieu/save-schedules` với payload gồm danh sách các buổi học:
+    ```json
+    {
+      "maLopHocPhan": "INT1001.01",
+      "schedules": [
+        { "thuTrongTuan": 2, "maTiet": 1, "maPhong": "A1-101", "ngayBatDau": "2026-09-01", "ngayKetThuc": "2026-12-15" },
+        { "thuTrongTuan": 4, "maTiet": 1, "maPhong": "A1-101", "ngayBatDau": "2026-09-01", "ngayKetThuc": "2026-12-15" },
+        { "thuTrongTuan": 6, "maTiet": 1, "maPhong": "A1-102", "ngayBatDau": "2026-09-01", "ngayKetThuc": "2026-12-15" }
+      ]
+    }
     ```
+  - Backend thực hiện kiểm tra xung đột đa chiều (Conflict Checking Engine):
+    1. **Xung đột nội bộ (Internal Conflict)**: Kiểm tra các mục trong payload không được trùng cặp `(thuTrongTuan, maTiet)`.
+    2. **Xung đột Phòng học (Room Conflict)**: Không phòng nào được gán cho 2 lớp khác nhau trong cùng khung thời gian giao nhau.
+    3. **Xung đột Lớp sinh viên ghép (Student Group Conflict)**: Kiểm tra các Lớp sinh viên (`LopSinhVien`) cùng tham gia LHP này không bị trùng lịch học ở một LHP khác cùng ca.
+  - Nếu phát hiện xung đột $\rightarrow$ Rollback và trả HTTP 409 Conflict kèm danh sách chi tiết lỗi.
+  - Nếu hợp lệ $\rightarrow$ Mở Transaction CSDL:
+    - Xóa toàn bộ lịch cũ của lớp học phần: `DELETE FROM ThoiKhoaBieu WHERE MaLopHocPhan = ?`.
+    - Chèn danh sách các dòng lịch mới vào `ThoiKhoaBieu`.
+    - Cập nhật `LopHocPhan.NgayBatDau`, `NgayKetThuc`, `SoTuan` đồng bộ theo khung lịch mới.
 - **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
   - `YeuCauNghi` lưu chi tiết khung giờ và phòng đề xuất mới.
   - `BuoiHoc.TrangThai = 'Swap_Pending'`.
@@ -2021,371 +1934,37 @@ Khi Trưởng bộ môn mở đơn đổi ca, hệ thống kiểm tra cùng lúc
     - Tạo mới 1 bản ghi `LoaiBuoiHoc = 'Makeup'`, `TrangThai = 'Normal'`.
     - Bản ghi ca nghỉ cũ cập nhật `DaDayBu = 1`.
 - **Kết quả hiển thị (UI Response)**:
-  - Buổi dạy bù xuất hiện trên ma trận lịch của Giảng viên với huy hiệu màu Tím nổi bật: _"Dạy Bù"_.
-  - Ca nghỉ cũ không còn xuất hiện trong danh sách "Ca chưa dạy bù".
+  - Làm mới dữ liệu bảng và TreeView, trạng thái lớp chuyển về chấm cam 🟠 (**Chưa xếp lịch**).
 
----
+=======
+## PHÂN HỆ: QUẢN LÝ LỚP HỌC PHẦN (LopHocPhan) — Dữ liệu nền (bản sửa đúng)
 
-### 3.5. Chức năng 5: Duyệt Yêu Cầu Dành Cho Trưởng Bộ Môn (Role `BOMON` - Màn hình `DuyetYeuCauManagement`)
+Bảng tác động chính: LopHocPhan (chỉ 6 trường nghiệp vụ dùng ở giai đoạn này: MaLopHocPhan, MaMonHoc, LoaiHoc, SiSoDuKien, SiSoDangKy, KhoaHoc, cộng với MaHocKy, MaBoMon là bắt buộc theo CSDL nhưng không hiện trong bảng tổng hợp của bạn vì cố định theo ngữ cảnh đang nhập — tức khi nhập 116 lớp của bộ môn MHT học kỳ 1 2025-2026 thì MaBoMon='MHT', MaHocKy='HK1_2025_2026' áp dụng chung cho cả lô).
+Bảng cha bắt buộc: MonHoc, HocKy, BoMon.
+ResourceId: 'LopHocPhan'
 
-- **Bảng dữ liệu tác động trong CSDL**: **`YeuCauNghi`**, **`PhanCongDayThay`**, **`DangKyDayBu`**, **`BuoiHoc`**.
-- **Resource ID kiểm tra quyền (`checkPermission`)**: `'DuyetYeuCau'` (`CanRead`, `CanUpdate`).
+1. Lọc & Hiển thị danh sách
+Chọn Học kỳ (bắt buộc) và Bộ môn (bắt buộc hoặc mặc định "Tất cả"), lọc thêm theo Môn học, Kiểu học, hoặc tìm theo MaLopHocPhan.
+Backend JOIN MonHoc lấy TenMonHoc, JOIN BoMon lấy TenBoMon.
+Hiển thị: Mã lớp môn tín chỉ, Tên môn học, Kiểu học, SV dự kiến/đăng ký, Khóa. Không có cột Giảng viên, không có badge số giai đoạn lịch.
+2. Thêm mới thủ công
+Nhập MaLopHocPhan trực tiếp (chính là "mã lớp môn tín chỉ", ví dụ "An ninh mạng-1-1-25(N01)"), chọn MaMonHoc, LoaiHoc, nhập SiSoDuKien, SiSoDangKy (không bắt buộc), chọn KhoaHoc (không bắt buộc). MaHocKy, MaBoMon lấy theo ngữ cảnh màn hình đang chọn (không hỏi lại mỗi lần thêm).
+Validate: MaLopHocPhan, MaMonHoc, LoaiHoc không trống; check trùng MaLopHocPhan; LoaiHoc theo danh mục Kiểu học (xem mục Dữ liệu danh mục bên dưới); môn học tồn tại.
+NgayBatDau/NgayKetThuc/SoTuan (vẫn NOT NULL trong CSDL) tự động gán bằng đúng khoảng ngày của HocKy đang chọn làm giá trị khởi tạo — không có ô nhập tay ở form này nữa (sẽ được ghi đè chính xác khi làm module Thời khóa biểu sau).
+MaGiangVien luôn NULL, TrangThaiPhanCong mặc định 'Unassigned', không có ô nào liên quan tới giảng viên trên form.
+3. Cập nhật thông tin cơ bản
+Sửa LoaiHoc, SiSoDuKien, SiSoDangKy, KhoaHoc. MaLopHocPhan, MaMonHoc khóa cứng (đổi coi như tạo lớp khác).
+4. Xem chi tiết
+Chỉ hiển thị thông tin cơ bản đã nhập. Không có tab Lịch học, không có tab Lớp sinh viên ghép ở giai đoạn này.
+5. Xóa
+Vì chưa có ThoiKhoaBieu/BuoiHoc, điều kiện xóa gần như luôn thỏa mãn — chỉ cần kiểm tra chưa bị ChiTietNhap.MaLopHocPhanDaTao trỏ tới dở dang (nếu có, cảnh báo trước khi xóa).
+6. Import từ file tổng hợp (Excel/Word dữ liệu nền)
 
-#### 3.5.1. Phân quyền & Phân cấp Dữ liệu theo Bộ Môn
+Theo đúng cấu trúc tài liệu Du_lieu_nen_bo_mon_MHT.docx bạn gửi, một lần import phục vụ đúng 1 Bộ môn + 1 Học kỳ (khớp cơ chế TepNhap), đọc bảng "LỚP HỌC PHẦN" với 6 cột: Mã lớp môn tín chỉ → MaLopHocPhan (dùng thẳng), Mã học phần → MaMonHoc, Kiểu học → LoaiHoc, SV dự kiến → SiSoDuKien, SV đăng ký → SiSoDangKy, Khóa → KhoaHoc.
 
-- **Thao tác người dùng (User Action)**:
-  - Trưởng Bộ môn đăng nhập hệ thống $\rightarrow$ Sidebar hiển thị menu **"Duyệt Yêu Cầu"** kèm badge số lượng đơn chờ (`Pending`).
-  - Chọn các tab: **Báo Nghỉ**, **Dạy Thay**, **Đổi Ca**, **Dạy Bù**.
-- **Nghiệp vụ xử lý (Business Logic)**:
-  - Endpoint: `GET /v1/api/yeucaunghi/bomon`.
-  - Backend bảo mật nghiêm ngặt: Lấy `maBoMon` từ token xác thực của Trưởng bộ môn (`req.user.maBoMon`).
-  - Chỉ trả về các đơn có `LopHocPhan.MaBoMon = req.user.maBoMon`. Tuyệt đối không cho phép xem hoặc duyệt đơn của Bộ môn khác.
-  - Sắp xếp ưu tiên: Các đơn trạng thái `Pending` được đưa lên trên đầu, tiếp theo sắp theo `ThoiGianGui DESC`.
-
-#### 3.5.2. Công cụ Đánh giá & Phát hiện Xung đột Tự động trước khi Duyệt
-
-- Hệ thống tự động kích hoạt kiểm tra xung đột thời gian thực khi Trưởng bộ môn mở đơn:
-  - Hiển thị bảng tóm tắt so sánh: **Lịch gốc** $\leftrightarrow$ **Lịch đề xuất thay đổi**.
-  - Badge cảnh báo trực quan:
-    - 🟢 **Khả dụng**: Phòng trống, Giảng viên trống ca, không xung đột lớp sinh viên.
-    - 🔴 **Xung đột**: Hiển thị rõ tên giảng viên bị trùng hoặc tên lớp đang chiếm phòng học đích.
-
-#### 3.5.3. Thao tác Phê duyệt 1-Click & Bắt buộc Lý do Từ chối
-
-- Bấm **Chấp thuận**: Cập nhật tức thì CSDL qua transaction an toàn, phát sinh thông báo cho Giảng viên.
-- Bấm **Từ chối**: Bắt buộc nhập lý do vào Textarea popup. Nếu để trống, hệ thống chặn gửi và cảnh báo đỏ.
-
----
-
-### 3.6. Chức năng 6: Giám Sát Biến Động Toàn Trường & Can Thiệp Thu Hồi Dành Cho Admin/Phòng Đào Tạo (Role `ADMIN`, `PHONGDAOTAO` - Màn hình `LichBienDongMonitor`)
-
-- **Bảng dữ liệu tác động trong CSDL**: Toàn bộ các bảng biến động lịch (`BuoiHoc`, `YeuCauNghi`, `DangKyDayBu`, `PhanCongDayThay`).
-- **Resource ID kiểm tra quyền (`checkPermission`)**: `'GiangVien'` / `'ThoiKhoaBieu'` (`ADMIN`, `PHONGDAOTAO`).
-
-#### 3.6.1. Giám sát Biến động Toàn trường & Bộ lọc Đa trạng thái
-
-- **Thao tác người dùng (User Action)**:
-  - Admin/Chuyên viên Phòng Đào Tạo chọn menu **"Biến Động Lịch"** trên Sidebar.
-  - Áp dụng các bộ lọc: **Học kỳ**, **Khoa**, **Bộ môn**, **Loại biến động** (Báo nghỉ, Dạy thay, Đổi ca, Dạy bù), **Trạng thái** (`Pending`, `Approved`, `Rejected`, `Revoked`).
-- **Nghiệp vụ xử lý (Business Logic)**:
-  - Endpoint: `GET /v1/api/biendong-lich/all`.
-  - Backend truy vấn toàn bộ buổi học có biến động trong học kỳ:
-    ```sql
-    SELECT
-      bh.MaBuoiHoc,
-      bh.NgayHoc,
-      bh.MaTiet,
-      bh.MaPhong,
-      bh.LoaiBuoiHoc,
-      bh.TrangThai AS TrangThaiBuoiHoc,
-      bh.DaDayBu,
-      lhp.MaLopHocPhan,
-      hp.TenHocPhan,
-      bm.TenBoMon,
-      k.TenKhoa,
-      gv.TenGiangVien AS GiangVienChinh,
-      gvThay.TenGiangVien AS GiangVienDayThay,
-      ycn.MaYeuCauNghi,
-      ycn.LoaiYeuCau,
-      ycn.LyDo,
-      ycn.TrangThai AS TrangThaiYeuCau,
-      ycn.ThoiGianGui,
-      ycn.ThoiGianDuyet,
-      gvDuyet.TenGiangVien AS NguoiDuyet
-    FROM BuoiHoc bh
-    JOIN LopHocPhan lhp ON bh.MaLopHocPhan = lhp.MaLopHocPhan
-    JOIN HocPhan hp ON lhp.MaHocPhan = hp.MaHocPhan
-    JOIN BoMon bm ON lhp.MaBoMon = bm.MaBoMon
-    JOIN Khoa k ON bm.MaKhoa = k.MaKhoa
-    JOIN GiangVien gv ON bh.MaGiangVien = gv.MaGiangVien
-    LEFT JOIN YeuCauNghi ycn ON bh.MaBuoiHoc = ycn.MaBuoiHoc
-    LEFT JOIN PhanCongDayThay pcdt ON ycn.MaYeuCauNghi = pcdt.MaYeuCauNghi
-    LEFT JOIN GiangVien gvThay ON pcdt.MaGiangVienDayThay = gvThay.MaGiangVien
-    LEFT JOIN GiangVien gvDuyet ON ycn.MaGiangVienDuyet = gvDuyet.MaGiangVien
-    WHERE (bh.TrangThai != 'Normal' OR bh.LoaiBuoiHoc = 'Makeup')
-    ORDER BY bh.NgayHoc DESC;
-    ```
-
-#### 3.6.2. Chỉ số KPIs Thống kê & Cơ chế Cảnh báo Quá hạn Dạy bù (>14 ngày)
-
-- Backend tự động tính toán 4 chỉ số thống kê phục vụ công tác thanh tra đào tạo:
-  1. **Tổng số ca biến động**: Toàn bộ các ca có phát sinh thay đổi.
-  2. **Số ca báo nghỉ**: Tổng số buổi học có `LoaiYeuCau = 'Absence'`.
-  3. **Tỷ lệ hoàn thành dạy bù (%)**: `(Số ca đã bù / Tổng số ca đã duyệt nghỉ) * 100`.
-  4. **Cảnh báo quá hạn (>14 ngày)**: Đánh dấu cờ đỏ `overdueWarning = true` cho bất kỳ ca nghỉ nào đã duyệt quá 14 ngày tính từ ngày nghỉ mà trường `DaDayBu == 0`.
-
-#### 3.6.3. Thao tác Can thiệp Thu hồi / Phục hồi Quyết định Biến động (Override/Revoke)
-
-- **Thao tác người dùng (User Action)**:
-  - Khi phát hiện một quyết định đổi ca hoặc dạy bù vi phạm quy chế hoặc phòng học cần thu hồi khẩn cấp cho sự kiện của Trường, Admin bấm nút **"Thu hồi / Can thiệp"**.
-  - Nhập **Lý do thu hồi** vào modal $\rightarrow$ Bấm **"Xác Nhận Thu Hồi"**.
-- **Nghiệp vụ xử lý (Business Logic)**:
-  - Endpoint: `POST /v1/api/biendong-lich/:id/revoke`.
-  - Quyền: Chỉ tài khoản role `ADMIN` hoặc `PHONGDAOTAO`.
-  - Mở Transaction CSDL:
-    1. Ghi nhật ký can thiệp:
-       ```sql
-       UPDATE YeuCauNghi
-       SET TrangThai = 'Revoked', LyDoTuChoi = CONCAT('[PĐT THU HỒI]: ', ?)
-       WHERE MaYeuCauNghi = ?;
-       ```
-    2. Nếu là ca đổi ca / dạy thay: Hoàn nguyên `BuoiHoc` về thông tin thời gian, phòng học và giảng viên ban đầu (`TrangThai = 'Normal'`).
-    3. Nếu là ca dạy bù: Hủy buổi học dạy bù (`BuoiHoc.TrangThai = 'Cancelled'`), hoàn nguyên ca nghỉ gốc về `DaDayBu = 0`.
-    4. Bắn thông báo khẩn cấp cho cả Trưởng bộ môn và Giảng viên liên quan.
-
----
-
-### 3.7. ĐẶC TẢ CHI TIẾT 7 API ENDPOINTS CHUẨN RESTFUL (DÀNH CHO BACKEND DEVELOPER)
-
-Tất cả API tuân thủ đúng chuẩn Response JSON của dự án:
-```json
-{
-  "status": "success",
-  "code": 200,
-  "message": "Thông báo kết quả thao tác",
-  "metadata": {}
-}
-```
-
----
-
-#### API 1: Trưởng Bộ Môn Lấy Danh Sách Đơn Cần Duyệt
-- **URL**: `GET /v1/api/yeucaunghi/bomon`
-- **Quyền**: Role `BOMON`
-- **Query Params**:
-  - `maHocKy` (string, optional)
-  - `loaiYeuCau` (string, optional: `ALL`, `ABSENCE`, `SUBSTITUTE`, `SWAP`, `MAKEUP`)
-  - `trangThai` (string, optional: `ALL`, `Pending`, `Approved`, `Rejected`)
-  - `search` (string, optional: tìm theo tên giảng viên, mã lớp, môn học)
-- **Response Success (200 OK)**:
-```json
-{
-  "status": "success",
-  "code": 200,
-  "message": "Lấy danh sách yêu cầu cần duyệt của bộ môn thành công.",
-  "metadata": [
-    {
-      "id": "YCN_2026_001",
-      "loaiYeuCau": "ABSENCE",
-      "maGiangVien": "NLM001",
-      "tenGiangVien": "ThS. Nguyễn Lê Minh",
-      "maLopHocPhan": "IT1.110.3.2627.1.QT01.K66",
-      "tenMonHoc": "Cơ sở dữ liệu 1-1-26 (QT01)",
-      "ngayGoc": "2026-10-06",
-      "tietGoc": "Tiết 1 - 3 (Sáng)",
-      "phongGoc": "P101_A3",
-      "lyDo": "Tham gia tập huấn chuyên môn nghiệp vụ tại Bộ GD&ĐT",
-      "thoiGianGui": "04/10/2026 08:30",
-      "trangThai": "Pending",
-      "lyDoTuChoi": null,
-      "minhChung": "Giay_trieu_tap.pdf"
-    }
-  ]
-}
-```
-
----
-
-#### API 2: Trưởng Bộ Môn Phê Duyệt Hoặc Từ Chối Đơn
-- **URL**: `PUT /v1/api/yeucaunghi/:id/duyet`
-- **Quyền**: Role `BOMON`
-- **Request Body**:
-```json
-{
-  "trangThai": "Approved", // "Approved" | "Rejected"
-  "lyDoTuChoi": ""         // Bắt buộc nếu trangThai === "Rejected"
-}
-```
-- **Response Success (200 OK)**:
-```json
-{
-  "status": "success",
-  "code": 200,
-  "message": "Phê duyệt yêu cầu thành công.",
-  "metadata": { "id": "YCN_2026_001", "trangThai": "Approved" }
-}
-```
-
----
-
-#### API 3: Admin & Phòng Đào Tạo Giám Sát Biến Động Toàn Trường
-- **URL**: `GET /v1/api/biendong-lich/all`
-- **Quyền**: Role `ADMIN`, `PHONGDAOTAO`
-- **Query Params**: `maHocKy`, `maKhoa`, `maBoMon`, `loaiBienDong`, `trangThai`, `search`
-- **Response Success (200 OK)**:
-```json
-{
-  "status": "success",
-  "code": 200,
-  "message": "Lấy danh sách biến động lịch toàn trường thành công.",
-  "metadata": [
-    {
-      "id": "BDL_001",
-      "maBuoiHoc": "BH_20261006_01",
-      "loaiBienDong": "ABSENCE",
-      "maLopHocPhan": "IT1.110.3.2627.1.QT01.K66",
-      "tenMonHoc": "Cơ sở dữ liệu",
-      "tenKhoa": "Công nghệ thông tin",
-      "tenBoMon": "Khoa học máy tính",
-      "giangVienChinh": "ThS. Nguyễn Lê Minh",
-      "giangVienThay": null,
-      "ngayDienRa": "2026-10-06",
-      "tiet": "Tiết 1 - 3",
-      "phong": "P101_A3",
-      "trangThai": "Approved",
-      "daDayBu": false,
-      "overdueWarning": true,
-      "nguoiDuyet": "TS. Phạm Hải Yến",
-      "thoiGianDuyet": "2026-10-04 10:15"
-    }
-  ]
-}
-```
-
----
-
-#### API 4: Phòng Đào Tạo Can Thiệp Thu Hồi Quyết Định Biến Động (Override/Revoke)
-- **URL**: `POST /v1/api/biendong-lich/:id/revoke`
-- **Quyền**: Role `ADMIN`, `PHONGDAOTAO`
-- **Request Body**:
-```json
-{
-  "lyDoThuHoi": "Phòng học P101_A3 trưng dụng phục vụ kỳ thi Olympic tin học toàn quốc."
-}
-```
-- **Response Success (200 OK)**:
-```json
-{
-  "status": "success",
-  "code": 200,
-  "message": "Đã thu hồi quyết định biến động lịch thành công.",
-  "metadata": { "id": "BDL_001", "trangThai": "Revoked" }
-}
-```
-
----
-
-#### API 5: Giảng Viên Lấy Danh Sách Ca Đã Nghỉ Cần Dạy Bù
-- **URL**: `GET /v1/api/dangkydaybu/ca-chua-bu`
-- **Quyền**: Mọi Giảng viên đã đăng nhập
-- **Response Success (200 OK)**:
-```json
-{
-  "status": "success",
-  "code": 200,
-  "message": "Lấy danh sách ca nghỉ chưa dạy bù thành công.",
-  "metadata": [
-    {
-      "maBuoiHoc": "BH_20261006_01",
-      "maYeuCauNghi": "YCN_2026_001",
-      "maLopHocPhan": "IT1.110.3.2627.1.QT01.K66",
-      "tenMonHoc": "Cơ sở dữ liệu",
-      "ngayNghi": "2026-10-06",
-      "tietNghi": 1,
-      "phongNghi": "P101_A3",
-      "lyDoNghi": "Bận công tác",
-      "thoiGianDuyet": "2026-10-04 10:00"
-    }
-  ]
-}
-```
-
----
-
-#### API 6: Giảng Viên Tạo Yêu Cầu Báo Nghỉ / Dạy Thay / Đổi Ca
-- **URL**: `POST /v1/api/yeucaunghi`
-- **Quyền**: Giảng viên phụ trách ca học
-- **Request Body**:
-```json
-{
-  "maBuoiHoc": "BH_20261006_01",
-  "loaiYeuCau": "ABSENCE", // "ABSENCE" | "SUBSTITUTE" | "SWAP"
-  "lyDo": "Tham gia tập huấn chuyên môn nghiệp vụ",
-  "minhChungUrl": null,
-  "maGiangVienThay": "NQT001",    // Bắt buộc nếu loaiYeuCau === 'SUBSTITUTE'
-  "ngayDeXuat": "2026-10-09",     // Bắt buộc nếu loaiYeuCau === 'SWAP'
-  "maTietDeXuat": 4,              // Bắt buộc nếu loaiYeuCau === 'SWAP'
-  "maPhongDeXuat": "P305_A3"      // Bắt buộc nếu loaiYeuCau === 'SWAP'
-}
-```
-- **Response Success (201 Created)**:
-```json
-{
-  "status": "success",
-  "code": 201,
-  "message": "Tạo yêu cầu thành công, đang chờ Trưởng bộ môn phê duyệt.",
-  "metadata": { "maYeuCauNghi": "YCN_2026_002" }
-}
-```
-
----
-
-#### API 7: Giảng Viên Đăng Ký Lịch Dạy Bù
-- **URL**: `POST /v1/api/dangkydaybu`
-- **Quyền**: Giảng viên sở hữu ca nghỉ
-- **Request Body**:
-```json
-{
-  "maYeuCauNghi": "YCN_2026_001",
-  "ngayDeXuat": "2026-10-12",
-  "maTiet": 2,
-  "maPhong": "P102_A3"
-}
-```
-- **Response Success (201 Created)**:
-```json
-{
-  "status": "success",
-  "code": 201,
-  "message": "Đăng ký lịch dạy bù thành công. Lịch dạy mới đã được bổ sung vào thời khóa biểu.",
-  "metadata": { "maDangKyDayBu": "DKDB_001", "maBuoiHocMoi": "BH_MAKEUP_20261012_01" }
-}
-```
-
----
-
-### 3.8. HƯỚNG DẪN KỸ THUẬT CHO LẬP TRÌNH VIÊN BACKEND
-
-Để hiện thực hóa trọn vẹn Phân hệ 3, lập trình viên backend cần thực hiện các hạng mục sau trong `LichGiangDay-backend`:
-
-1. **Khởi tạo / Bổ sung Bảng trong MySQL**:
-   - Chạy script DDL tạo 4 bảng: `BuoiHoc`, `YeuCauNghi`, `PhanCongDayThay`, `DangKyDayBu` (Chi tiết tại Mục CSDL phía trên).
-   - Đảm bảo các chỉ mục (Indexes) được tạo cho: `BuoiHoc(NgayHoc, MaTiet, MaPhong)`, `BuoiHoc(MaGiangVien, NgayHoc)`, `YeuCauNghi(MaGiangVien, TrangThai)`.
-
-2. **Cấu trúc Thư mục Backend (`src/`)**:
-   - `controllers/`:
-     - `yeucaunghi.controller.js`: Xử lý tạo đơn, lấy danh sách đơn bộ môn, phê duyệt/từ chối.
-     - `biendonglich.controller.js`: Xử lý lấy danh sách biến động toàn trường, can thiệp thu hồi.
-     - `dangkydaybu.controller.js`: Xử lý lấy ca chưa bù, đăng ký ca bù.
-   - `services/`:
-     - `yeucaunghi.service.js`: Nghiệp vụ giao dịch tạo/duyệt đơn nghỉ, đổi ca, dạy thay.
-     - `conflictCheck.service.js`: Hàm lõi kiểm tra trùng phòng, trùng tiết giảng viên, trùng lịch lớp ghép.
-     - `biendonglich.service.js`: Tổng hợp dữ liệu KPI và giám sát lịch.
-     - `dangkydaybu.service.js`: Kiểm tra điều kiện 3 ngày, sức chứa phòng, sinh buổi học mới trong `BuoiHoc`.
-   - `routes/`:
-     - `yeucaunghi.route.js` $\rightarrow$ Mount tại `/v1/api/yeucaunghi`.
-     - `biendonglich.route.js` $\rightarrow$ Mount tại `/v1/api/biendong-lich`.
-     - `dangkydaybu.route.js` $\rightarrow$ Mount tại `/v1/api/dangkydaybu`.
-
-3. **Nguyên tắc Quản lý Giao dịch (Database Transactions)**:
-   - Mọi thao tác phê duyệt hoặc đăng ký dạy bù **bắt buộc** phải bao bọc trong MySQL Transaction:
-     ```javascript
-     const connection = await pool.getConnection();
-     try {
-       await connection.beginTransaction();
-       // 1. Cập nhật YeuCauNghi
-       // 2. Cập nhật BuoiHoc
-       // 3. Tạo thông báo / Phân công
-       await connection.commit();
-     } catch (error) {
-       await connection.rollback();
-       throw error;
-     } finally {
-       connection.release();
-     }
-     ```
-
-4. **Tích hợp với Frontend đã hoàn tất**:
-   - Toàn bộ giao diện Trưởng bộ môn (`DuyetYeuCauManagement.jsx`), giao diện Admin/PĐT (`LichBienDongMonitor.jsx`) và thư viện gọi API (`src/utils/apiBienDongLich.js`) **đã được code và build sẵn 100%**.
-   - Khi Backend triển khai xong 7 API đúng các quy chuẩn URL, Method, Request/Response Payload như đặc tả trên, hệ thống sẽ khớp nối hoàn toàn tự động và vận hành trơn tru mà không cần chỉnh sửa bất kỳ dòng mã nào ở phía Frontend.
-
+Trước khi import danh sách lớp, phải import hoặc có sẵn 4 bảng danh mục nền khác trước: Bộ môn, Học kỳ, Môn học, Phòng học, Khóa sinh viên — đúng thứ tự xuất hiện trong tài liệu của bạn (mục 1-7 trước khi tới mục 8 Lớp học phần). Nếu Môn học trong dòng Lớp học phần chưa tồn tại → báo lỗi, không tự tạo ngầm.
+Không có bước map Giảng viên (vì cột này không tồn tại trong nguồn dữ liệu nền).
+Mỗi dòng độc lập, 1 dòng = 1 LopHocPhan, không có khái niệm "dòng nối tiếp/giai đoạn bổ sung" ở bước này (khác với Import Excel TKB sau này) — vì bảng nguồn không có khái niệm đó.
+7. Export ra Excel
+Xuất đúng 6 cột đã import, theo Bộ môn + Học kỳ đã chọn, dùng để đối chiếu dữ liệu nền.
+>>>>>>> 2115174d52aa64b09de60797f3c0cf01168099f5
