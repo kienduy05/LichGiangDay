@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, Fragment } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import {
   GraduationCap, Calendar, Clock, Building, Users, BookOpen,
@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { apiGetHocKyList } from '../../utils/api';
 import { apiGetLecturerWeeklySchedule } from '../../utils/apiPhanCongGiangVien';
+import { apiGetLichGiangVien } from '../../utils/apiBienDongLich';
 
 import LecturerClassDetailModal from './components/LecturerClassDetailModal';
 import RequestDoiCaModal from './components/RequestDoiCaModal';
@@ -55,7 +56,7 @@ const formatDate = (date) => {
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 };
 
-export default function LecturerScheduleView() {
+export default function LecturerScheduleView({ onBackHome }) {
   const { user, logout } = useAuth();
 
   const [hocKyList, setHocKyList] = useState([]);
@@ -114,21 +115,57 @@ export default function LecturerScheduleView() {
 
   // 2. Fetch Lecturer Schedule
   const fetchSchedule = useCallback(async () => {
-    if (!selectedHocKy) return;
     setLoading(true);
     try {
-      const data = await apiGetLecturerWeeklySchedule({
+      const startD = new Date(currentWeekStart);
+      const tuNgay = `${startD.getFullYear()}-${String(startD.getMonth() + 1).padStart(2, '0')}-${String(startD.getDate()).padStart(2, '0')}`;
+      const endD = addDays(currentWeekStart, 6);
+      const denNgay = `${endD.getFullYear()}-${String(endD.getMonth() + 1).padStart(2, '0')}-${String(endD.getDate()).padStart(2, '0')}`;
+
+      // 1. Fetch BuoiHoc for this specific week from API lich-giang-vien
+      const buoiHocList = await apiGetLichGiangVien({ tuNgay, denNgay }).catch(() => []);
+
+      // 2. Fetch fallback/teacher info
+      const profileData = selectedHocKy ? await apiGetLecturerWeeklySchedule({
         maHocKy: selectedHocKy,
         maGiangVien: user?.maGiangVien || ''
-      });
-      setScheduleData(data || { matrix: {}, schedule: [], giangVien: null });
+      }).catch(() => null) : null;
+
+      if (buoiHocList && buoiHocList.length > 0) {
+        // Build matrix from buoiHocList
+        const matrix = {};
+        DAYS_DEF.forEach(d => { matrix[d.value] = {}; });
+
+        buoiHocList.forEach(bh => {
+          const d = new Date(bh.NgayHoc);
+          const dow = d.getDay() === 0 ? 8 : d.getDay() + 1;
+          const tiet = bh.MaTiet;
+          if (!matrix[dow]) matrix[dow] = {};
+          if (!matrix[dow][tiet]) matrix[dow][tiet] = [];
+          matrix[dow][tiet].push({
+            ...bh,
+            Thu: dow,
+            LoaiHoc: bh.LoaiHoc || (bh.LoaiBuoiHoc === 'Makeup' ? 'BÙ' : 'LT')
+          });
+        });
+
+        setScheduleData({
+          matrix,
+          schedule: buoiHocList,
+          giangVien: profileData?.giangVien || { HoTen: user?.fullName, MaGiangVien: user?.maGiangVien }
+        });
+      } else if (profileData && profileData.matrix) {
+        setScheduleData(profileData);
+      } else {
+        setScheduleData({ matrix: {}, schedule: [], giangVien: profileData?.giangVien || null });
+      }
     } catch (err) {
       console.error('Lỗi tải lịch giảng dạy của giảng viên:', err);
       setScheduleData({ matrix: {}, schedule: [], giangVien: null });
     } finally {
       setLoading(false);
     }
-  }, [selectedHocKy, user?.maGiangVien]);
+  }, [currentWeekStart, selectedHocKy, user?.maGiangVien, user?.fullName]);
 
   useEffect(() => {
     fetchSchedule();
@@ -163,7 +200,8 @@ export default function LecturerScheduleView() {
     setDayThayModalOpen(true);
   };
 
-  const handleOpenTaoDayBu = () => {
+  const handleOpenTaoDayBu = (item = null) => {
+    if (item) setSelectedClass(item);
     setTaoLichDayBuModalOpen(true);
   };
 
@@ -184,6 +222,146 @@ export default function LecturerScheduleView() {
 
   const gvInfo = scheduleData.giangVien || {};
 
+  // Render individual class card with container-query responsive action buttons
+  const renderClassCard = (item, idx, day) => {
+    const loaiClass = `loai-${(item.LoaiHoc || 'LT').toLowerCase()}`;
+    const status = item.TrangThai || 'Normal';
+    let statusClass = 'status-card-normal';
+    let statusBadge = null;
+
+    if (status.includes('_Pending')) {
+      statusClass = 'status-card-pending';
+      const label = status === 'Absence_Pending' ? 'Chờ duyệt nghỉ' : status === 'Swap_Pending' ? 'Chờ duyệt đổi ca' : 'Chờ duyệt dạy thay';
+      statusBadge = <span className="status-badge-pill status-badge-pending" title={`⏳ ${label}`}>⏳ {label}</span>;
+    } else if (status === 'Absent') {
+      statusClass = 'status-card-absent';
+      const label = `Đã nghỉ ${item.DaDayBu ? '(Đã bù)' : '(Chưa bù)'}`;
+      statusBadge = <span className="status-badge-pill status-badge-absent" title={`⛔ ${label}`}>⛔ {label}</span>;
+    } else if (status === 'Substituted') {
+      statusClass = 'status-card-substituted';
+      const label = `Dạy thay (${item.TenGiangVien || 'GV'})`;
+      statusBadge = <span className="status-badge-pill status-badge-substituted" title={`🔄 ${label}`}>🔄 {label}</span>;
+    } else if (status === 'Swapped') {
+      statusClass = 'status-card-swapped';
+      statusBadge = <span className="status-badge-pill status-badge-swapped" title="🔀 Đã đổi ca">🔀 Đã đổi ca</span>;
+    } else if (item.LoaiBuoiHoc === 'Makeup') {
+      statusClass = 'status-card-makeup';
+      statusBadge = <span className="status-badge-pill status-badge-makeup" title="➕ Dạy Bù">➕ Dạy Bù</span>;
+    }
+
+    const isNormal = status === 'Normal';
+    const isAbsentNotMadeUp = status === 'Absent' && !item.DaDayBu;
+    const isPending = status.includes('_Pending');
+
+    // Check if session date is future or today
+    const itemDate = item.NgayHoc ? new Date(item.NgayHoc) : (day?.dateObj || new Date());
+    const todayZero = new Date();
+    todayZero.setHours(0, 0, 0, 0);
+    const isFutureOrToday = new Date(itemDate).setHours(0, 0, 0, 0) >= todayZero.getTime();
+
+    // Only normal sessions in future/today that are not makeup classes can request swap/absence/substitute
+    const canActionNormal = isNormal && isFutureOrToday && item.LoaiBuoiHoc !== 'Makeup';
+
+    return (
+      <div
+        key={item.MaBuoiHoc || item.MaLopHocPhan || idx}
+        className={`lgd-class-card ${loaiClass} ${statusClass}`}
+        onClick={() => handleCardClick(item)}
+        title="Nhấp để xem chi tiết buổi học & gửi yêu cầu"
+      >
+        <div className="lgd-card-header">
+          <span className="lgd-card-subject" title={item.TenLopHocPhan || item.TenMonHoc}>
+            {item.TenLopHocPhan || item.TenMonHoc}
+          </span>
+          <span className={`lgd-card-tag tag-${(item.LoaiHoc || 'LT').toLowerCase()}`}>
+            {item.LoaiHoc || 'LT'}
+          </span>
+        </div>
+
+        {statusBadge && (
+          <div className="lgd-card-badge-wrap">
+            {statusBadge}
+          </div>
+        )}
+
+        <div className="lgd-card-meta">
+          <div className="lgd-card-meta-row">
+            <div className="lgd-room-wrap" title={`${item.TenPhong || 'Chưa xếp'}${item.TenToaNha ? ` (${item.TenToaNha})` : ''}`}>
+              <Building size={12} color="#0284c7" className="meta-icon" />
+              <span className="lgd-card-room">
+                {item.TenPhong || 'Chưa xếp'} {item.TenToaNha ? `(${item.TenToaNha})` : ''}
+              </span>
+            </div>
+            {item.SiSoDangKy ? (
+              <span className="lgd-card-siso">
+                {item.SiSoDangKy} SV
+              </span>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Action Chips: Đổi ca, Báo nghỉ, Dạy thay, Dạy bù */}
+        {(canActionNormal || isAbsentNotMadeUp || isPending) && (
+          <div className="lec-card-action-chips" onClick={e => e.stopPropagation()}>
+            {canActionNormal && (
+              <>
+                <button
+                  type="button"
+                  className="lec-chip-btn btn-doi-ca"
+                  onClick={() => handleOpenDoiCa(item)}
+                  title="Xin đổi ca học này"
+                  aria-label="Đổi ca"
+                >
+                  <RefreshCw size={12} />
+                  <span className="btn-text">Đổi ca</span>
+                </button>
+                <button
+                  type="button"
+                  className="lec-chip-btn btn-bao-nghi"
+                  onClick={() => handleOpenBaoNghi(item)}
+                  title="Báo nghỉ buổi học này"
+                  aria-label="Báo nghỉ"
+                >
+                  <AlertTriangle size={12} />
+                  <span className="btn-text">Báo nghỉ</span>
+                </button>
+                <button
+                  type="button"
+                  className="lec-chip-btn btn-day-thay"
+                  onClick={() => handleOpenDayThay(item)}
+                  title="Nhờ giảng viên khác dạy thay"
+                  aria-label="Dạy thay"
+                >
+                  <Users size={12} />
+                  <span className="btn-text">Dạy thay</span>
+                </button>
+              </>
+            )}
+
+            {isAbsentNotMadeUp && (
+              <button
+                type="button"
+                className="lec-chip-btn btn-day-bu"
+                onClick={() => handleOpenTaoDayBu(item)}
+                title="Đăng ký lịch dạy bù cho ca này"
+                aria-label="Dạy bù"
+              >
+                <CalendarPlus size={12} />
+                <span className="btn-text">Dạy bù</span>
+              </button>
+            )}
+
+            {isPending && (
+              <span className="lec-note-pending" title="Chờ Trưởng bộ môn phê duyệt">
+                ⏳ Chờ TBM duyệt
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="lec-portal-layout">
       {/* ========================================================
@@ -191,6 +369,31 @@ export default function LecturerScheduleView() {
           ======================================================== */}
       <header className="lec-portal-nav">
         <div className="lec-nav-left">
+          {onBackHome && (
+            <button
+              type="button"
+              onClick={onBackHome}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '0.45rem 0.85rem',
+                borderRadius: '8px',
+                border: '1px solid #bfdbfe',
+                background: '#eff6ff',
+                color: '#1d4ed8',
+                fontWeight: 700,
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                marginRight: '0.5rem'
+              }}
+              title="Quay lại Trang Chủ Giảng Viên"
+            >
+              <ChevronLeft size={16} />
+              <span>Về Trang Chủ</span>
+            </button>
+          )}
+
           <div className="lec-nav-logo-box">
             <School size={22} />
           </div>
@@ -349,125 +552,118 @@ export default function LecturerScheduleView() {
           )}
 
           {!loading && (
-            <table className="lgd-matrix-table" style={{ minWidth: '1120px' }}>
-              <thead>
-                <tr>
-                  <th className="lgd-th-period" style={{ width: '105px' }}>
-                    Ca / Tiết Học
-                  </th>
+            <>
+              {/* 1. Desktop & Tablet Matrix Grid (CSS Grid with sticky headers) */}
+              <div className="lec-matrix-scroll-wrapper">
+                <div className="lec-matrix-grid">
+                  {/* Top-Left Corner Header */}
+                  <div className="lec-grid-cell lec-corner-cell">
+                    <span>Ca / Tiết Học</span>
+                  </div>
+
+                  {/* Day Headers (Sticky Top) */}
                   {weekDays.map(d => {
                     const isToday = d.value === todayDayOfWeek;
                     return (
-                      <th key={d.value} className={`lgd-th-day ${isToday ? 'is-today' : ''}`} style={{ minWidth: '140px' }}>
+                      <div
+                        key={d.value}
+                        className={`lec-grid-cell lec-header-day ${isToday ? 'is-today' : ''}`}
+                      >
                         <div className="lgd-day-name">{d.label}</div>
                         <div className="lgd-day-date">{d.displayDate}</div>
                         {isToday && <span className="lgd-today-badge">Hôm nay</span>}
-                      </th>
+                      </div>
                     );
                   })}
-                </tr>
-              </thead>
-              <tbody>
-                {PERIOD_ROWS.map(period => (
-                  <tr key={period.maTiet}>
-                    {/* Period Column */}
-                    <td className="lgd-td-period" style={{ width: '105px' }}>
-                      <span className={`lgd-period-session ${period.sessionClass}`}>
-                        {period.session}
-                      </span>
-                      <div className="lgd-period-name">{period.label}</div>
-                      <div className="lgd-period-time">{period.time}</div>
-                    </td>
 
-                    {/* Day Cells */}
-                    {weekDays.map(d => {
-                      const items = scheduleData.matrix?.[d.value]?.[period.maTiet] || [];
-                      const isTodayCol = d.value === todayDayOfWeek;
+                  {/* Period Rows */}
+                  {PERIOD_ROWS.map(period => (
+                    <Fragment key={period.maTiet}>
+                      {/* Sticky Left Period Cell */}
+                      <div className="lec-grid-cell lec-period-cell">
+                        <span className={`lgd-period-session ${period.sessionClass}`}>
+                          {period.session}
+                        </span>
+                        <div className="lgd-period-name">{period.label}</div>
+                        <div className="lgd-period-time">{period.time}</div>
+                      </div>
 
-                      return (
-                        <td
-                          key={d.value}
-                          className={`lgd-td-cell ${isTodayCol ? 'is-today-col' : ''}`}
-                          style={{ minWidth: '140px' }}
-                        >
-                          {items.length === 0 ? (
-                            <div className="lgd-empty-cell">Trống</div>
-                          ) : (
-                            <div className="lgd-cell-cards">
-                              {items.map((item, idx) => {
-                                const loaiClass = `loai-${(item.LoaiHoc || 'LT').toLowerCase()}`;
-                                return (
-                                  <div
-                                    key={item.MaLopHocPhan || idx}
-                                    className={`lgd-class-card ${loaiClass}`}
-                                    onClick={() => handleCardClick(item)}
-                                    title="Nhấp để xem chi tiết buổi học & gửi yêu cầu đổi ca, dạy bù"
-                                  >
-                                    <div className="lgd-card-header">
-                                      <span className="lgd-card-subject" title={item.TenLopHocPhan || item.TenMonHoc}>
-                                        {item.TenLopHocPhan || item.TenMonHoc}
-                                      </span>
-                                      <span className="lgd-card-tag">
-                                        {item.LoaiHoc || 'LT'}
-                                      </span>
-                                    </div>
+                      {/* 7 Day Schedule Cells */}
+                      {weekDays.map(d => {
+                        const items = scheduleData.matrix?.[d.value]?.[period.maTiet] || [];
+                        const isTodayCol = d.value === todayDayOfWeek;
 
-                                    <div className="lgd-card-meta">
-                                      <div className="lgd-card-meta-row">
-                                        <Building size={12} color="#0284c7" />
-                                        <span className="lgd-card-room">
-                                          {item.TenPhong || 'Chưa xếp'} {item.TenToaNha ? `(${item.TenToaNha})` : ''}
-                                        </span>
-                                        {item.SiSoDangKy ? (
-                                          <span style={{ marginLeft: 'auto', color: '#64748b' }}>
-                                            {item.SiSoDangKy} SV
-                                          </span>
-                                        ) : null}
-                                      </div>
-                                    </div>
+                        return (
+                          <div
+                            key={d.value}
+                            className={`lec-grid-cell lec-day-cell ${isTodayCol ? 'is-today-col' : ''}`}
+                          >
+                            {items.length === 0 ? (
+                              <div className="lgd-empty-cell">Trống</div>
+                            ) : (
+                              <div className="lgd-cell-cards">
+                                {items.map((item, idx) => renderClassCard(item, idx, d))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </Fragment>
+                  ))}
+                </div>
+              </div>
 
-                                    {/* Action Chips: Đổi ca, Báo nghỉ, Dạy thay */}
-                                    <div className="lec-card-action-chips" onClick={e => e.stopPropagation()}>
-                                      <button
-                                        type="button"
-                                        className="lec-chip-btn btn-doi-ca"
-                                        onClick={() => handleOpenDoiCa(item)}
-                                        title="Xin đổi ca học này"
-                                      >
-                                        <RefreshCw size={10} />
-                                        <span>Đổi ca</span>
-                                      </button>
-                                      <button
-                                        type="button"
-                                        className="lec-chip-btn btn-bao-nghi"
-                                        onClick={() => handleOpenBaoNghi(item)}
-                                        title="Báo nghỉ buổi học này"
-                                      >
-                                        <AlertTriangle size={10} />
-                                        <span>Báo nghỉ</span>
-                                      </button>
-                                      <button
-                                        type="button"
-                                        className="lec-chip-btn btn-day-thay"
-                                        onClick={() => handleOpenDayThay(item)}
-                                        title="Nhờ giảng viên khác dạy thay"
-                                      >
-                                        <Users size={10} />
-                                        <span>Dạy thay</span>
-                                      </button>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+              {/* 2. Mobile Schedule List View (<640px) */}
+              <div className="lec-mobile-schedule-list">
+                {weekDays.map(d => {
+                  const isToday = d.value === todayDayOfWeek;
+                  const dayClasses = [];
+                  PERIOD_ROWS.forEach(period => {
+                    const classes = scheduleData.matrix?.[d.value]?.[period.maTiet] || [];
+                    classes.forEach(c => {
+                      dayClasses.push({
+                        ...c,
+                        periodLabel: period.label,
+                        periodTime: period.time,
+                        session: period.session,
+                        sessionClass: period.sessionClass
+                      });
+                    });
+                  });
+
+                  return (
+                    <div key={d.value} className={`lec-mobile-day-block ${isToday ? 'is-today-block' : ''}`}>
+                      <div className="lec-mobile-day-header">
+                        <div className="lec-mobile-day-title">
+                          <span className="day-name">{d.label}</span>
+                          <span className="day-date">{d.displayDate}</span>
+                          {isToday && <span className="lgd-today-badge">Hôm nay</span>}
+                        </div>
+                        <span className="lec-mobile-count">{dayClasses.length} ca học</span>
+                      </div>
+
+                      <div className="lec-mobile-day-body">
+                        {dayClasses.length === 0 ? (
+                          <div className="lec-mobile-empty-day">Không có ca giảng dạy trong ngày</div>
+                        ) : (
+                          <div className="lec-mobile-cards-wrap">
+                            {dayClasses.map((item, idx) => (
+                              <div key={item.MaBuoiHoc || idx} className="lec-mobile-card-item">
+                                <div className="lec-mobile-period-tag">
+                                  <Clock size={12} />
+                                  <span>{item.periodLabel} ({item.periodTime})</span>
+                                </div>
+                                {renderClassCard(item, idx, d)}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           )}
         </div>
       </main>

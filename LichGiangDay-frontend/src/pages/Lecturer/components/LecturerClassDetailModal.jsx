@@ -10,7 +10,9 @@ export default function LecturerClassDetailModal({
   item,
   onRequestDoiCa,
   onRequestBaoNghi,
-  onRequestDayThay
+  onRequestDayThay,
+  onRequestDayBu,
+  onCancelRequest
 }) {
   if (!isOpen || !item) return null;
 
@@ -95,79 +97,140 @@ export default function LecturerClassDetailModal({
             <div style={{ fontSize: '0.78125rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.6rem' }}>
               Thao Tác Nghiệp Vụ Buổi Dạy
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.65rem' }}>
-              {/* 1. Đổi ca */}
-              <button
-                type="button"
-                onClick={() => onRequestDoiCa && onRequestDoiCa(item)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.45rem',
-                  padding: '0.65rem 0.75rem',
-                  borderRadius: '8px',
-                  border: '1px solid #bfdbfe',
-                  background: '#eff6ff',
-                  color: '#1d4ed8',
-                  fontSize: '0.8125rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s'
-                }}
-              >
-                <RefreshCw size={15} />
-                <span>Xin Đổi Ca</span>
-              </button>
 
-              {/* 2. Báo nghỉ */}
-              <button
-                type="button"
-                onClick={() => onRequestBaoNghi && onRequestBaoNghi(item)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.45rem',
-                  padding: '0.65rem 0.75rem',
-                  borderRadius: '8px',
-                  border: '1px solid #fecaca',
-                  background: '#fef2f2',
-                  color: '#dc2626',
-                  fontSize: '0.8125rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s'
-                }}
-              >
-                <AlertTriangle size={15} />
-                <span>Báo Nghỉ</span>
-              </button>
+            {/* Trạng thái Buổi học */}
+            {item.TrangThai && item.TrangThai !== 'Normal' && (
+              <div style={{ marginBottom: '0.75rem', padding: '0.5rem 0.75rem', borderRadius: '6px', fontSize: '0.8125rem', background: '#fffbeb', border: '1px solid #fde68a', color: '#b45309' }}>
+                Trạng thái: <strong>{item.TrangThai}</strong> {item.GhiChu && `• ${item.GhiChu}`}
+              </div>
+            )}
 
-              {/* 3. Dạy thay */}
+            {/* Nút theo trạng thái */}
+            {item.TrangThai === 'Absent' && item.DaDayBu === 0 ? (
               <button
                 type="button"
-                onClick={() => onRequestDayThay && onRequestDayThay(item)}
+                onClick={() => { onClose(); if (onRequestDayBu) onRequestDayBu(item); }}
                 style={{
+                  width: '100%',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '0.45rem',
-                  padding: '0.65rem 0.75rem',
+                  gap: '0.5rem',
+                  padding: '0.75rem',
                   borderRadius: '8px',
-                  border: '1px solid #ddd6fe',
-                  background: '#f5f3ff',
-                  color: '#6d28d9',
-                  fontSize: '0.8125rem',
+                  background: '#059669',
+                  color: '#ffffff',
+                  border: 'none',
+                  fontSize: '0.875rem',
                   fontWeight: 700,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s'
+                  cursor: 'pointer'
                 }}
               >
-                <Users size={15} />
-                <span>Dạy Thay</span>
+                <PlusCircle size={16} />
+                <span>Đăng Ký Dạy Bù Cho Ca Này</span>
               </button>
-            </div>
+            ) : item.TrangThai?.includes('Pending') ? (
+              <button
+                type="button"
+                onClick={() => { if (item.yeuCauHienTai && onCancelRequest) onCancelRequest(item.yeuCauHienTai.MaYeuCauNghi); }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  padding: '0.75rem',
+                  borderRadius: '8px',
+                  background: '#fee2e2',
+                  border: '1px solid #fca5a5',
+                  color: '#b91c1c',
+                  fontSize: '0.875rem',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                <X size={16} />
+                <span>Hủy Yêu Cầu Đang Chờ Duyệt</span>
+              </button>
+            ) : item.TrangThai === 'Normal' ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.65rem' }}>
+                {/* 1. Đổi ca */}
+                <button
+                  type="button"
+                  onClick={() => onRequestDoiCa && onRequestDoiCa(item)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.45rem',
+                    padding: '0.65rem 0.75rem',
+                    borderRadius: '8px',
+                    border: '1px solid #bfdbfe',
+                    background: '#eff6ff',
+                    color: '#1d4ed8',
+                    fontSize: '0.8125rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s'
+                  }}
+                >
+                  <RefreshCw size={15} />
+                  <span>Xin Đổi Ca</span>
+                </button>
+
+                {/* 2. Báo nghỉ */}
+                <button
+                  type="button"
+                  onClick={() => onRequestBaoNghi && onRequestBaoNghi(item)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.45rem',
+                    padding: '0.65rem 0.75rem',
+                    borderRadius: '8px',
+                    border: '1px solid #fecaca',
+                    background: '#fef2f2',
+                    color: '#dc2626',
+                    fontSize: '0.8125rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s'
+                  }}
+                >
+                  <AlertTriangle size={15} />
+                  <span>Báo Nghỉ</span>
+                </button>
+
+                {/* 3. Dạy thay */}
+                <button
+                  type="button"
+                  onClick={() => onRequestDayThay && onRequestDayThay(item)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.45rem',
+                    padding: '0.65rem 0.75rem',
+                    borderRadius: '8px',
+                    border: '1px solid #ddd6fe',
+                    background: '#f5f3ff',
+                    color: '#6d28d9',
+                    fontSize: '0.8125rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s'
+                  }}
+                >
+                  <Users size={15} />
+                  <span>Dạy Thay</span>
+                </button>
+              </div>
+            ) : (
+              <div style={{ fontSize: '0.8125rem', color: '#64748b', fontStyle: 'italic', textAlign: 'center' }}>
+                Buổi học đã hoàn thành hoặc không ở trạng thái bình thường.
+              </div>
+            )}
           </div>
 
           {/* Details Grid */}

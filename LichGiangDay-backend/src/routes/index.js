@@ -56,4 +56,19 @@ router.use('/v1/api/thoikhoabieu', require('./thoikhoabieu'));
 // Dashboard statistics routes
 router.use('/v1/api/dashboard', require('./dashboard'));
 
+// Notifications routes
+router.use('/v1/api/thongbao', require('./thongbao'));
+
+// Lecturer Schedule route
+router.get('/v1/api/lich-giang-vien', require('../auth/authUtils').authentication, require('../controllers/yeucaunghi.controller').getLichGiangVien);
+
+// Leave/Swap/Substitute Requests routes
+router.use('/v1/api/yeucaunghi', require('./yeucaunghi'));
+
+// Makeup Class Registration routes
+router.use('/v1/api/dangkydaybu', require('./dangkydaybu'));
+
+// Schedule Variation Monitoring routes
+router.use('/v1/api/biendong-lich', require('./biendonglich'));
+
 module.exports = router;
