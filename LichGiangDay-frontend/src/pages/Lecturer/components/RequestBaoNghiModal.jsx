@@ -1,24 +1,48 @@
 import { useState } from 'react';
-import { X, AlertTriangle, Calendar, Clock, Send, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { X, AlertTriangle, Calendar, Clock, Send, AlertCircle, CheckCircle2, Loader2, Link2 } from 'lucide-react';
+import { apiSubmitYeuCauNghi } from '../../../utils/apiBienDongLich';
 
-export default function RequestBaoNghiModal({ isOpen, onClose, classItem }) {
+export default function RequestBaoNghiModal({ isOpen, onClose, classItem, onSuccess }) {
   if (!isOpen || !classItem) return null;
 
-  const [ngayNghi, setNgayNghi] = useState('');
   const [lyDo, setLyDo] = useState('');
-  const [loaiNghi, setLoaiNghi] = useState('DotXuat');
-  const [coKeHoachDayBu, setCoKeHoachDayBu] = useState(true);
+  const [minhChungUrl, setMinhChungUrl] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitted(true);
+    if (!lyDo.trim()) {
+      setError('Vui lòng nhập lý do báo nghỉ');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      await apiSubmitYeuCauNghi({
+        loaiYeuCau: 'ABSENCE',
+        maBuoiHoc: classItem.MaBuoiHoc,
+        lyDo: lyDo.trim(),
+        minhChungUrl: minhChungUrl.trim() || null
+      });
+
+      setSubmitted(true);
+      if (onSuccess) onSuccess();
+    } catch (err) {
+      setError(err.message || 'Gửi báo nghỉ thất bại. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleResetAndClose = () => {
     setSubmitted(false);
     setLyDo('');
-    setNgayNghi('');
+    setMinhChungUrl('');
+    setError('');
     onClose();
   };
 
@@ -45,7 +69,7 @@ export default function RequestBaoNghiModal({ isOpen, onClose, classItem }) {
               </div>
               <h4 style={{ margin: 0, fontSize: '1.2rem', color: '#0f172a' }}>Gửi Báo Nghỉ Thành Công!</h4>
               <p style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '0.5rem', lineHeight: 1.5 }}>
-                Thông tin báo nghỉ đã được gửi đến Ban Đào tạo & Trưởng Bộ môn. Vui lòng sắp xếp lịch dạy bù sớm nhất để đảm bảo tiến độ học tập của sinh viên.
+                Đơn báo nghỉ đã được gửi tới Trưởng Bộ Môn để phê duyệt. Sau khi được duyệt, bạn có thể lập lịch dạy bù cho lớp học phần này.
               </p>
               <button
                 type="button"
@@ -66,93 +90,74 @@ export default function RequestBaoNghiModal({ isOpen, onClose, classItem }) {
             </div>
           ) : (
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {error && (
+                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', padding: '0.75rem', borderRadius: '8px', color: '#b91c1c', fontSize: '0.84rem' }}>
+                  {error}
+                </div>
+              )}
+
               {/* Class Info Box */}
               <div style={{ background: '#fef2f2', padding: '0.85rem 1rem', borderRadius: '10px', border: '1px solid #fecaca', fontSize: '0.84rem' }}>
                 <div style={{ fontWeight: 700, color: '#b91c1c', fontSize: '0.925rem' }}>
-                  {classItem.TenLopHocPhan || classItem.TenMonHoc}
+                  {classItem.TenMonHoc || classItem.TenLopHocPhan}
                 </div>
                 <div style={{ marginTop: '0.3rem', color: '#64748b', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                   <span>Mã lớp: <strong>{classItem.MaLopHocPhan}</strong></span>
-                  <span>Thời gian: <strong>Thứ {classItem.ThuTrongTuan}, {classItem.TenTiet}</strong></span>
+                  <span>Ngày: <strong>{classItem.NgayHoc ? new Date(classItem.NgayHoc).toLocaleDateString('vi-VN') : '-'}</strong></span>
+                  <span>Tiết: <strong>{classItem.TenTiet}</strong></span>
                   <span>Phòng: <strong>{classItem.TenPhong}</strong></span>
-                </div>
-              </div>
-
-              {/* Date & Type */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#334155', display: 'block', marginBottom: '0.35rem' }}>
-                    Ngày xin nghỉ <span style={{ color: '#ef4444' }}>*</span>
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={ngayNghi}
-                    onChange={e => setNgayNghi(e.target.value)}
-                    style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.875rem' }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#334155', display: 'block', marginBottom: '0.35rem' }}>
-                    Hình thức nghỉ
-                  </label>
-                  <select
-                    value={loaiNghi}
-                    onChange={e => setLoaiNghi(e.target.value)}
-                    style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.875rem', background: '#ffffff' }}
-                  >
-                    <option value="DotXuat">Nghỉ đột xuất (Ốm, việc gia đình)</option>
-                    <option value="CongTac">Nghỉ theo kế hoạch công tác</option>
-                    <option value="Khac">Lý do khác</option>
-                  </select>
                 </div>
               </div>
 
               {/* Reason */}
               <div>
                 <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#334155', display: 'block', marginBottom: '0.35rem' }}>
-                  Lý do chi tiết <span style={{ color: '#ef4444' }}>*</span>
+                  Lý do xin nghỉ <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <textarea
                   required
-                  rows="3"
-                  placeholder="Ghi rõ lý do xin nghỉ buổi dạy..."
+                  rows={3}
                   value={lyDo}
                   onChange={e => setLyDo(e.target.value)}
-                  style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.875rem', resize: 'vertical' }}
+                  placeholder="Nhập lý do cụ thể (công tác, ốm, việc gia đình đột xuất...)"
+                  style={{ width: '100%', padding: '0.65rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.875rem' }}
                 />
               </div>
 
-              {/* Checkbox plan for makeup */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f8fafc', padding: '0.6rem 0.85rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                <input
-                  type="checkbox"
-                  id="chkDayBu"
-                  checked={coKeHoachDayBu}
-                  onChange={e => setCoKeHoachDayBu(e.target.checked)}
-                  style={{ accentColor: '#dc2626', width: '16px', height: '16px' }}
-                />
-                <label htmlFor="chkDayBu" style={{ fontSize: '0.8125rem', color: '#334155', cursor: 'pointer' }}>
-                  Giảng viên cam kết sẽ đăng ký lịch dạy bù sau khi hoàn thành thời gian nghỉ.
+              {/* Evidence URL */}
+              <div>
+                <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#334155', display: 'block', marginBottom: '0.35rem' }}>
+                  Link minh chứng (nếu có)
                 </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="url"
+                    value={minhChungUrl}
+                    onChange={e => setMinhChungUrl(e.target.value)}
+                    placeholder="https://example.com/giay-cong-tac.pdf"
+                    style={{ width: '100%', padding: '0.6rem 0.6rem 0.6rem 2.2rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.875rem' }}
+                  />
+                  <Link2 size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                </div>
               </div>
 
-              {/* Buttons */}
+              {/* Footer actions */}
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
                 <button
                   type="button"
                   onClick={handleResetAndClose}
-                  style={{ padding: '0.6rem 1.25rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', fontWeight: 600, cursor: 'pointer' }}
+                  disabled={loading}
+                  style={{ padding: '0.6rem 1.2rem', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  style={{ padding: '0.6rem 1.4rem', borderRadius: '8px', border: 'none', background: '#dc2626', color: '#ffffff', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.45rem' }}
+                  disabled={loading}
+                  style={{ padding: '0.6rem 1.4rem', background: '#dc2626', border: 'none', borderRadius: '8px', color: '#ffffff', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.45rem' }}
                 >
-                  <Send size={15} />
-                  <span>Gửi Thông Báo Nghỉ</span>
+                  {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                  <span>Gửi đơn báo nghỉ</span>
                 </button>
               </div>
             </form>
