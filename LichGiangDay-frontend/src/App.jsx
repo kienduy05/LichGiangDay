@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import LecturerLogin from './pages/Lecturer/LecturerLogin';
+import LecturerHome from './pages/Lecturer/LecturerHome';
 import LecturerScheduleView from './pages/Lecturer/LecturerScheduleView';
 import AdminLogin from './pages/Admin/AdminLogin';
 import AdminDashboard from './pages/Admin/AdminDashboard';
@@ -9,6 +11,7 @@ import { Loader2 } from 'lucide-react';
 // Route Guard cho Cổng Giảng Viên (Root: /)
 function LecturerRoute() {
   const { user, loading } = useAuth();
+  const [viewSchedule, setViewSchedule] = useState(false);
 
   if (loading) {
     return (
@@ -28,8 +31,12 @@ function LecturerRoute() {
     return <Navigate to="/admin" replace />;
   }
 
-  // Đúng role GIANGVIEN: hiện Cổng Lịch Giảng Dạy Cá Nhân
-  return <LecturerScheduleView />;
+  // Đúng role GIANGVIEN: Hiện Landing page trước, chỉ mở ma trận khi bấm 'Xem lịch giảng dạy'
+  if (viewSchedule) {
+    return <LecturerScheduleView onBackHome={() => setViewSchedule(false)} />;
+  }
+
+  return <LecturerHome onOpenSchedule={() => setViewSchedule(true)} />;
 }
 
 // Route Guard cho Cổng Quản Trị (/admin)

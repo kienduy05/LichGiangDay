@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
+import { apiGetYeuCauNghiByBoMon } from '../../../utils/apiBienDongLich';
 import {
   LayoutDashboard, Building, Layers, School, Network, UserCheck,
   BookOpen, Users, BookMarked, CalendarDays, Clock,
@@ -10,6 +11,19 @@ import './AdminSidebar.css';
 
 export default function AdminSidebar({ activeTab, setActiveTab, isOpenMobile, onCloseMobile }) {
   const { user, hasPermission } = useAuth();
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    if (user?.role === 'BOMON') {
+      apiGetYeuCauNghiByBoMon({ trangThai: 'Pending' })
+        .then(res => {
+          if (Array.isArray(res)) {
+            setPendingCount(res.filter(r => r.trangThai === 'Pending' || r.TrangThai === 'Pending').length);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [user?.role]);
 
   const handleNavClick = (tab) => {
     setActiveTab(tab);
@@ -237,7 +251,9 @@ export default function AdminSidebar({ activeTab, setActiveTab, isOpenMobile, on
               >
                 <ClipboardCheck size={18} />
                 <span>Duyệt Yêu Cầu</span>
-                <span className="admin-nav-badge">4</span>
+                {pendingCount > 0 && (
+                  <span className="admin-nav-badge" style={{ background: '#ef4444' }}>{pendingCount}</span>
+                )}
               </div>
             )}
 
@@ -251,6 +267,9 @@ export default function AdminSidebar({ activeTab, setActiveTab, isOpenMobile, on
                 <span>Biến Động Lịch</span>
                 {['ADMIN', 'PHONGDAOTAO'].includes(user?.role) && (
                   <span className="admin-nav-badge" style={{ background: '#3b82f6' }}>Toàn trường</span>
+                )}
+                {user?.role === 'BOMON' && (
+                  <span className="admin-nav-badge" style={{ background: '#10b981' }}>Bộ môn</span>
                 )}
               </div>
             )}

@@ -4,7 +4,8 @@ import {
   Filter, Search, Download, Printer, ShieldAlert, CheckCircle2,
   XCircle, AlertTriangle, Eye, RefreshCw, X, ShieldX, Check, FileSpreadsheet
 } from 'lucide-react';
-import { apiGetBienDongLichAll, apiRevokeBienDongLich } from '../../../../utils/apiBienDongLich';
+import { useAuth } from '../../../../context/AuthContext';
+import { apiGetBienDongLichAll, apiGetBienDongLichBoMon, apiRevokeBienDongLich } from '../../../../utils/apiBienDongLich';
 import './LichBienDongMonitor.css';
 
 // Rich Mock Data for University-wide Schedule Changes (Admin & PĐT)
@@ -125,7 +126,11 @@ const INITIAL_CHANGES_DATA = [
 ];
 
 export default function LichBienDongMonitor() {
+  const { user } = useAuth();
+  const isBoMon = user?.role === 'BOMON';
+
   const [data, setData] = useState(INITIAL_CHANGES_DATA);
+  const [remoteKpi, setRemoteKpi] = useState(null);
   const [selectedHocKy, setSelectedHocKy] = useState('HK1_2026_2027');
   const [selectedKhoa, setSelectedKhoa] = useState('ALL');
   const [selectedBoMon, setSelectedBoMon] = useState('ALL');
@@ -146,9 +151,12 @@ export default function LichBienDongMonitor() {
 
   // KPIs
   const kpiStats = useMemo(() => {
+    if (remoteKpi) {
+      return remoteKpi;
+    }
     const total = data.length;
     const absence = data.filter(d => d.loaiBienDong === 'ABSENCE').length;
-    const makeupDone = data.filter(d => d.loaiBienDong === 'MAKEUP' && d.trangThai === 'Approved').length;
+    const makeupDone = data.filter(d => d.loaiBienDong === 'MAKEUP' && (d.trangThai === 'Approved' || d.trangThai === 'Confirmed')).length;
     const substitute = data.filter(d => d.loaiBienDong === 'SUBSTITUTE').length;
     const overdue = data.filter(d => d.overdueWarning).length;
     return {
@@ -159,29 +167,47 @@ export default function LichBienDongMonitor() {
       substitute,
       overdue
     };
-  }, [data]);
+  }, [data, remoteKpi]);
 
-  // Tự động tải danh sách biến động lịch từ Backend API
+  // Tự động tải danh sách biến động lịch từ Backend API (phân quyền theo role)
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const remoteData = await apiGetBienDongLichAll({
-          maHocKy: selectedHocKy,
-          maKhoa: selectedKhoa,
-          maBoMon: selectedBoMon,
-          loaiBienDong: selectedLoai,
-          trangThai: selectedStatus,
-          search: searchTerm
-        });
-        if (remoteData && Array.isArray(remoteData) && remoteData.length > 0) {
-          setData(remoteData);
+        let remoteData;
+        if (isBoMon) {
+          remoteData = await apiGetBienDongLichBoMon({
+            maHocKy: selectedHocKy,
+            loaiBienDong: selectedLoai,
+            trangThai: selectedStatus,
+            search: searchTerm
+          });
+        } else {
+          remoteData = await apiGetBienDongLichAll({
+            maHocKy: selectedHocKy,
+            maKhoa: selectedKhoa,
+            maBoMon: selectedBoMon,
+            loaiBienDong: selectedLoai,
+            trangThai: selectedStatus,
+            search: searchTerm
+          });
+        }
+
+        if (remoteData) {
+          if (Array.isArray(remoteData) && remoteData.length > 0) {
+            setData(remoteData);
+          } else if (remoteData.items && Array.isArray(remoteData.items)) {
+            setData(remoteData.items);
+            if (remoteData.kpi) {
+              setRemoteKpi(remoteData.kpi);
+            }
+          }
         }
       } catch (err) {
         // Tự động dùng initial mock data
       }
     };
     fetchData();
-  }, [selectedHocKy, selectedKhoa, selectedBoMon, selectedLoai, selectedStatus, searchTerm]);
+  }, [isBoMon, selectedHocKy, selectedKhoa, selectedBoMon, selectedLoai, selectedStatus, searchTerm]);
   const filteredData = useMemo(() => {
     return data.filter(item => {
       if (selectedKhoa !== 'ALL' && item.tenKhoa !== selectedKhoa) return false;
@@ -406,6 +432,8 @@ export default function LichBienDongMonitor() {
             <select
               className="lbd-filter-select"
               value={selectedKhoa}
+              disabled={isBoMon}
+              title={isBoMon ? "Khóa cứng theo thẩm quyền Bộ môn" : ""}
               onChange={e => {
                 setSelectedKhoa(e.target.value);
                 setSelectedBoMon('ALL');
@@ -423,6 +451,8 @@ export default function LichBienDongMonitor() {
             <select
               className="lbd-filter-select"
               value={selectedBoMon}
+              disabled={isBoMon}
+              title={isBoMon ? "Khóa cứng theo thẩm quyền Bộ môn" : ""}
               onChange={e => setSelectedBoMon(e.target.value)}
             >
               <option value="ALL">-- Tất cả Bộ môn --</option>
@@ -544,7 +574,7 @@ export default function LichBienDongMonitor() {
                         <Eye size={12} />
                         <span>Xem</span>
                       </button>
-                      {item.trangThai === 'Approved' && (
+                      {!isBoMon && (item.trangThai === 'Approved' || item.trangThai === 'Confirmed') && (
                         <button
                           type="button"
                           className="lbd-action-btn btn-revoke"
@@ -633,7 +663,7 @@ export default function LichBienDongMonitor() {
               >
                 Đóng
               </button>
-              {detailItem.trangThai === 'Approved' && (
+              {!isBoMon && (detailItem.trangThai === 'Approved' || detailItem.trangThai === 'Confirmed') && (
                 <button
                   type="button"
                   className="lgd-btn lgd-btn-danger"

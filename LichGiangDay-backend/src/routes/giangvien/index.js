@@ -17,6 +17,10 @@ router.get('/', checkPermission('GiangVien', 'CanRead'), giangVienController.get
 // GET /v1/api/giangvien/available-accounts?maGiangVien=...
 router.get('/available-accounts', checkPermission('GiangVien', 'CanRead'), giangVienController.getAvailableAccounts);
 
+// --- Danh sách đồng nghiệp rảnh để nhờ dạy thay ---
+// GET /v1/api/giangvien/dong-nghiep-trong?maBuoiHoc=...
+router.get('/dong-nghiep-trong', checkPermission('GiangVien', 'CanRead'), require('../../controllers/yeucaunghi.controller').getDongNghiepTrong);
+
 // --- Chi tiết Giảng viên kèm lịch sử hoạt động ---
 // GET /v1/api/giangvien/:maGiangVien/chitiet
 router.get('/:maGiangVien/chitiet', checkPermission('GiangVien', 'CanRead'), giangVienController.getChiTiet);
