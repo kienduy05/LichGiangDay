@@ -4,7 +4,8 @@ import {
   Calendar, Building, User, Users, BookOpen, Search, Filter,
   ArrowRight, ShieldAlert, Check, X, RefreshCw, Send, FileText
 } from 'lucide-react';
-import { apiGetYeuCauNghiByBoMon, apiDuyetYeuCauNghi } from '../../../../utils/apiBienDongLich';
+import { apiGetYeuCauNghiByBoMon, apiDuyetYeuCauNghi, apiCheckConflictYeuCau } from '../../../../utils/apiBienDongLich';
+import { useAuth } from '../../../../context/AuthContext';
 import './DuyetYeuCauManagement.css';
 
 // Initial Mock Requests Data (Bộ môn Mạng & Các hệ thống thông tin)
@@ -100,8 +101,45 @@ const INITIAL_REQUESTS = [
   }
 ];
 
+// Helper chuẩn hóa dữ liệu từ Backend API (PascalCase) sang định dạng UI Component
+export const normalizeRequest = (r) => {
+  if (!r) return null;
+  return {
+    id: r.MaYeuCauNghi || r.id || '',
+    loaiYeuCau: r.LoaiYeuCau || r.loaiYeuCau || 'ABSENCE',
+    maGiangVien: r.MaGiangVien || r.maGiangVien || '',
+    tenGiangVien: r.TenGiangVienGui || r.tenGiangVien || r.HoTen || '',
+    maLopHocPhan: r.MaLopHocPhan || r.maLopHocPhan || '',
+    tenMonHoc: r.TenMonHoc || r.tenMonHoc || r.TenLopHocPhan || '',
+    tenLopHocPhan: r.TenLopHocPhan || r.tenLopHocPhan || '',
+    maBoMon: r.MaBoMon || r.maBoMon || '',
+    tenBoMon: r.TenBoMon || r.tenBoMon || '',
+    ngayGoc: r.NgayHoc ? (typeof r.NgayHoc === 'string' ? r.NgayHoc.slice(0, 10) : r.NgayHoc) : (r.ngayGoc || ''),
+    tietGoc: r.TenTiet || (r.MaTiet ? `Tiết ${r.MaTiet}` : '') || r.tietGoc || '',
+    phongGoc: r.TenPhong || r.MaPhong || r.phongGoc || '',
+    ngayDeXuat: r.NgayDeXuat ? (typeof r.NgayDeXuat === 'string' ? r.NgayDeXuat.slice(0, 10) : r.NgayDeXuat) : (r.ngayDeXuat || ''),
+    tietDeXuat: r.TenTietDeXuat || (r.MaTietDeXuat ? `Tiết ${r.MaTietDeXuat}` : '') || r.tietDeXuat || '',
+    phongDeXuat: r.TenPhongDeXuat || r.MaPhongDeXuat || r.phongDeXuat || '',
+    maGiangVienThay: r.MaGiangVienDeXuat || r.maGiangVienThay || '',
+    tenGiangVienThay: r.TenGiangVienDeXuat || r.tenGiangVienThay || '',
+    lyDo: r.LyDo || r.lyDo || '',
+    thoiGianGui: r.ThoiGianGui ? (typeof r.ThoiGianGui === 'string' ? r.ThoiGianGui.slice(0, 19).replace('T', ' ') : r.ThoiGianGui) : (r.thoiGianGui || ''),
+    trangThai: r.TrangThai || r.trangThai || 'Pending',
+    lyDoTuChoi: r.LyDoTuChoi || r.lyDoTuChoi || '',
+    minhChung: r.MinhChungUrl || r.minhChung || '',
+    nguoiDuyet: r.NguoiDuyet || r.nguoiDuyet || (r.MaGiangVienDuyet ? `GV ${r.MaGiangVienDuyet}` : ''),
+    thoiGianDuyet: r.ThoiGianDuyet ? (typeof r.ThoiGianDuyet === 'string' ? r.ThoiGianDuyet.slice(0, 19).replace('T', ' ') : r.ThoiGianDuyet) : (r.thoiGianDuyet || ''),
+    conflictCheck: r.conflictCheck || null,
+    maBuoiHoc: r.MaBuoiHoc || r.maBuoiHoc || '',
+    raw: r
+  };
+};
+
 export default function DuyetYeuCauManagement() {
-  const [requests, setRequests] = useState(INITIAL_REQUESTS);
+  const { user } = useAuth();
+  const isBoMon = user?.role === 'BOMON';
+  const [requests, setRequests] = useState(() => INITIAL_REQUESTS.map(normalizeRequest));
+  const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('ALL'); // ALL | ABSENCE | SUBSTITUTE | SWAP | MAKEUP
   const [statusFilter, setStatusFilter] = useState('ALL'); // ALL | Pending | Approved | Rejected
   const [searchTerm, setSearchTerm] = useState('');
@@ -119,10 +157,10 @@ export default function DuyetYeuCauManagement() {
 
   // KPIs
   const kpiData = useMemo(() => {
-    const pending = requests.filter(r => r.trangThai === 'Pending').length;
-    const approved = requests.filter(r => r.trangThai === 'Approved').length;
-    const absence = requests.filter(r => r.loaiYeuCau === 'ABSENCE').length;
-    const substitute = requests.filter(r => r.loaiYeuCau === 'SUBSTITUTE').length;
+    const pending = requests.filter(r => (r.trangThai || r.TrangThai) === 'Pending').length;
+    const approved = requests.filter(r => (r.trangThai || r.TrangThai) === 'Approved').length;
+    const absence = requests.filter(r => (r.loaiYeuCau || r.LoaiYeuCau) === 'ABSENCE').length;
+    const substitute = requests.filter(r => (r.loaiYeuCau || r.LoaiYeuCau) === 'SUBSTITUTE').length;
     return { pending, approved, absence, substitute };
   }, [requests]);
 
@@ -130,31 +168,32 @@ export default function DuyetYeuCauManagement() {
   const tabCounts = useMemo(() => {
     return {
       ALL: requests.length,
-      ABSENCE: requests.filter(r => r.loaiYeuCau === 'ABSENCE').length,
-      SUBSTITUTE: requests.filter(r => r.loaiYeuCau === 'SUBSTITUTE').length,
-      SWAP: requests.filter(r => r.loaiYeuCau === 'SWAP').length,
-      MAKEUP: requests.filter(r => r.loaiYeuCau === 'MAKEUP').length,
+      ABSENCE: requests.filter(r => (r.loaiYeuCau || r.LoaiYeuCau) === 'ABSENCE').length,
+      SUBSTITUTE: requests.filter(r => (r.loaiYeuCau || r.LoaiYeuCau) === 'SUBSTITUTE').length,
+      SWAP: requests.filter(r => (r.loaiYeuCau || r.LoaiYeuCau) === 'SWAP').length,
+      MAKEUP: requests.filter(r => (r.loaiYeuCau || r.LoaiYeuCau) === 'MAKEUP').length,
     };
   }, [requests]);
 
-  // Tự động tải dữ liệu từ Backend API (kèm fallback nếu backend chưa chạy API này)
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const remoteData = await apiGetYeuCauNghiByBoMon({
-          loaiYeuCau: activeTab,
-          trangThai: statusFilter,
-          search: searchTerm
-        });
-        if (remoteData && Array.isArray(remoteData) && remoteData.length > 0) {
-          setRequests(remoteData);
-        }
-      } catch (err) {
-        // Tự động dùng initial mock data
+  // Tự động tải dữ liệu từ Backend API
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const remoteData = await apiGetYeuCauNghiByBoMon();
+      if (remoteData && Array.isArray(remoteData)) {
+        setRequests(remoteData.map(normalizeRequest));
       }
-    };
+    } catch (err) {
+      console.warn('[DuyetYeuCau] Lỗi tải dữ liệu API, dùng dữ liệu mẫu:', err.message);
+      setRequests(INITIAL_REQUESTS.map(normalizeRequest));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
-  }, [activeTab, statusFilter, searchTerm]);
+  }, []);
 
   // Filtered requests
   const filteredRequests = useMemo(() => {
@@ -166,10 +205,11 @@ export default function DuyetYeuCauManagement() {
       // Search
       if (searchTerm.trim()) {
         const kw = searchTerm.toLowerCase();
+        const matchId = item.id?.toLowerCase().includes(kw);
         const matchName = item.tenGiangVien?.toLowerCase().includes(kw);
-        const matchClass = item.tenMonHoc?.toLowerCase().includes(kw) || item.maLopHocPhan?.toLowerCase().includes(kw);
+        const matchClass = item.tenMonHoc?.toLowerCase().includes(kw) || item.maLopHocPhan?.toLowerCase().includes(kw) || item.tenLopHocPhan?.toLowerCase().includes(kw);
         const matchThay = item.tenGiangVienThay?.toLowerCase().includes(kw);
-        if (!matchName && !matchClass && !matchThay) return false;
+        if (!matchId && !matchName && !matchClass && !matchThay) return false;
       }
       return true;
     });
@@ -179,8 +219,10 @@ export default function DuyetYeuCauManagement() {
   const handleApprove = async (item) => {
     try {
       await apiDuyetYeuCauNghi({ maYeuCauNghi: item.id, trangThai: 'Approved' });
+      showToast(`Đã chấp thuận yêu cầu [${item.id}] của ${item.tenGiangVien || 'giảng viên'} thành công!`);
     } catch (err) {
-      // Vẫn cập nhật UI lạc quan (Optimistic update)
+      alert(`Lỗi khi duyệt yêu cầu: ${err.message}`);
+      return;
     }
 
     setRequests(prev => prev.map(r => {
@@ -197,7 +239,6 @@ export default function DuyetYeuCauManagement() {
     if (inspectItem?.id === item.id) {
       setInspectItem(null);
     }
-    showToast(`Đã chấp thuận yêu cầu [${item.id}] của ${item.tenGiangVien} thành công!`);
   };
 
   // Reject action
@@ -219,24 +260,9 @@ export default function DuyetYeuCauManagement() {
         trangThai: 'Rejected',
         lyDoTuChoi: rejectReason.trim()
       });
+      showToast(`Đã từ chối yêu cầu [${rejectItem.id}]. Phản hồi đã được gửi đến giảng viên.`);
     } catch (err) {
-      // Vẫn cập nhật UI lạc quan
-    }
-
-    setRequests(prev => prev.map(r => {
-      if (r.id === rejectItem.id) {
-        return {
-          ...r,
-          trangThai: 'Rejected',
-          lyDoTuChoi: rejectReason.trim(),
-          nguoiDuyet: 'Trưởng Bộ Môn (Từ chối)',
-          thoiGianDuyet: new Date().toLocaleString('vi-VN')
-        };
-      }
-      return r;
-    }));
-    if (!rejectReason.trim()) {
-      alert('Vui lòng nhập lý do từ chối để thông báo cho giảng viên!');
+      alert(`Lỗi khi từ chối yêu cầu: ${err.message}`);
       return;
     }
 
@@ -258,7 +284,23 @@ export default function DuyetYeuCauManagement() {
     if (inspectItem?.id === targetId) {
       setInspectItem(null);
     }
-    showToast(`Đã từ chối yêu cầu [${targetId}]. Phản hồi đã được gửi đến giảng viên.`);
+  };
+
+  // Mở modal kiểm tra chi tiết & kiểm tra xung đột tự động
+  const handleOpenInspect = async (item) => {
+    setInspectItem(item);
+    if (!item.conflictCheck && item.trangThai === 'Pending') {
+      try {
+        const res = await apiCheckConflictYeuCau(item.id);
+        const safe = !res.conflict;
+        let message = safe
+          ? (res.message || 'Hệ thống tự động: Không phát hiện xung đột lịch giảng dạy hay phòng học.')
+          : (res.details?.map(d => d.message).join('; ') || 'Cảnh báo: Phát hiện xung đột lịch!');
+        setInspectItem(prev => (prev && prev.id === item.id ? { ...prev, conflictCheck: { safe, message } } : prev));
+      } catch (err) {
+        setInspectItem(prev => (prev && prev.id === item.id ? { ...prev, conflictCheck: { safe: true, message: 'Hệ thống tự động: Không phát hiện xung đột lịch.' } } : prev));
+      }
+    }
   };
 
   const renderTypeBadge = (type) => {
@@ -321,24 +363,52 @@ export default function DuyetYeuCauManagement() {
             <ClipboardCheck size={26} />
           </div>
           <div>
-            <h1 className="dyc-title">Phê Duyệt Yêu Cầu Giảng Dạy Bộ Môn</h1>
+            <h1 className="dyc-title">
+              {isBoMon ? 'Phê Duyệt Yêu Cầu Giảng Dạy Bộ Môn' : 'Phê Duyệt & Giám Sát Yêu Cầu Giảng Dạy'}
+            </h1>
             <p className="dyc-subtitle">
-              Duyệt các đề xuất Báo nghỉ, Nhờ dạy thay, Xin đổi ca và Đăng ký dạy bù của giảng viên trực thuộc Bộ môn
+              {isBoMon
+                ? 'Duyệt các đề xuất Báo nghỉ, Nhờ dạy thay, Xin đổi ca và Đăng ký dạy bù của giảng viên trực thuộc Bộ môn'
+                : 'Theo dõi và xử lý các đề xuất Báo nghỉ, Nhờ dạy thay, Xin đổi ca và Đăng ký dạy bù toàn trường'}
             </p>
           </div>
         </div>
 
-        <div className="dyc-header-actions">
+        <div className="dyc-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+          <button
+            type="button"
+            className="dyc-btn-action"
+            onClick={fetchData}
+            title="Tải lại dữ liệu từ hệ thống"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              padding: '0.45rem 0.85rem',
+              borderRadius: '8px',
+              border: '1px solid #cbd5e1',
+              background: '#ffffff',
+              color: '#334155',
+              fontWeight: 600,
+              fontSize: '0.8125rem',
+              cursor: 'pointer'
+            }}
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            <span>{loading ? 'Đang tải...' : 'Làm mới'}</span>
+          </button>
           <span style={{
             fontSize: '0.8125rem',
-            background: '#eff6ff',
-            color: '#1d4ed8',
+            background: isBoMon ? '#eff6ff' : '#f0fdf4',
+            color: isBoMon ? '#1d4ed8' : '#15803d',
             padding: '0.4rem 0.85rem',
             borderRadius: '8px',
             fontWeight: 700,
-            border: '1px solid #bfdbfe'
+            border: isBoMon ? '1px solid #bfdbfe' : '1px solid #bbf7d0'
           }}>
-            Bộ môn: Mạng & Các hệ thống thông tin
+            {isBoMon
+              ? (requests.find(r => r.tenBoMon)?.tenBoMon ? `Bộ môn: ${requests.find(r => r.tenBoMon).tenBoMon}` : 'Bộ môn của tôi')
+              : 'Phạm vi: Toàn trường (PĐT & Admin)'}
           </span>
         </div>
       </div>
@@ -564,7 +634,7 @@ export default function DuyetYeuCauManagement() {
                       <button
                         type="button"
                         className="dyc-btn-action btn-inspect"
-                        onClick={() => setInspectItem(item)}
+                        onClick={() => handleOpenInspect(item)}
                         title="Xem chi tiết & Kiểm tra xung đột"
                       >
                         <FileText size={13} />

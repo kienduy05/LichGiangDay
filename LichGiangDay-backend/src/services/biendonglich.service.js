@@ -20,8 +20,10 @@ class BienDongLichService {
         COUNT(DISTINCT CASE WHEN (bh.TrangThai = 'Absent' OR ycn.LoaiYeuCau = 'ABSENCE') AND bh.DaDayBu = 0 AND DATEDIFF(CURRENT_DATE(), bh.NgayHoc) > 14 THEN bh.MaBuoiHoc END) AS soCaQuaHan14Ngay
       FROM BuoiHoc bh
       JOIN LopHocPhan lhp ON bh.MaLopHocPhan = lhp.MaLopHocPhan
+      LEFT JOIN BoMon bm ON lhp.MaBoMon = bm.MaBoMon
       LEFT JOIN YeuCauNghi ycn ON bh.MaBuoiHoc = ycn.MaBuoiHoc
-      WHERE (bh.TrangThai != 'Normal' OR bh.LoaiBuoiHoc = 'Makeup' OR ycn.MaYeuCauNghi IS NOT NULL)
+      LEFT JOIN DangKyDayBu dkdb ON (bh.MaBuoiHoc = dkdb.MaBuoiHocTao OR ycn.MaYeuCauNghi = dkdb.MaYeuCauNghi)
+      WHERE (bh.TrangThai != 'Normal' OR bh.LoaiBuoiHoc = 'Makeup' OR ycn.MaYeuCauNghi IS NOT NULL OR dkdb.MaDangKyDayBu IS NOT NULL)
       ${baseConditionSql ? `AND ${baseConditionSql}` : ''}
     `;
 
@@ -56,6 +58,9 @@ class BienDongLichService {
     const conditions = [];
     const params = [];
 
+    // Luôn lọc các ca có biến động lịch
+    conditions.push("(bh.TrangThai != 'Normal' OR bh.LoaiBuoiHoc = 'Makeup' OR ycn.MaYeuCauNghi IS NOT NULL OR dkdb.MaDangKyDayBu IS NOT NULL)");
+
     // Nếu vai trò là BOMON, ép cố định maBoMon của họ
     if (user.role === 'BOMON') {
       if (!scope.maBoMon) {
@@ -67,23 +72,31 @@ class BienDongLichService {
       params.push(scope.maBoMon);
     } else {
       // ADMIN hoặc PHONGDAOTAO có thể lọc theo maKhoa, maBoMon
-      if (maKhoa) {
+      if (maKhoa && maKhoa !== 'ALL') {
         conditions.push('bm.MaKhoa = ?');
         params.push(maKhoa);
       }
-      if (maBoMon) {
+      if (maBoMon && maBoMon !== 'ALL') {
         conditions.push('lhp.MaBoMon = ?');
         params.push(maBoMon);
       }
     }
 
-    if (maHocKy) {
+    // Chuẩn hóa mã học kỳ nếu nhận từ frontend
+    let finalMaHocKy = maHocKy;
+    if (finalMaHocKy === 'HK1_2026_2027') finalMaHocKy = 'HK1_26_27';
+    if (finalMaHocKy === 'HK2_2026_2027') finalMaHocKy = 'HK2_26_27';
+    if (finalMaHocKy === 'HK1_2025_2026') finalMaHocKy = 'HK1_25_26';
+    if (finalMaHocKy === 'HK2_2025_2026') finalMaHocKy = 'HK2_25_26';
+
+    if (finalMaHocKy && finalMaHocKy !== 'ALL') {
       conditions.push('lhp.MaHocKy = ?');
-      params.push(maHocKy);
+      params.push(finalMaHocKy);
     }
 
-    // Điều kiện cơ bản cho KPI
-    const baseConditionSql = conditions.length > 0 ? conditions.join(' AND ') : '';
+    // Điều kiện cơ bản cho KPI (bỏ qua điều kiện đầu tiên vì KPI query đã có sẵn)
+    const kpiConditions = conditions.slice(1);
+    const baseConditionSql = kpiConditions.length > 0 ? kpiConditions.join(' AND ') : '';
     const kpiParams = [...params];
 
     // Lọc theo loại biến động
