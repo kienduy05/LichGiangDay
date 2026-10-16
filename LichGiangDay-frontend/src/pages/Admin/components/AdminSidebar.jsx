@@ -14,11 +14,11 @@ export default function AdminSidebar({ activeTab, setActiveTab, isOpenMobile, on
   const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
-    if (user?.role === 'BOMON') {
+    if (['BOMON', 'ADMIN', 'PHONGDAOTAO'].includes(user?.role)) {
       apiGetYeuCauNghiByBoMon({ trangThai: 'Pending' })
         .then(res => {
           if (Array.isArray(res)) {
-            setPendingCount(res.filter(r => r.trangThai === 'Pending' || r.TrangThai === 'Pending').length);
+            setPendingCount(res.filter(r => (r.trangThai || r.TrangThai) === 'Pending').length);
           }
         })
         .catch(() => {});
@@ -243,8 +243,8 @@ export default function AdminSidebar({ activeTab, setActiveTab, isOpenMobile, on
               </div>
             )}
 
-            {/* DUYỆT YÊU CẦU GIẢNG DẠY (ĐỘC QUYỀN ROLE BOMON) */}
-            {user?.role === 'BOMON' && (
+            {/* DUYỆT YÊU CẦU GIẢNG DẠY (BOMON, ADMIN, PHONGDAOTAO) */}
+            {(['BOMON', 'ADMIN', 'PHONGDAOTAO'].includes(user?.role) || hasPermission('DuyetYeuCau', 'CanRead')) && (
               <div
                 className={`admin-nav-item ${activeTab === 'duyetyeucau' ? 'active' : ''}`}
                 onClick={() => handleNavClick('duyetyeucau')}

@@ -125,13 +125,78 @@ const INITIAL_CHANGES_DATA = [
   }
 ];
 
+// Helper chuẩn hóa dữ liệu biến động lịch từ Backend API sang format của UI
+export const normalizeBienDong = (r) => {
+  if (!r) return null;
+  const id = r.MaYeuCauNghi || r.MaDangKyDayBu || r.MaBuoiHoc || r.id || '';
+
+  // Thời gian gốc
+  let thoiGianGoc = r.thoiGianGoc || '';
+  if (!thoiGianGoc && r.NgayHoc) {
+    const dStr = typeof r.NgayHoc === 'string' ? r.NgayHoc.slice(0, 10) : '';
+    const tiet = r.TenTiet || (r.MaTiet ? `Tiết ${r.MaTiet}` : '');
+    const phong = r.TenPhong || r.MaPhong || '';
+    thoiGianGoc = `${dStr} • ${tiet} • ${phong}`;
+  }
+
+  // Giảng viên gốc
+  const giangVienGoc = r.TenGiangVienGoc || r.TenGiangVien || r.giangVienGoc || 'Chưa phân công';
+
+  // Chi tiết thay đổi
+  let chiTietThayDoi = r.chiTietThayDoi || '';
+  if (!chiTietThayDoi) {
+    const loai = r.loaiBienDong || r.LoaiYeuCau;
+    if (loai === 'ABSENCE') {
+      chiTietThayDoi = `Báo nghỉ: ${r.LyDo || 'Nghỉ theo kế hoạch'}`;
+    } else if (loai === 'SUBSTITUTE') {
+      chiTietThayDoi = `Dạy thay: ${r.TenGiangVienDayThay || r.MaGiangVienDeXuat || 'Đã phân công'}`;
+    } else if (loai === 'SWAP') {
+      const dxNgay = r.NgayDeXuat ? (typeof r.NgayDeXuat === 'string' ? r.NgayDeXuat.slice(0, 10) : '') : '';
+      chiTietThayDoi = `Đổi sang: ${dxNgay} • ${r.TenTietDeXuat || ''} • ${r.TenPhongDeXuat || ''}`;
+    } else if (loai === 'MAKEUP' || r.LoaiBuoiHoc === 'Makeup') {
+      const ngayDay = r.NgayHoc ? (typeof r.NgayHoc === 'string' ? r.NgayHoc.slice(0, 10) : '') : '';
+      chiTietThayDoi = `Dạy bù vào: ${ngayDay} • ${r.TenTiet || ''} • ${r.TenPhong || ''}`;
+    } else {
+      chiTietThayDoi = r.LyDo || r.GhiChu || 'Biến động lịch';
+    }
+  }
+
+  // Trạng thái hiển thị
+  let trangThai = r.trangThaiHienThi || r.TrangThaiYeuCau || r.TrangThaiDayBu || r.TrangThaiBuoiHoc || r.trangThai || 'Pending';
+  if (trangThai === 'Normal') {
+    if (r.loaiBienDong === 'MAKEUP' || r.LoaiBuoiHoc === 'Makeup') trangThai = 'Confirmed';
+    else trangThai = 'Approved';
+  }
+
+  return {
+    id,
+    ngayBienDong: r.NgayHoc ? (typeof r.NgayHoc === 'string' ? r.NgayHoc.slice(0, 10) : '') : (r.ngayBienDong || ''),
+    loaiBienDong: r.loaiBienDong || r.LoaiYeuCau || (r.LoaiBuoiHoc === 'Makeup' ? 'MAKEUP' : 'ABSENCE'),
+    tenKhoa: r.TenKhoa || r.tenKhoa || '',
+    tenBoMon: r.TenBoMon || r.tenBoMon || '',
+    maBoMon: r.MaBoMon || r.maBoMon || '',
+    maLopHocPhan: r.MaLopHocPhan || r.maLopHocPhan || '',
+    tenMonHoc: r.TenMonHoc || r.tenMonHoc || r.TenLopHocPhan || '',
+    giangVienGoc,
+    thoiGianGoc,
+    chiTietThayDoi,
+    trangThai,
+    nguoiDuyet: r.TenNguoiDuyet || r.nguoiDuyet || (trangThai === 'Pending' ? 'Chờ Trưởng BM duyệt' : 'Cán bộ quản lý'),
+    ngayDuyet: r.ThoiGianDuyet ? (typeof r.ThoiGianDuyet === 'string' ? r.ThoiGianDuyet.slice(0, 10) : '') : (r.ngayDuyet || '-'),
+    daDayBu: Boolean(r.DaDayBu),
+    overdueWarning: Boolean(r.overdueWarning),
+    raw: r
+  };
+};
+
 export default function LichBienDongMonitor() {
   const { user } = useAuth();
   const isBoMon = user?.role === 'BOMON';
 
-  const [data, setData] = useState(INITIAL_CHANGES_DATA);
+  const [data, setData] = useState(() => INITIAL_CHANGES_DATA.map(normalizeBienDong));
+  const [loading, setLoading] = useState(false);
   const [remoteKpi, setRemoteKpi] = useState(null);
-  const [selectedHocKy, setSelectedHocKy] = useState('HK1_2026_2027');
+  const [selectedHocKy, setSelectedHocKy] = useState('ALL');
   const [selectedKhoa, setSelectedKhoa] = useState('ALL');
   const [selectedBoMon, setSelectedBoMon] = useState('ALL');
   const [selectedLoai, setSelectedLoai] = useState('ALL'); // ALL | ABSENCE | SUBSTITUTE | SWAP | MAKEUP
@@ -152,7 +217,14 @@ export default function LichBienDongMonitor() {
   // KPIs
   const kpiStats = useMemo(() => {
     if (remoteKpi) {
-      return remoteKpi;
+      return {
+        total: remoteKpi.tongCaBienDong !== undefined ? remoteKpi.tongCaBienDong : data.length,
+        absence: remoteKpi.soCaBaoNghi !== undefined ? remoteKpi.soCaBaoNghi : 0,
+        makeupDone: remoteKpi.soCaDaBu !== undefined ? remoteKpi.soCaDaBu : 0,
+        makeupRate: remoteKpi.tyLeHoanThanhDayBu !== undefined ? remoteKpi.tyLeHoanThanhDayBu : 100,
+        substitute: data.filter(d => d.loaiBienDong === 'SUBSTITUTE').length,
+        overdue: remoteKpi.soCaQuaHan14Ngay !== undefined ? remoteKpi.soCaQuaHan14Ngay : 0
+      };
     }
     const total = data.length;
     const absence = data.filter(d => d.loaiBienDong === 'ABSENCE').length;
@@ -169,49 +241,55 @@ export default function LichBienDongMonitor() {
     };
   }, [data, remoteKpi]);
 
-  // Tự động tải danh sách biến động lịch từ Backend API (phân quyền theo role)
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        let remoteData;
-        if (isBoMon) {
-          remoteData = await apiGetBienDongLichBoMon({
-            maHocKy: selectedHocKy,
-            loaiBienDong: selectedLoai,
-            trangThai: selectedStatus,
-            search: searchTerm
-          });
-        } else {
-          remoteData = await apiGetBienDongLichAll({
-            maHocKy: selectedHocKy,
-            maKhoa: selectedKhoa,
-            maBoMon: selectedBoMon,
-            loaiBienDong: selectedLoai,
-            trangThai: selectedStatus,
-            search: searchTerm
-          });
-        }
+  // Tải danh sách biến động lịch từ Backend API (phân quyền theo role)
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      let remoteData;
+      if (isBoMon) {
+        remoteData = await apiGetBienDongLichBoMon({
+          maHocKy: selectedHocKy,
+          loaiBienDong: selectedLoai,
+          trangThai: selectedStatus,
+          search: searchTerm
+        });
+      } else {
+        remoteData = await apiGetBienDongLichAll({
+          maHocKy: selectedHocKy,
+          maKhoa: selectedKhoa,
+          maBoMon: selectedBoMon,
+          loaiBienDong: selectedLoai,
+          trangThai: selectedStatus,
+          search: searchTerm
+        });
+      }
 
-        if (remoteData) {
-          if (Array.isArray(remoteData) && remoteData.length > 0) {
-            setData(remoteData);
-          } else if (remoteData.items && Array.isArray(remoteData.items)) {
-            setData(remoteData.items);
-            if (remoteData.kpi) {
-              setRemoteKpi(remoteData.kpi);
-            }
+      if (remoteData) {
+        if (Array.isArray(remoteData)) {
+          setData(remoteData.map(normalizeBienDong));
+        } else if (remoteData.items && Array.isArray(remoteData.items)) {
+          setData(remoteData.items.map(normalizeBienDong));
+          if (remoteData.kpi) {
+            setRemoteKpi(remoteData.kpi);
           }
         }
-      } catch (err) {
-        // Tự động dùng initial mock data
       }
-    };
+    } catch (err) {
+      console.warn('[LichBienDong] Lỗi tải dữ liệu API, dùng dữ liệu mẫu:', err.message);
+      setData(INITIAL_CHANGES_DATA.map(normalizeBienDong));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
   }, [isBoMon, selectedHocKy, selectedKhoa, selectedBoMon, selectedLoai, selectedStatus, searchTerm]);
+
   const filteredData = useMemo(() => {
     return data.filter(item => {
-      if (selectedKhoa !== 'ALL' && item.tenKhoa !== selectedKhoa) return false;
-      if (selectedBoMon !== 'ALL' && item.tenBoMon !== selectedBoMon) return false;
+      if (selectedKhoa !== 'ALL' && item.tenKhoa !== selectedKhoa && item.maKhoa !== selectedKhoa) return false;
+      if (selectedBoMon !== 'ALL' && item.tenBoMon !== selectedBoMon && item.maBoMon !== selectedBoMon && !item.tenBoMon?.toLowerCase().includes(selectedBoMon.toLowerCase())) return false;
       if (selectedLoai !== 'ALL' && item.loaiBienDong !== selectedLoai) return false;
       if (selectedStatus !== 'ALL' && item.trangThai !== selectedStatus) return false;
       if (searchTerm.trim()) {
@@ -328,22 +406,61 @@ export default function LichBienDongMonitor() {
       {/* Header */}
       <div className="lbd-header">
         <div className="lbd-header-left">
-          <div className="lbd-header-icon">
+          <div className="lbd-header-icon" style={{ background: isBoMon ? 'linear-gradient(135deg, #059669 0%, #0d9488 100%)' : 'linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)' }}>
             <Activity size={26} />
           </div>
           <div>
-            <h1 className="lbd-title">Giám Sát Biến Động Lịch Giảng Dạy Toàn Trường</h1>
+            <h1 className="lbd-title">
+              {isBoMon ? 'Giám Sát Biến Động Lịch Giảng Dạy Bộ Môn' : 'Giám Sát Biến Động Lịch Giảng Dạy Toàn Trường'}
+            </h1>
             <p className="lbd-subtitle">
-              Phân hệ Phòng Đào Tạo & Ban Giám Hiệu theo dõi, thanh tra các ca Báo nghỉ, Dạy thay, Đổi ca và Dạy bù
+              {isBoMon
+                ? 'Theo dõi, quản lý các ca Báo nghỉ, Dạy thay, Đổi ca và Dạy bù của giảng viên trực thuộc Bộ môn'
+                : 'Phân hệ Phòng Đào Tạo & Ban Giám Hiệu theo dõi, thanh tra các ca Báo nghỉ, Dạy thay, Đổi ca và Dạy bù toàn trường'}
             </p>
           </div>
         </div>
 
-        <div className="lbd-header-actions">
+        <div className="lbd-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+          <button
+            type="button"
+            className="lbd-action-btn"
+            onClick={fetchData}
+            title="Tải lại dữ liệu từ hệ thống"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              padding: '0.45rem 0.85rem',
+              borderRadius: '8px',
+              border: '1px solid #cbd5e1',
+              background: '#ffffff',
+              color: '#334155',
+              fontWeight: 600,
+              fontSize: '0.8125rem',
+              cursor: 'pointer'
+            }}
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            <span>{loading ? 'Đang tải...' : 'Làm mới'}</span>
+          </button>
+          <span style={{
+            fontSize: '0.8125rem',
+            background: isBoMon ? '#ecfdf5' : '#eff6ff',
+            color: isBoMon ? '#059669' : '#1d4ed8',
+            padding: '0.45rem 0.85rem',
+            borderRadius: '8px',
+            fontWeight: 700,
+            border: isBoMon ? '1px solid #a7f3d0' : '1px solid #bfdbfe'
+          }}>
+            {isBoMon
+              ? `Bộ môn: ${data.find(d => d.tenBoMon)?.tenBoMon || user?.tenBoMon || 'Của tôi'}`
+              : 'Phạm vi: Toàn trường (PĐT & BGH)'}
+          </span>
           <button
             type="button"
             className="lbd-btn-export"
-            onClick={() => showToast('Đang xuất báo cáo biến động lịch toàn trường ra file Excel...')}
+            onClick={() => showToast('Đang xuất báo cáo biến động lịch ra file Excel...')}
           >
             <FileSpreadsheet size={16} color="#059669" />
             <span>Xuất Báo Cáo Excel</span>
@@ -422,8 +539,10 @@ export default function LichBienDongMonitor() {
               value={selectedHocKy}
               onChange={e => setSelectedHocKy(e.target.value)}
             >
-              <option value="HK1_2026_2027">Học kỳ 1 (2026 - 2027)</option>
-              <option value="HK2_2026_2027">Học kỳ 2 (2026 - 2027)</option>
+              <option value="ALL">-- Tất cả học kỳ --</option>
+              <option value="HK1_26_27">Học kỳ 1 (2026 - 2027)</option>
+              <option value="HK2_25_26">Học kỳ 2 (2025 - 2026)</option>
+              <option value="HK1_25_26">Học kỳ 1 (2025 - 2026)</option>
             </select>
           </div>
 
@@ -433,16 +552,16 @@ export default function LichBienDongMonitor() {
               className="lbd-filter-select"
               value={selectedKhoa}
               disabled={isBoMon}
-              title={isBoMon ? "Khóa cứng theo thẩm quyền Bộ môn" : ""}
+              title={isBoMon ? "Khóa theo thẩm quyền Bộ môn" : ""}
               onChange={e => {
                 setSelectedKhoa(e.target.value);
                 setSelectedBoMon('ALL');
               }}
             >
               <option value="ALL">-- Tất cả các Khoa --</option>
-              <option value="Công nghệ thông tin">Khoa Công nghệ thông tin</option>
-              <option value="Kinh tế vận tải">Khoa Kinh tế vận tải</option>
-              <option value="Điện - Điện tử">Khoa Điện - Điện tử</option>
+              <option value="CNTT">Khoa Công nghệ thông tin</option>
+              <option value="KTVT">Khoa Kinh tế vận tải</option>
+              <option value="DDT">Khoa Điện - Điện tử</option>
             </select>
           </div>
 
@@ -452,14 +571,13 @@ export default function LichBienDongMonitor() {
               className="lbd-filter-select"
               value={selectedBoMon}
               disabled={isBoMon}
-              title={isBoMon ? "Khóa cứng theo thẩm quyền Bộ môn" : ""}
+              title={isBoMon ? "Khóa theo thẩm quyền Bộ môn" : ""}
               onChange={e => setSelectedBoMon(e.target.value)}
             >
               <option value="ALL">-- Tất cả Bộ môn --</option>
-              <option value="Mạng & HTTT">Mạng & HTTT</option>
-              <option value="Khoa học máy tính">Khoa học máy tính</option>
-              <option value="Kinh tế xây dựng">Kinh tế xây dựng</option>
-              <option value="Tự động hóa">Tự động hóa</option>
+              <option value="MHT">Mạng & Hệ thống thông tin</option>
+              <option value="CNPM1">Công nghệ phần mềm</option>
+              <option value="KHMT">Khoa học máy tính</option>
             </select>
           </div>
 
