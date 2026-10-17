@@ -218,6 +218,83 @@ class BoMonService {
     await db.query(`DELETE FROM BoMon WHERE MaBoMon = ?`, [maBoMon]);
     return { success: true, maBoMon };
   };
+
+  /**
+   * Lấy danh sách Giảng viên Active thuộc Bộ môn để chọn Trưởng bộ môn.
+   * Chỉ liệt kê giảng viên có Bộ môn nằm trong chính Bộ môn đó.
+   */
+  static getGiangVienByBoMon = async (maBoMon) => {
+    const boMon = await this.getById(maBoMon);
+    if (!boMon) {
+      throw new Error(`Không tìm thấy bộ môn có mã '${maBoMon}'.`);
+    }
+
+    const [rows] = await db.query(`
+      SELECT
+        gv.MaGiangVien,
+        gv.HoTen,
+        gv.Email,
+        gv.SoDienThoai,
+        gv.TrangThai,
+        bm.MaBoMon,
+        bm.TenBoMon
+      FROM GiangVien gv
+      JOIN BoMon bm ON gv.MaBoMon = bm.MaBoMon
+      WHERE bm.MaBoMon = ?
+        AND gv.TrangThai = 'Active'
+      ORDER BY gv.HoTen ASC
+    `, [maBoMon]);
+
+    return rows;
+  };
+
+  /**
+   * Phân công hoặc bãi nhiệm Trưởng bộ môn.
+   * - maGiangVien = null/undefined: bãi nhiệm (set NULL).
+   * - maGiangVien có giá trị: kiểm tra GV tồn tại, Active, và thuộc chính bộ môn này.
+   */
+  static assignTruongBoMon = async (maBoMon, maGiangVien) => {
+    const existing = await this.getById(maBoMon);
+    if (!existing) {
+      throw new Error(`Không tìm thấy bộ môn có mã '${maBoMon}'.`);
+    }
+
+    // Trường hợp bãi nhiệm (truyền null)
+    if (!maGiangVien) {
+      await db.query(`
+        UPDATE BoMon SET MaTruongBoMon = NULL WHERE MaBoMon = ?
+      `, [maBoMon]);
+      return await this.getById(maBoMon);
+    }
+
+    // Kiểm tra giảng viên tồn tại và đang Active
+    const [gvRows] = await db.query(`
+      SELECT gv.MaGiangVien, gv.HoTen, gv.TrangThai, gv.MaBoMon
+      FROM GiangVien gv
+      WHERE gv.MaGiangVien = ?
+      LIMIT 1
+    `, [maGiangVien]);
+
+    if (gvRows.length === 0) {
+      throw new Error(`Không tìm thấy giảng viên có mã '${maGiangVien}'.`);
+    }
+
+    const gv = gvRows[0];
+
+    if (gv.TrangThai !== 'Active') {
+      throw new Error(`Giảng viên '${gv.HoTen}' không ở trạng thái Active, không thể phân công làm Trưởng bộ môn.`);
+    }
+
+    if (gv.MaBoMon !== maBoMon) {
+      throw new Error(`Giảng viên '${gv.HoTen}' không thuộc Bộ môn '${maBoMon}', không thể phân công làm Trưởng bộ môn.`);
+    }
+
+    await db.query(`
+      UPDATE BoMon SET MaTruongBoMon = ? WHERE MaBoMon = ?
+    `, [maGiangVien, maBoMon]);
+
+    return await this.getById(maBoMon);
+  };
 }
 
 module.exports = BoMonService;

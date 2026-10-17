@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   User, CheckCircle2, AlertTriangle, AlertCircle, Clock, Building,
   BookOpen, Calendar, Eye, UserPlus, UserMinus, ShieldAlert,
-  Loader2, Info, ArrowRight, HelpCircle
+  Loader2, Info, ArrowRight, HelpCircle, Lock
 } from 'lucide-react';
 import './PhanCongGiangVien.css';
 
@@ -39,6 +39,7 @@ export default function PhanCongInspector({
 
   const thuLabels = { 2: 'Thứ 2', 3: 'Thứ 3', 4: 'Thứ 4', 5: 'Thứ 5', 6: 'Thứ 6', 7: 'Thứ 7', 8: 'Chủ nhật' };
   const loaiHocLabels = { LT: 'Lý thuyết', TH: 'Thực hành', BT: 'Bài tập', BTL: 'Bài tập lớn' };
+  const isLocked = selectedClass.isLocked || selectedClass.TrangThaiPhanCong === 'Locked';
 
   return (
     <div className="pcgv-inspector-panel">
@@ -70,6 +71,12 @@ export default function PhanCongInspector({
           <span className="pcgv-meta-badge">
             Sĩ số: <strong>{selectedClass.SiSoDangKy || selectedClass.SiSoDuKien || 0} SV</strong>
           </span>
+          {isLocked && (
+            <span className="pcgv-meta-badge" style={{ background: '#f5f3ff', color: '#7c3aed', borderColor: '#ddd6fe', fontWeight: 700 }}>
+              <Lock size={13} />
+              Trạng thái: <strong>ĐÃ KHÓA LỊCH (PĐT)</strong>
+            </span>
+          )}
         </div>
 
         {/* Detailed Schedules */}
@@ -94,29 +101,62 @@ export default function PhanCongInspector({
 
       {/* Currently Assigned Lecturer Card */}
       {selectedClass.isAssigned && (
-        <div className="pcgv-current-gv-banner">
+        <div className="pcgv-current-gv-banner" style={isLocked ? { background: '#f5f3ff', borderColor: '#ddd6fe' } : {}}>
           <div className="pcgv-current-gv-info">
-            <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: '#10b981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <User size={20} />
+            <div style={{
+              width: '38px', height: '38px', borderRadius: '50%',
+              background: isLocked ? '#7c3aed' : '#10b981',
+              color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              {isLocked ? <Lock size={18} /> : <User size={20} />}
             </div>
             <div>
-              <div style={{ fontSize: '0.75rem', color: '#065f46', fontWeight: 600 }}>
-                Giảng viên đang phụ trách lớp:
+              <div style={{ fontSize: '0.75rem', color: isLocked ? '#6d28d9' : '#065f46', fontWeight: 700 }}>
+                {isLocked ? 'LỊCH ĐÃ ĐƯỢC PHÒNG ĐÀO TẠO KHÓA' : 'Giảng viên đang phụ trách lớp:'}
               </div>
-              <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#064e3b' }}>
+              <div style={{ fontSize: '0.9375rem', fontWeight: 800, color: isLocked ? '#4c1d95' : '#064e3b' }}>
                 {selectedClass.TenGiangVien}
               </div>
             </div>
           </div>
-          <button
-            className="pcgv-btn-unassign"
-            onClick={() => onUnassign(selectedClass.MaLopHocPhan)}
-            disabled={assigning}
-            title="Hủy phân công lớp này"
-          >
-            <UserMinus size={13} />
-            <span>Hủy phân công</span>
-          </button>
+          {isLocked ? (
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: '5px',
+              padding: '0.45rem 0.85rem', background: '#ffffff', color: '#7c3aed',
+              borderRadius: '7px', fontSize: '0.78rem', fontWeight: 700,
+              border: '1px solid #c4b5fd'
+            }}>
+              <Lock size={13} /> Lịch đã khóa (Không thể hủy)
+            </span>
+          ) : (
+            <button
+              className="pcgv-btn-unassign"
+              onClick={() => onUnassign(selectedClass.MaLopHocPhan)}
+              disabled={assigning}
+              title="Hủy phân công lớp này"
+            >
+              <UserMinus size={13} />
+              <span>Hủy phân công</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Cảnh báo khi lịch đã bị PĐT khóa */}
+      {isLocked && (
+        <div style={{
+          padding: '0.85rem 1.15rem', background: '#faf5ff',
+          border: '1px solid #d8b4fe', borderRadius: '10px',
+          color: '#581c87', fontSize: '0.84rem', lineHeight: 1.5,
+          display: 'flex', alignItems: 'center', gap: '0.65rem'
+        }}>
+          <Lock size={20} color="#7c3aed" style={{ flexShrink: 0 }} />
+          <div>
+            <strong>Thời khóa biểu lớp này đã được Phòng Đào Tạo chốt & KHÓA LỊCH TOÀN TRƯỜNG.</strong>
+            <div style={{ fontSize: '0.78rem', color: '#6b21a8', marginTop: '2px' }}>
+              Bộ môn không thể phân công lại hay hủy phân công. Nếu cần điều chỉnh nhân sự giảng dạy, vui lòng liên hệ Phòng Đào Tạo để mở khóa lịch.
+            </div>
+          </div>
         </div>
       )}
 
@@ -194,21 +234,25 @@ export default function PhanCongInspector({
                           <button
                             type="button"
                             className="pcgv-btn-assign-action"
-                            onClick={() => onAssign(selectedClass.MaLopHocPhan, gv.MaGiangVien, false)}
-                            disabled={assigning}
+                            onClick={() => !isLocked && onAssign(selectedClass.MaLopHocPhan, gv.MaGiangVien, false)}
+                            disabled={assigning || isLocked}
+                            style={isLocked ? { opacity: 0.45, cursor: 'not-allowed', background: '#94a3b8' } : {}}
+                            title={isLocked ? 'Lịch đã bị Phòng Đào Tạo khóa' : 'Phân công'}
                           >
-                            <UserPlus size={13} />
-                            <span>Phân công</span>
+                            {isLocked ? <Lock size={13} /> : <UserPlus size={13} />}
+                            <span>{isLocked ? 'Đã khóa' : 'Phân công'}</span>
                           </button>
                         ) : (
                           <button
                             type="button"
                             className="pcgv-btn-unassign"
-                            onClick={() => onUnassign(selectedClass.MaLopHocPhan)}
-                            disabled={assigning}
+                            onClick={() => !isLocked && onUnassign(selectedClass.MaLopHocPhan)}
+                            disabled={assigning || isLocked}
+                            style={isLocked ? { opacity: 0.45, cursor: 'not-allowed' } : {}}
+                            title={isLocked ? 'Lịch đã bị Phòng Đào Tạo khóa' : 'Bỏ gán'}
                           >
-                            <UserMinus size={13} />
-                            <span>Bỏ gán</span>
+                            {isLocked ? <Lock size={13} /> : <UserMinus size={13} />}
+                            <span>{isLocked ? 'Đã khóa' : 'Bỏ gán'}</span>
                           </button>
                         )}
                       </div>
@@ -269,20 +313,21 @@ export default function PhanCongInspector({
                           fontWeight: 600,
                           borderRadius: '6px',
                           border: '1px solid #f87171',
-                          background: '#fff',
-                          color: '#dc2626',
-                          cursor: 'pointer'
+                          background: isLocked ? '#f1f5f9' : '#fff',
+                          color: isLocked ? '#94a3b8' : '#dc2626',
+                          cursor: isLocked ? 'not-allowed' : 'pointer'
                         }}
-                        onClick={() => setConfirmConflictModal({
+                        disabled={assigning || isLocked}
+                        onClick={() => !isLocked && setConfirmConflictModal({
                           maLopHocPhan: selectedClass.MaLopHocPhan,
                           maGiangVien: gv.MaGiangVien,
                           lecturerName: gv.HoTen,
                           conflicts: gv.conflicts
                         })}
-                        title="Bỏ qua cảnh báo để cưỡng chế phân công"
+                        title={isLocked ? 'Lịch đã bị Phòng Đào Tạo khóa' : 'Bỏ qua cảnh báo để cưỡng chế phân công'}
                       >
-                        <AlertTriangle size={12} />
-                        <span>Cưỡng chế gán</span>
+                        {isLocked ? <Lock size={12} /> : <AlertTriangle size={12} />}
+                        <span>{isLocked ? 'Đã khóa' : 'Cưỡng chế gán'}</span>
                       </button>
                     </div>
                   </div>

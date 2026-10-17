@@ -144,3 +144,43 @@ export const apiGetMatrixGrid = async ({
   if (!response.ok) throw new Error(data.message || 'Lấy dữ liệu lưới thời khóa biểu thất bại.');
   return data.metadata;
 };
+
+// ================================================================
+// ADMIN / PHÒNG ĐÀO TẠO: KHÓA & MỞ KHÓA THỜI KHÓA BIỂU
+// ================================================================
+
+/** 10. Khóa lịch lớp học phần sau khi Bộ môn phân công */
+export const apiLockClassSchedule = async (maLopHocPhan) => {
+  const response = await fetch(`${API_BASE_URL}/thoikhoabieu/lock-class`, {
+    method: 'POST',
+    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ maLopHocPhan })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Khóa thời khóa biểu thất bại.');
+  return data;
+};
+
+/** 11. Mở khóa lịch lớp học phần */
+export const apiUnlockClassSchedule = async (maLopHocPhan) => {
+  const response = await fetch(`${API_BASE_URL}/thoikhoabieu/unlock-class`, {
+    method: 'POST',
+    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ maLopHocPhan })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Mở khóa thời khóa biểu thất bại.');
+  return data;
+};
+
+/** 12. Khóa đồng loạt tất cả các lớp đã phân công trong học kỳ */
+export const apiLockAllSemesterSchedules = async ({ maHocKy, maKhoa = '', maBoMon = '' } = {}) => {
+  const response = await fetch(`${API_BASE_URL}/thoikhoabieu/lock-all`, {
+    method: 'POST',
+    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ maHocKy, maKhoa, maBoMon })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Khóa toàn bộ thời khóa biểu thất bại.');
+  return data;
+};

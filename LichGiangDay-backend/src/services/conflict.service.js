@@ -329,7 +329,8 @@ class ConflictService {
               gioKetThuc: t.GioKetThuc,
               maPhong: r.MaPhong,
               tenPhong: r.TenPhong,
-              tenToaNha: r.TenToaNha,
+              maToaNha: r.MaToaNha,
+              tenToaNha: r.TenToaNha || `Tòa ${r.MaToaNha || ''}`,
               sucChua: r.SucChua,
               loaiPhong: r.LoaiPhong
             });

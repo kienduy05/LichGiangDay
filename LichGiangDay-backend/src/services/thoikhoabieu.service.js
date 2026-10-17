@@ -673,7 +673,7 @@ class ThoiKhoaBieuService {
 
     // 1. Kiểm tra LHP tồn tại
     const [lhpRows] = await db.query(`
-      SELECT MaLopHocPhan, TenLopHocPhan, NgayBatDau, NgayKetThuc, MaHocKy
+      SELECT MaLopHocPhan, TenLopHocPhan, NgayBatDau, NgayKetThuc, MaHocKy, TrangThaiPhanCong
       FROM LopHocPhan WHERE MaLopHocPhan = ? LIMIT 1
     `, [trimmedLhp]);
 
@@ -682,9 +682,14 @@ class ThoiKhoaBieuService {
     }
     const lhp = lhpRows[0];
 
+    if (lhp.TrangThaiPhanCong === 'Locked') {
+      throw new Error(`Thời khóa biểu của lớp '${lhp.TenLopHocPhan || lhp.MaLopHocPhan}' đã được KHÓA CHÍNH THỨC. Không thể thay đổi lịch học.`);
+    }
+
     // 2. Nếu có schedules, validate từng buổi
     if (!Array.isArray(schedules) || schedules.length === 0) {
       // Nếu gửi mảng rỗng -> Xóa toàn bộ lịch TKB của lớp này
+      await db.query(`DELETE FROM BuoiHoc WHERE MaLopHocPhan = ?`, [trimmedLhp]);
       await db.query(`DELETE FROM ThoiKhoaBieu WHERE MaLopHocPhan = ?`, [trimmedLhp]);
       return { success: true, count: 0, schedules: [] };
     }
@@ -722,6 +727,9 @@ class ThoiKhoaBieuService {
     const conn = await db.getConnection();
     try {
       await conn.beginTransaction();
+
+      // Xóa các buổi học cũ của TKB lớp này
+      await conn.query(`DELETE FROM BuoiHoc WHERE MaLopHocPhan = ?`, [trimmedLhp]);
 
       // Xóa TKB cũ của lớp này
       await conn.query(`DELETE FROM ThoiKhoaBieu WHERE MaLopHocPhan = ?`, [trimmedLhp]);
@@ -769,6 +777,14 @@ class ThoiKhoaBieuService {
       throw new Error(`Không tìm thấy lớp học phần '${maLopHocPhan}'.`);
     }
 
+    if (existing.TrangThaiPhanCong === 'Locked') {
+      throw new Error(`Thời khóa biểu lớp '${existing.TenLopHocPhan || existing.MaLopHocPhan}' đã được KHÓA CHÍNH THỨC. Không thể xóa thời khóa biểu.`);
+    }
+
+    // 1. Xóa các buổi học của lớp học phần này
+    await db.query(`DELETE FROM BuoiHoc WHERE MaLopHocPhan = ?`, [maLopHocPhan]);
+
+    // 2. Xóa thời khóa biểu của lớp học phần
     const [result] = await db.query(
       `DELETE FROM ThoiKhoaBieu WHERE MaLopHocPhan = ?`,
       [maLopHocPhan]
@@ -782,7 +798,10 @@ class ThoiKhoaBieuService {
   // ================================================================
   static deleteScheduleItem = async (maThoiKhoaBieu) => {
     const [rows] = await db.query(
-      `SELECT MaThoiKhoaBieu, MaLopHocPhan FROM ThoiKhoaBieu WHERE MaThoiKhoaBieu = ? LIMIT 1`,
+      `SELECT tkb.MaThoiKhoaBieu, tkb.MaLopHocPhan, lhp.TrangThaiPhanCong, lhp.TenLopHocPhan
+       FROM ThoiKhoaBieu tkb
+       JOIN LopHocPhan lhp ON tkb.MaLopHocPhan = lhp.MaLopHocPhan
+       WHERE tkb.MaThoiKhoaBieu = ? LIMIT 1`,
       [maThoiKhoaBieu]
     );
 
@@ -790,6 +809,14 @@ class ThoiKhoaBieuService {
       throw new Error(`Không tìm thấy bản ghi thời khóa biểu '${maThoiKhoaBieu}'.`);
     }
 
+    if (rows[0].TrangThaiPhanCong === 'Locked') {
+      throw new Error(`Thời khóa biểu của lớp '${rows[0].TenLopHocPhan || rows[0].MaLopHocPhan}' đã được KHÓA CHÍNH THỨC. Không thể xóa buổi học.`);
+    }
+
+    // 1. Xóa các buổi học liên kết với bản ghi TKB này
+    await db.query(`DELETE FROM BuoiHoc WHERE MaThoiKhoaBieu = ?`, [maThoiKhoaBieu]);
+
+    // 2. Xóa bản ghi Thời khóa biểu
     await db.query(`DELETE FROM ThoiKhoaBieu WHERE MaThoiKhoaBieu = ?`, [maThoiKhoaBieu]);
 
     return { success: true, maThoiKhoaBieu };
@@ -1036,12 +1063,14 @@ class ThoiKhoaBieuService {
       const schedules = schedulesByClass[c.MaLopHocPhan] || [];
       const hasSchedule = schedules.length > 0;
       const isAssigned = !!c.MaGiangVien;
+      const isLocked = c.TrangThaiPhanCong === 'Locked';
       return {
         ...c,
         schedules,
         hasSchedule,
         isAssigned,
-        statusGroup: !hasSchedule ? 'UNSCHEDULED' : (isAssigned ? 'ASSIGNED' : 'UNASSIGNED')
+        isLocked,
+        statusGroup: !hasSchedule ? 'UNSCHEDULED' : (isLocked ? 'LOCKED' : (isAssigned ? 'ASSIGNED' : 'UNASSIGNED'))
       };
     });
 
@@ -1051,8 +1080,11 @@ class ThoiKhoaBieuService {
       // Các lớp ĐÃ CÓ LỊCH nhưng CHƯA PHÂN CÔNG (Cần xử lý gấp)
       filteredList = enhancedClasses.filter(c => c.hasSchedule && !c.isAssigned);
     } else if (filterStatus === 'ASSIGNED') {
-      // Các lớp đã phân công
+      // Các lớp đã phân công (chưa khóa hoặc đã khóa)
       filteredList = enhancedClasses.filter(c => c.isAssigned);
+    } else if (filterStatus === 'LOCKED') {
+      // Các lớp đã bị khóa bởi PĐT/Admin
+      filteredList = enhancedClasses.filter(c => c.isLocked);
     } else if (filterStatus === 'SCHEDULED') {
       // Tất cả lớp đã có lịch
       filteredList = enhancedClasses.filter(c => c.hasSchedule);
@@ -1065,6 +1097,7 @@ class ThoiKhoaBieuService {
     const totalClasses = enhancedClasses.length;
     const scheduledCount = enhancedClasses.filter(c => c.hasSchedule).length;
     const assignedCount = enhancedClasses.filter(c => c.isAssigned).length;
+    const lockedCount = enhancedClasses.filter(c => c.isLocked).length;
     const unassignedScheduledCount = enhancedClasses.filter(c => c.hasSchedule && !c.isAssigned).length;
     const unscheduledCount = enhancedClasses.filter(c => !c.hasSchedule).length;
 
@@ -1086,6 +1119,7 @@ class ThoiKhoaBieuService {
         totalClasses,
         scheduledCount,
         assignedCount,
+        lockedCount,
         unassignedScheduledCount,
         unscheduledCount,
         assignedLecturersCount: assignedLecturerSet.size,
@@ -1507,7 +1541,7 @@ class ThoiKhoaBieuService {
 
     // 1. Xác thực Lớp học phần thuộc đúng Bộ môn
     const [lhpRows] = await db.query(`
-      SELECT MaLopHocPhan, TenLopHocPhan, MaMonHoc, MaBoMon, MaHocKy
+      SELECT MaLopHocPhan, TenLopHocPhan, MaMonHoc, MaBoMon, MaHocKy, TrangThaiPhanCong
       FROM LopHocPhan
       WHERE MaLopHocPhan = ? AND MaBoMon = ? LIMIT 1
     `, [maLopHocPhan.trim(), maBoMon.trim()]);
@@ -1517,6 +1551,11 @@ class ThoiKhoaBieuService {
     }
 
     const targetClass = lhpRows[0];
+
+    // Chặn thay đổi nếu lớp đã bị Admin/PĐT khóa
+    if (targetClass.TrangThaiPhanCong === 'Locked') {
+      throw new Error(`Thời khóa biểu của lớp '${targetClass.TenLopHocPhan || targetClass.MaLopHocPhan}' đã được Phòng Đào Tạo chốt và KHÓA LỊCH. Bộ môn không thể thay đổi phân công giảng viên.`);
+    }
 
     // 2. Xác thực Giảng viên thuộc Bộ môn & Active
     const [gvRows] = await db.query(`
@@ -1589,13 +1628,18 @@ class ThoiKhoaBieuService {
 
     // Xác thực Lớp học phần thuộc đúng Bộ môn
     const [lhpRows] = await db.query(`
-      SELECT MaLopHocPhan, TenLopHocPhan, MaGiangVien
+      SELECT MaLopHocPhan, TenLopHocPhan, MaGiangVien, TrangThaiPhanCong
       FROM LopHocPhan
       WHERE MaLopHocPhan = ? AND MaBoMon = ? LIMIT 1
     `, [maLopHocPhan.trim(), maBoMon.trim()]);
 
     if (lhpRows.length === 0) {
       throw new Error(`Lớp học phần '${maLopHocPhan}' không tồn tại hoặc không thuộc Bộ môn của bạn.`);
+    }
+
+    // Chặn hủy phân công nếu lớp đã bị Admin/PĐT khóa
+    if (lhpRows[0].TrangThaiPhanCong === 'Locked') {
+      throw new Error(`Thời khóa biểu của lớp '${lhpRows[0].TenLopHocPhan || lhpRows[0].MaLopHocPhan}' đã được Phòng Đào Tạo chốt và KHÓA LỊCH. Bộ môn không thể hủy phân công giảng viên.`);
     }
 
     await db.query(`
@@ -1613,6 +1657,220 @@ class ThoiKhoaBieuService {
     return {
       maLopHocPhan: maLopHocPhan.trim(),
       trangThaiPhanCong: 'Unassigned'
+    };
+  };
+
+  // ================================================================
+  // 16. [ADMIN / PHONGDAOTAO] Khóa lịch Lớp học phần & Phát sinh BuoiHoc chính thức
+  // ================================================================
+  static lockScheduleForClass = async ({ maLopHocPhan } = {}) => {
+    if (!maLopHocPhan || !maLopHocPhan.trim()) {
+      throw new Error('Mã lớp học phần không được để trống.');
+    }
+
+    // 1. Kiểm tra Lớp học phần
+    const [lhpRows] = await db.query(`
+      SELECT lhp.MaLopHocPhan, lhp.TenLopHocPhan, lhp.MaGiangVien, lhp.MaBoMon,
+             lhp.NgayBatDau, lhp.NgayKetThuc, lhp.TrangThaiPhanCong,
+             gv.HoTen AS TenGiangVien
+      FROM LopHocPhan lhp
+      LEFT JOIN GiangVien gv ON lhp.MaGiangVien = gv.MaGiangVien
+      WHERE lhp.MaLopHocPhan = ? LIMIT 1
+    `, [maLopHocPhan.trim()]);
+
+    if (lhpRows.length === 0) {
+      throw new Error(`Lớp học phần '${maLopHocPhan}' không tồn tại.`);
+    }
+
+    const lhp = lhpRows[0];
+    if (!lhp.MaGiangVien) {
+      throw new Error(`Lớp học phần '${lhp.TenLopHocPhan || lhp.MaLopHocPhan}' chưa được Bộ môn phân công giảng viên. Vui lòng phân công giảng viên trước khi khóa lịch.`);
+    }
+
+    // 2. Lấy danh sách TKB của lớp này
+    const [schedules] = await db.query(`
+      SELECT MaThoiKhoaBieu, ThuTrongTuan, MaTiet, MaPhong, NgayBatDau, NgayKetThuc
+      FROM ThoiKhoaBieu
+      WHERE MaLopHocPhan = ?
+      ORDER BY ThuTrongTuan ASC, MaTiet ASC
+    `, [lhp.MaLopHocPhan]);
+
+    if (schedules.length === 0) {
+      throw new Error(`Lớp học phần '${lhp.TenLopHocPhan || lhp.MaLopHocPhan}' chưa có lịch học thời khóa biểu. Không thể khóa lịch.`);
+    }
+
+    const conn = await db.getConnection();
+    try {
+      await conn.beginTransaction();
+
+      // 3. Đánh dấu trạng thái 'Locked'
+      await conn.query(`
+        UPDATE LopHocPhan
+        SET TrangThaiPhanCong = 'Locked'
+        WHERE MaLopHocPhan = ?
+      `, [lhp.MaLopHocPhan]);
+
+      await conn.query(`
+        UPDATE ThoiKhoaBieu
+        SET TrangThai = 'Locked', ThoiGianBoMonXacNhan = NOW()
+        WHERE MaLopHocPhan = ?
+      `, [lhp.MaLopHocPhan]);
+
+      // 4. Phát sinh danh sách BuoiHoc chính thức cho toàn bộ học kỳ
+      await conn.query(`DELETE FROM BuoiHoc WHERE MaLopHocPhan = ?`, [lhp.MaLopHocPhan]);
+
+      for (const sc of schedules) {
+        const rawStart = String(sc.NgayBatDau || lhp.NgayBatDau).slice(0, 10);
+        const rawEnd = String(sc.NgayKetThuc || lhp.NgayKetThuc).slice(0, 10);
+
+        const [sY, sM, sD] = rawStart.split('-').map(Number);
+        const [eY, eM, eD] = rawEnd.split('-').map(Number);
+
+        // Khởi tạo tại 12h trưa để tránh hoàn toàn mọi vấn đề lệch múi giờ
+        let curr = new Date(sY, sM - 1, sD, 12, 0, 0);
+        const endLimit = new Date(eY, eM - 1, eD, 23, 59, 59);
+
+        // Quy đổi Thứ trong tuần sang getDay() của JavaScript:
+        // Thứ 2 (2) -> 1 (Monday)
+        // Thứ 3 (3) -> 2 (Tuesday)
+        // Thứ 4 (4) -> 3 (Wednesday)
+        // Thứ 5 (5) -> 4 (Thursday)
+        // Thứ 6 (6) -> 5 (Friday)
+        // Thứ 7 (7) -> 6 (Saturday)
+        // Chủ nhật (8) -> 0 (Sunday)
+        const targetDay = sc.ThuTrongTuan === 8 ? 0 : sc.ThuTrongTuan - 1;
+
+        while (curr.getDay() !== targetDay) {
+          curr.setDate(curr.getDate() + 1);
+        }
+
+        while (curr <= endLimit) {
+          const y = curr.getFullYear();
+          const m = String(curr.getMonth() + 1).padStart(2, '0');
+          const d = String(curr.getDate()).padStart(2, '0');
+          const ngayHocStr = `${y}-${m}-${d}`;
+          const dateCompact = `${y}${m}${d}`;
+          const randHex = Math.random().toString(36).substring(2, 6).toUpperCase();
+          const maBuoiHoc = `BH_${dateCompact}_${randHex}`;
+
+          await conn.query(`
+            INSERT INTO BuoiHoc (
+              MaBuoiHoc, MaLopHocPhan, MaGiangVien, MaThoiKhoaBieu,
+              NgayHoc, MaTiet, MaPhong, LoaiBuoiHoc, TrangThai
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'Regular', 'Normal')
+          `, [
+            maBuoiHoc,
+            lhp.MaLopHocPhan,
+            lhp.MaGiangVien,
+            sc.MaThoiKhoaBieu,
+            ngayHocStr,
+            sc.MaTiet,
+            sc.MaPhong
+          ]);
+
+          curr.setDate(curr.getDate() + 7);
+        }
+      }
+
+      await conn.commit();
+
+      return {
+        success: true,
+        maLopHocPhan: lhp.MaLopHocPhan,
+        tenLopHocPhan: lhp.TenLopHocPhan,
+        tenGiangVien: lhp.TenGiangVien,
+        trangThai: 'Locked',
+        message: `Đã khóa thời khóa biểu lớp '${lhp.TenLopHocPhan || lhp.MaLopHocPhan}' thành công. Toàn bộ lịch dạy chính thức đã được chốt!`
+      };
+    } catch (err) {
+      await conn.rollback();
+      throw err;
+    } finally {
+      conn.release();
+    }
+  };
+
+  // ================================================================
+  // 17. [ADMIN / PHONGDAOTAO] Mở khóa lịch Lớp học phần (Unlock)
+  // ================================================================
+  static unlockScheduleForClass = async ({ maLopHocPhan } = {}) => {
+    if (!maLopHocPhan || !maLopHocPhan.trim()) {
+      throw new Error('Mã lớp học phần không được để trống.');
+    }
+
+    const [lhpRows] = await db.query(`
+      SELECT MaLopHocPhan, TenLopHocPhan, MaGiangVien, TrangThaiPhanCong
+      FROM LopHocPhan
+      WHERE MaLopHocPhan = ? LIMIT 1
+    `, [maLopHocPhan.trim()]);
+
+    if (lhpRows.length === 0) {
+      throw new Error(`Lớp học phần '${maLopHocPhan}' không tồn tại.`);
+    }
+
+    const lhp = lhpRows[0];
+    const newStatus = lhp.MaGiangVien ? 'Assigned' : 'Unassigned';
+
+    await db.query(`
+      UPDATE LopHocPhan
+      SET TrangThaiPhanCong = ?
+      WHERE MaLopHocPhan = ?
+    `, [newStatus, lhp.MaLopHocPhan]);
+
+    await db.query(`
+      UPDATE ThoiKhoaBieu
+      SET TrangThai = 'Scheduled'
+      WHERE MaLopHocPhan = ?
+    `, [lhp.MaLopHocPhan]);
+
+    return {
+      success: true,
+      maLopHocPhan: lhp.MaLopHocPhan,
+      trangThai: newStatus,
+      message: `Đã mở khóa lịch lớp '${lhp.TenLopHocPhan || lhp.MaLopHocPhan}'. Bạn có thể chỉnh sửa lại TKB hoặc điều chỉnh phân công.`
+    };
+  };
+
+  // ================================================================
+  // 18. [ADMIN / PHONGDAOTAO] Khóa đồng loạt tất cả các lớp đã phân công trong học kỳ
+  // ================================================================
+  static lockAllAssignedClasses = async ({ maHocKy, maKhoa, maBoMon } = {}) => {
+    if (!maHocKy || !maHocKy.trim()) {
+      throw new Error('Vui lòng chọn Học kỳ.');
+    }
+
+    let sql = `
+      SELECT lhp.MaLopHocPhan
+      FROM LopHocPhan lhp
+      LEFT JOIN BoMon bm ON lhp.MaBoMon = bm.MaBoMon
+      WHERE lhp.MaHocKy = ?
+        AND lhp.MaGiangVien IS NOT NULL
+        AND (lhp.TrangThaiPhanCong IS NULL OR lhp.TrangThaiPhanCong != 'Locked')
+        AND EXISTS (SELECT 1 FROM ThoiKhoaBieu tkb WHERE tkb.MaLopHocPhan = lhp.MaLopHocPhan)
+    `;
+    const params = [maHocKy.trim()];
+
+    if (maKhoa && maKhoa.trim()) {
+      sql += ` AND bm.MaKhoa = ?`;
+      params.push(maKhoa.trim());
+    }
+    if (maBoMon && maBoMon.trim()) {
+      sql += ` AND lhp.MaBoMon = ?`;
+      params.push(maBoMon.trim());
+    }
+
+    const [rows] = await db.query(sql, params);
+
+    let lockedCount = 0;
+    for (const row of rows) {
+      await this.lockScheduleForClass({ maLopHocPhan: row.MaLopHocPhan });
+      lockedCount++;
+    }
+
+    return {
+      success: true,
+      lockedCount,
+      message: `Đã chốt & khóa thành công ${lockedCount} lớp học phần đã được phân công trong học kỳ.`
     };
   };
 }

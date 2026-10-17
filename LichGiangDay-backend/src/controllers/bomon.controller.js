@@ -156,6 +156,49 @@ class BoMonController {
       });
     }
   };
+
+  // 7. Lấy danh sách Giảng viên Active thuộc Bộ môn
+  getGiangVien = async (req, res, next) => {
+    try {
+      const { maBoMon } = req.params;
+      const list = await BoMonService.getGiangVienByBoMon(maBoMon);
+      return res.status(200).json({
+        status: 'success',
+        code: 200,
+        message: 'Lấy danh sách giảng viên thuộc bộ môn thành công.',
+        metadata: list
+      });
+    } catch (error) {
+      const statusCode = error.message.includes('Không tìm thấy') ? 404 : 500;
+      return res.status(statusCode).json({
+        status: 'error',
+        code: statusCode,
+        message: error.message
+      });
+    }
+  };
+
+  // 8. Phân công hoặc bãi nhiệm Trưởng bộ môn
+  assignTruongBoMon = async (req, res, next) => {
+    try {
+      const { maBoMon } = req.params;
+      const { maGiangVien } = req.body;
+      const result = await BoMonService.assignTruongBoMon(maBoMon, maGiangVien || null);
+      return res.status(200).json({
+        status: 'success',
+        code: 200,
+        message: maGiangVien ? 'Phân công trưởng bộ môn thành công.' : 'Bãi nhiệm trưởng bộ môn thành công.',
+        metadata: result
+      });
+    } catch (error) {
+      const statusCode = error.message.includes('Không tìm thấy') ? 404 : 400;
+      return res.status(statusCode).json({
+        status: 'error',
+        code: statusCode,
+        message: error.message
+      });
+    }
+  };
 }
 
 module.exports = new BoMonController();

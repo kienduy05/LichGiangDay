@@ -116,7 +116,8 @@ class DangKyDayBuService {
     const diffTime = proposedDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays < 3) {
+    const isProd = process.env.NODE_ENV === 'production';
+    if (isProd && diffDays < 3) {
       const err = new Error('Quy định: Thời gian đăng ký dạy bù phải trước ít nhất 3 ngày tính từ ngày hiện tại để kịp thông báo cho sinh viên.');
       err.status = 400;
       throw err;

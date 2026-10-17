@@ -247,7 +247,7 @@ export default function ThoiKhoaBieuScheduleModal({
   return (
     <div className="tkb-modal-overlay">
       <div className="tkb-modal-container">
-        
+
         {/* MODAL HEADER */}
         <div className="tkb-modal-header">
           <div className="tkb-modal-title-group">
@@ -268,7 +268,7 @@ export default function ThoiKhoaBieuScheduleModal({
 
         {/* MODAL BODY */}
         <div className="tkb-modal-body">
-          
+
           {/* 1. THÔNG TIN LỚP HỌC PHẦN */}
           <div className="lhp-info-banner">
             <div className="info-badge-item">
@@ -321,7 +321,7 @@ export default function ThoiKhoaBieuScheduleModal({
             </div>
           ) : (
             <div className="schedule-builder-layout">
-              
+
               {/* SESSIONS TAB BAR (Thứ trong tuần) */}
               <div className="sessions-tabs-header">
                 <div className="sessions-tabs-list">
@@ -395,7 +395,7 @@ export default function ThoiKhoaBieuScheduleModal({
               {/* ACTIVE SESSION CONFIGURATION */}
               {currentSession && (
                 <div className="active-session-panel">
-                  
+
                   {/* Row 1: Chọn Thứ & Tiết */}
                   <div className="session-config-row">
                     <div className="config-form-group">

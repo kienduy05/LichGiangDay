@@ -144,7 +144,9 @@ class BienDongLichService {
         DATE_FORMAT(ycn.ThoiGianDuyet, '%Y-%m-%d %H:%i:%s') AS ThoiGianDuyet,
         gvDuyet.HoTen AS TenNguoiDuyet,
         gvThay.HoTen AS TenGiangVienDayThay,
-        dkdb.MaDangKyDayBu, dkdb.TrangThai AS TrangThaiDayBu,
+        dkdb.MaDangKyDayBu, dkdb.TrangThai AS TrangThaiDayBu, dkdb.MaBuoiHocTao,
+        DATE_FORMAT(bhGoc.NgayHoc, '%Y-%m-%d') AS NgayHocGoc,
+        thGoc.TenTiet AS TenTietGoc, phGoc.TenPhong AS TenPhongGoc,
         DATEDIFF(CURRENT_DATE(), bh.NgayHoc) AS SoNgayDaQua,
         COALESCE(ycn.ThoiGianGui, bh.NgayHoc) AS ThoiGianSapXep
       FROM BuoiHoc bh
@@ -154,12 +156,15 @@ class BienDongLichService {
       JOIN MonHoc mh ON lhp.MaMonHoc = mh.MaMonHoc
       JOIN PhongHoc ph ON bh.MaPhong = ph.MaPhong
       JOIN TietHoc th ON bh.MaTiet = th.MaTiet
+      LEFT JOIN BuoiHoc bhGoc ON bh.MaBuoiHocGoc = bhGoc.MaBuoiHoc
+      LEFT JOIN TietHoc thGoc ON bhGoc.MaTiet = thGoc.MaTiet
+      LEFT JOIN PhongHoc phGoc ON bhGoc.MaPhong = phGoc.MaPhong
       LEFT JOIN GiangVien gv ON bh.MaGiangVien = gv.MaGiangVien
       LEFT JOIN GiangVien gvGoc ON bh.MaGiangVienGoc = gvGoc.MaGiangVien
       LEFT JOIN YeuCauNghi ycn ON bh.MaBuoiHoc = ycn.MaBuoiHoc
       LEFT JOIN GiangVien gvDuyet ON ycn.MaGiangVienDuyet = gvDuyet.MaGiangVien
       LEFT JOIN GiangVien gvThay ON (ycn.MaGiangVienDeXuat = gvThay.MaGiangVien OR bh.MaGiangVien = gvThay.MaGiangVien)
-      LEFT JOIN DangKyDayBu dkdb ON (bh.MaBuoiHoc = dkdb.MaBuoiHocTao OR ycn.MaYeuCauNghi = dkdb.MaYeuCauNghi)
+      LEFT JOIN DangKyDayBu dkdb ON (bh.MaBuoiHoc = dkdb.MaBuoiHocTao OR (ycn.MaYeuCauNghi IS NOT NULL AND ycn.MaYeuCauNghi = dkdb.MaYeuCauNghi AND bh.LoaiBuoiHoc != 'Makeup'))
       ${whereClause}
       ORDER BY ThoiGianSapXep DESC
     `;
@@ -170,7 +175,7 @@ class BienDongLichService {
     // Chuẩn hóa loại và cờ overdue
     const items = rows.map(r => {
       let loai = 'ABSENCE';
-      if (r.LoaiBuoiHoc === 'Makeup' || r.MaDangKyDayBu) {
+      if (r.LoaiBuoiHoc === 'Makeup' || (r.MaDangKyDayBu && r.MaBuoiHoc === r.MaBuoiHocTao)) {
         loai = 'MAKEUP';
       } else if (r.LoaiYeuCau) {
         loai = r.LoaiYeuCau;
@@ -180,12 +185,30 @@ class BienDongLichService {
         loai = 'SUBSTITUTE';
       }
 
-      const trangThaiHienThi = r.TrangThaiYeuCau || r.TrangThaiDayBu || r.TrangThaiBuoiHoc;
+      // Xác định trạng thái hiển thị đúng theo loại biến động
+      let trangThaiHienThi = 'Pending';
+      if (loai === 'MAKEUP') {
+        trangThaiHienThi = r.TrangThaiDayBu || (r.TrangThaiBuoiHoc === 'Normal' ? 'Confirmed' : r.TrangThaiBuoiHoc);
+      } else if (loai === 'ABSENCE' || loai === 'SWAP' || loai === 'SUBSTITUTE') {
+        trangThaiHienThi = r.TrangThaiYeuCau || r.TrangThaiBuoiHoc;
+      } else {
+        trangThaiHienThi = r.TrangThaiBuoiHoc || 'Pending';
+      }
+
+      // Xác định tên người / đơn vị duyệt (hiển thị tên Bộ môn theo quy định)
+      let tenNguoiDuyet = r.TenBoMon ? (r.TenBoMon.startsWith('Bộ môn') ? r.TenBoMon : `Bộ môn ${r.TenBoMon}`) : (r.MaBoMon ? `Bộ môn ${r.MaBoMon}` : 'Bộ môn');
+      if (loai === 'MAKEUP') {
+        tenNguoiDuyet = 'Hệ thống tự động';
+      } else if (trangThaiHienThi === 'Pending') {
+        tenNguoiDuyet = 'Chờ Bộ môn duyệt';
+      }
+
       const isAbsent = r.TrangThaiBuoiHoc === 'Absent' || r.LoaiYeuCau === 'ABSENCE';
       const overdueWarning = isAbsent && r.DaDayBu === 0 && r.SoNgayDaQua > 14;
 
       return {
         ...r,
+        TenNguoiDuyet: tenNguoiDuyet,
         loaiBienDong: loai,
         trangThaiHienThi,
         overdueWarning

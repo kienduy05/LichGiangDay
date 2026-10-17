@@ -137,14 +137,22 @@ export default function LecturerScheduleView({ onBackHome }) {
         DAYS_DEF.forEach(d => { matrix[d.value] = {}; });
 
         buoiHocList.forEach(bh => {
-          const d = new Date(bh.NgayHoc);
-          const dow = d.getDay() === 0 ? 8 : d.getDay() + 1;
+          const parts = String(bh.NgayHoc).split('-');
+          let dow;
+          if (parts.length === 3) {
+            const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+            dow = d.getDay() === 0 ? 8 : d.getDay() + 1;
+          } else {
+            const d = new Date(bh.NgayHoc);
+            dow = d.getDay() === 0 ? 8 : d.getDay() + 1;
+          }
           const tiet = bh.MaTiet;
           if (!matrix[dow]) matrix[dow] = {};
           if (!matrix[dow][tiet]) matrix[dow][tiet] = [];
           matrix[dow][tiet].push({
             ...bh,
             Thu: dow,
+            ThuTrongTuan: dow,
             LoaiHoc: bh.LoaiHoc || (bh.LoaiBuoiHoc === 'Makeup' ? 'BÙ' : 'LT')
           });
         });
@@ -154,14 +162,20 @@ export default function LecturerScheduleView({ onBackHome }) {
           schedule: buoiHocList,
           giangVien: profileData?.giangVien || { HoTen: user?.fullName, MaGiangVien: user?.maGiangVien }
         });
-      } else if (profileData && profileData.matrix) {
-        setScheduleData(profileData);
       } else {
-        setScheduleData({ matrix: {}, schedule: [], giangVien: profileData?.giangVien || null });
+        const emptyMatrix = {};
+        DAYS_DEF.forEach(d => { emptyMatrix[d.value] = {}; });
+        setScheduleData({
+          matrix: emptyMatrix,
+          schedule: [],
+          giangVien: profileData?.giangVien || { HoTen: user?.fullName, MaGiangVien: user?.maGiangVien }
+        });
       }
     } catch (err) {
       console.error('Lỗi tải lịch giảng dạy của giảng viên:', err);
-      setScheduleData({ matrix: {}, schedule: [], giangVien: null });
+      const emptyMatrix = {};
+      DAYS_DEF.forEach(d => { emptyMatrix[d.value] = {}; });
+      setScheduleData({ matrix: emptyMatrix, schedule: [], giangVien: null });
     } finally {
       setLoading(false);
     }
