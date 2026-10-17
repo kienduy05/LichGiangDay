@@ -3,7 +3,8 @@ const ThongBaoService = require('../services/thongbao.service');
 class ThongBaoController {
   getMyNotifications = async (req, res, next) => {
     try {
-      const list = await ThongBaoService.getMyNotifications(req.user.userId);
+      const { tab = 'all', limit = 50, page = 1 } = req.query;
+      const list = await ThongBaoService.getMyNotifications(req.user.userId, { tab, limit, page });
       return res.status(200).json({
         status: 'success',
         code: 200,

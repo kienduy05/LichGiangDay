@@ -298,6 +298,16 @@ class YeuCauNghiService {
         maDoiTuongLienQuan: maYeuCauNghi
       }, connection);
 
+      // Nếu là nhờ dạy thay, gửi thêm thông báo cho giảng viên được nhờ dạy thay
+      if (loaiYeuCau === 'SUBSTITUTE' && maGiangVienDeXuat) {
+        await ThongBaoService.notifyGiangVien(maGiangVienDeXuat, {
+          tieuDe: `Yêu cầu dạy thay từ ${scope.hoTen || maGiangVien}`,
+          noiDung: `Giảng viên ${scope.hoTen || maGiangVien} đề xuất bạn dạy thay lớp ${buoiHoc.TenLopHocPhan} vào ngày ${ngayHocStr}.`,
+          loaiThongBao: 'SubstituteRequest',
+          maDoiTuongLienQuan: maYeuCauNghi
+        }, connection);
+      }
+
       await connection.commit();
       return { maYeuCauNghi, maBuoiHoc, loaiYeuCau, trangThai: 'Pending' };
 

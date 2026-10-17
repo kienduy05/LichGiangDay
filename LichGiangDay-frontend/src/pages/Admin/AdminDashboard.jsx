@@ -8,6 +8,7 @@ import EditProfileModal from './components/EditProfileModal';
 import ChangePasswordModal from './components/ChangePasswordModal';
 
 import DashboardOverview from './components/DashboardOverview';
+import BoMonDashboardOverview from './components/BoMonDashboard/BoMonDashboardOverview';
 import RolesManagement from './components/RolesManagement';
 import UsersManagement from './components/UsersManagement';
 import PermissionsManagement from './components/PermissionsManagement';
@@ -180,11 +181,18 @@ export default function AdminDashboard() {
           onOpenEditModal={handleOpenEditModal}
           onOpenPasswordModal={handleOpenPasswordModal}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
+          onNavigateTab={setActiveTab}
         />
 
         {/* Main Body Dynamic View Switching */}
         <main className="admin-body">
-          {activeTab === 'dashboard' && <DashboardOverview setActiveTab={setActiveTab} />}
+          {activeTab === 'dashboard' && (
+            user?.role === 'BOMON' ? (
+              <BoMonDashboardOverview setActiveTab={setActiveTab} />
+            ) : (
+              <DashboardOverview setActiveTab={setActiveTab} />
+            )
+          )}
           {activeTab === 'toanha' && <ToaNhaManagement />}
           {activeTab === 'phonghoc' && <PhongHocManagement />}
           {activeTab === 'khoa' && <KhoaManagement />}
