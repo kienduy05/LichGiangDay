@@ -261,8 +261,13 @@ export const apiGetDashboardHomNay = async () => {
 /**
  * 17. THÔNG BÁO
  */
-export const apiGetThongBao = async () => {
-  const url = `${API_BASE_URL}/thongbao`;
+export const apiGetThongBao = async ({ tab = 'all', page = 1, limit = 50 } = {}) => {
+  const params = new URLSearchParams();
+  if (tab) params.append('tab', tab);
+  if (page) params.append('page', page);
+  if (limit) params.append('limit', limit);
+  const queryStr = params.toString() ? `?${params.toString()}` : '';
+  const url = `${API_BASE_URL}/thongbao${queryStr}`;
   const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() });
   const data = await response.json();
   if (!response.ok) throw new Error(data.message || 'Lấy thông báo thất bại.');

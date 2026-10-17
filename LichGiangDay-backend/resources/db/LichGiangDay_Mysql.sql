@@ -589,18 +589,38 @@ CREATE TABLE ChiTietNhap (
 -- ============================================================
 
 CREATE TABLE ThongBao (
-    MaThongBao          VARCHAR(20)     NOT NULL,
+    MaThongBao          VARCHAR(30)     NOT NULL,
     UserId              VARCHAR(15)     NOT NULL,
-    NoiDung             VARCHAR(500)   NOT NULL,
+    TieuDe              VARCHAR(255)    NULL,
+    NoiDung             VARCHAR(500)    NOT NULL,
     LoaiThongBao        VARCHAR(30)     NULL,
-    ThoiGianGui         DATETIME       NOT NULL,
-    DaDoc               TINYINT(1)             NOT NULL DEFAULT 0,
-    MaDoiTuongLienQuan  VARCHAR(20)     NULL,
+    ThoiGianGui         DATETIME        NOT NULL,
+    DaDoc               TINYINT(1)      NOT NULL DEFAULT 0,
+    MaDoiTuongLienQuan  VARCHAR(30)     NULL,
 
     CONSTRAINT PK_ThongBao
         PRIMARY KEY (MaThongBao),
 
     CONSTRAINT FK_ThongBao_Users
+        FOREIGN KEY (UserId)
+        REFERENCES Users (UserId)
+);
+
+
+CREATE TABLE ThongBaoDaDoc (
+    MaThongBao          VARCHAR(30)     NOT NULL,
+    UserId              VARCHAR(15)     NOT NULL,
+    TieuDe              VARCHAR(255)    NULL,
+    NoiDung             VARCHAR(500)    NOT NULL,
+    LoaiThongBao        VARCHAR(30)     NULL,
+    ThoiGianGui         DATETIME        NOT NULL,
+    ThoiGianDoc         DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    MaDoiTuongLienQuan  VARCHAR(30)     NULL,
+
+    CONSTRAINT PK_ThongBaoDaDoc
+        PRIMARY KEY (MaThongBao),
+
+    CONSTRAINT FK_ThongBaoDaDoc_Users
         FOREIGN KEY (UserId)
         REFERENCES Users (UserId)
 );
@@ -639,3 +659,204 @@ CREATE INDEX IX_BuoiHoc_Ngay_Phong ON BuoiHoc (NgayHoc, MaPhong);
 CREATE INDEX IX_BuoiHoc_Ngay_GiangVien ON BuoiHoc (NgayHoc, MaGiangVien);
 CREATE INDEX IX_LopHocPhan_HocKy_BoMon ON LopHocPhan (MaHocKy, MaBoMon);
 CREATE INDEX IX_LopHocPhan_KhoaHoc ON LopHocPhan (KhoaHoc);
+
+
+/* ============================================================
+   9. DU LIEU KHOI TAO BAN DAU (SEED DATA)
+   ============================================================ */
+
+-- 9.1. Vai tro he thong (Roles)
+INSERT INTO Roles (RoleId, RoleName, Description, IsSystem) VALUES
+  ('ADMIN', 'Administrator', 'Quản trị viên hệ thống, có tất cả các quyền cấu hình', 1),
+  ('BOMON', 'Bộ môn', 'Tài khoản cấp bộ môn', 0),
+  ('GIANGVIEN', 'Giảng viên', 'Tài khoản của giảng viên, chỉ có thể xem lịch dạy', 0),
+  ('KHOA', 'Khoa', 'Tài khoản cấp khoa', 0),
+  ('PHONGDAOTAO', 'Phòng đào tạo đại học', 'Tài khoản của Phòng Đào Tạo đại học', 0)
+ON DUPLICATE KEY UPDATE RoleName=VALUES(RoleName), Description=VALUES(Description);
+
+-- 9.2. Danh muc tai nguyen he thong (Resources)
+INSERT INTO Resources (ResourceId, ResourceName, Description) VALUES
+  ('ApiKeys', 'Quản lý API Keys', 'Tài nguyên Quản lý API Keys'),
+  ('BienDongLich', 'Giám sát biến động lịch', 'Quản lý và giám sát biến động lịch giảng dạy toàn trường và theo bộ môn'),
+  ('BoMon', 'Quản lý Bộ môn', 'Tài nguyên Quản lý Bộ môn'),
+  ('BuoiHoc', 'Quản lý Buổi học', 'Tài nguyên Quản lý Buổi học'),
+  ('ChiTietNhap', 'Quản lý Chi tiết nhập', 'Tài nguyên Quản lý Chi tiết nhập'),
+  ('DangKyDayBu', 'Quản lý Dạy bù', 'Tài nguyên Quản lý Dạy bù'),
+  ('DuyetYeuCau', 'Duyệt yêu cầu lịch giảng dạy', 'Duyệt các yêu cầu nghỉ, đổi ca, phân công dạy thay'),
+  ('GiangVien', 'Quản lý Giảng viên', 'Tài nguyên Quản lý Giảng viên'),
+  ('HocKy', 'Quản lý Học kỳ', 'Tài nguyên Quản lý Học kỳ'),
+  ('KeyTokens', 'Quản lý Tokens', 'Tài nguyên Quản lý Tokens'),
+  ('Khoa', 'Quản lý Khoa', 'Tài nguyên Quản lý Khoa'),
+  ('LopHocPhan', 'Quản lý Lớp học phần', 'Tài nguyên Quản lý Lớp học phần'),
+  ('LopHocPhan_LopSinhVien', 'Quản lý Lớp HP - Sinh viên', 'Tài nguyên Quản lý Lớp HP - Sinh viên'),
+  ('LopSinhVien', 'Quản lý Lớp sinh viên', 'Tài nguyên Quản lý Lớp sinh viên'),
+  ('MonHoc', 'Quản lý Môn học', 'Tài nguyên Quản lý Môn học'),
+  ('NhatKyHeThong', 'Quản lý Nhật ký hệ thống', 'Tài nguyên Quản lý Nhật ký hệ thống'),
+  ('PhanCongDayThay', 'Quản lý Dạy thay', 'Tài nguyên Quản lý Dạy thay'),
+  ('PhongHoc', 'Quản lý Phòng học', 'Tài nguyên Quản lý Phòng học'),
+  ('Resources', 'Quản lý Tài nguyên', 'Tài nguyên Quản lý Tài nguyên'),
+  ('RolePermissions', 'Quản lý Phân quyền', 'Tài nguyên Quản lý Phân quyền'),
+  ('Roles', 'Quản lý Quyền', 'Tài nguyên Quản lý Quyền'),
+  ('TepNhap', 'Quản lý Tệp nhập', 'Tài nguyên Quản lý Tệp nhập'),
+  ('ThoiKhoaBieu', 'Quản lý Thời khóa biểu', 'Tài nguyên Quản lý Thời khóa biểu'),
+  ('ThongBao', 'Quản lý Thông báo', 'Tài nguyên Quản lý Thông báo'),
+  ('ThongBaoDaDoc', 'Quản lý Thông báo đã đọc', 'Lưu trữ lịch sử thông báo đã đọc'),
+  ('TietHoc', 'Quản lý Tiết học', 'Tài nguyên Quản lý Tiết học'),
+  ('ToaNha', 'Quản lý Tòa nhà', 'Tài nguyên Quản lý Tòa nhà'),
+  ('Users', 'Quản lý Người dùng', 'Tài nguyên Quản lý Người dùng'),
+  ('YeuCauNghi', 'Quản lý Yêu cầu nghỉ', 'Tài nguyên Quản lý Yêu cầu nghỉ')
+ON DUPLICATE KEY UPDATE ResourceName=VALUES(ResourceName), Description=VALUES(Description);
+
+-- 9.3. Phan quyen vai tro (RolePermissions)
+INSERT INTO RolePermissions (RoleId, ResourceId, CanCreate, CanRead, CanUpdate, CanDelete) VALUES
+  ('ADMIN', 'ApiKeys', 1, 1, 1, 1),
+  ('ADMIN', 'BienDongLich', 1, 1, 1, 1),
+  ('ADMIN', 'BoMon', 1, 1, 1, 1),
+  ('ADMIN', 'BuoiHoc', 1, 1, 1, 1),
+  ('ADMIN', 'ChiTietNhap', 1, 1, 1, 1),
+  ('ADMIN', 'DangKyDayBu', 1, 1, 1, 1),
+  ('ADMIN', 'DuyetYeuCau', 1, 1, 1, 1),
+  ('ADMIN', 'GiangVien', 1, 1, 1, 1),
+  ('ADMIN', 'HocKy', 1, 1, 1, 1),
+  ('ADMIN', 'KeyTokens', 1, 1, 1, 1),
+  ('ADMIN', 'Khoa', 1, 1, 1, 1),
+  ('ADMIN', 'LopHocPhan', 1, 1, 1, 1),
+  ('ADMIN', 'LopHocPhan_LopSinhVien', 1, 1, 1, 1),
+  ('ADMIN', 'LopSinhVien', 1, 1, 1, 1),
+  ('ADMIN', 'MonHoc', 1, 1, 1, 1),
+  ('ADMIN', 'NhatKyHeThong', 1, 1, 1, 1),
+  ('ADMIN', 'PhanCongDayThay', 1, 1, 1, 1),
+  ('ADMIN', 'PhongHoc', 1, 1, 1, 1),
+  ('ADMIN', 'Resources', 1, 1, 1, 1),
+  ('ADMIN', 'RolePermissions', 1, 1, 1, 1),
+  ('ADMIN', 'Roles', 1, 1, 1, 1),
+  ('ADMIN', 'TepNhap', 1, 1, 1, 1),
+  ('ADMIN', 'ThoiKhoaBieu', 1, 1, 1, 1),
+  ('ADMIN', 'ThongBao', 1, 1, 1, 1),
+  ('ADMIN', 'ThongBaoDaDoc', 1, 1, 1, 1),
+  ('ADMIN', 'TietHoc', 1, 1, 1, 1),
+  ('ADMIN', 'ToaNha', 1, 1, 1, 1),
+  ('ADMIN', 'Users', 1, 1, 1, 1),
+  ('ADMIN', 'YeuCauNghi', 1, 1, 1, 1),
+  ('BOMON', 'ApiKeys', 0, 0, 0, 0),
+  ('BOMON', 'BienDongLich', 0, 1, 0, 0),
+  ('BOMON', 'BoMon', 0, 0, 0, 0),
+  ('BOMON', 'BuoiHoc', 1, 1, 1, 1),
+  ('BOMON', 'ChiTietNhap', 1, 0, 1, 1),
+  ('BOMON', 'DangKyDayBu', 0, 1, 0, 1),
+  ('BOMON', 'DuyetYeuCau', 0, 1, 1, 0),
+  ('BOMON', 'GiangVien', 0, 1, 0, 0),
+  ('BOMON', 'HocKy', 0, 0, 0, 0),
+  ('BOMON', 'KeyTokens', 0, 0, 0, 0),
+  ('BOMON', 'Khoa', 0, 0, 0, 0),
+  ('BOMON', 'LopHocPhan', 0, 1, 0, 0),
+  ('BOMON', 'LopHocPhan_LopSinhVien', 0, 0, 0, 0),
+  ('BOMON', 'LopSinhVien', 0, 0, 0, 0),
+  ('BOMON', 'MonHoc', 0, 1, 0, 0),
+  ('BOMON', 'NhatKyHeThong', 0, 0, 0, 0),
+  ('BOMON', 'PhanCongDayThay', 1, 1, 1, 0),
+  ('BOMON', 'PhongHoc', 0, 0, 0, 0),
+  ('BOMON', 'Resources', 0, 0, 0, 0),
+  ('BOMON', 'RolePermissions', 0, 0, 0, 0),
+  ('BOMON', 'Roles', 0, 0, 0, 0),
+  ('BOMON', 'TepNhap', 0, 0, 0, 0),
+  ('BOMON', 'ThoiKhoaBieu', 1, 1, 1, 1),
+  ('BOMON', 'ThongBao', 0, 0, 0, 0),
+  ('BOMON', 'ThongBaoDaDoc', 0, 1, 1, 0),
+  ('BOMON', 'TietHoc', 0, 0, 0, 0),
+  ('BOMON', 'ToaNha', 0, 0, 0, 0),
+  ('BOMON', 'Users', 0, 0, 0, 0),
+  ('BOMON', 'YeuCauNghi', 0, 1, 1, 1),
+  ('GIANGVIEN', 'ApiKeys', 0, 0, 0, 0),
+  ('GIANGVIEN', 'BoMon', 0, 1, 0, 0),
+  ('GIANGVIEN', 'BuoiHoc', 0, 1, 0, 0),
+  ('GIANGVIEN', 'ChiTietNhap', 0, 0, 0, 0),
+  ('GIANGVIEN', 'DangKyDayBu', 1, 1, 0, 0),
+  ('GIANGVIEN', 'GiangVien', 0, 1, 0, 0),
+  ('GIANGVIEN', 'HocKy', 0, 1, 0, 0),
+  ('GIANGVIEN', 'KeyTokens', 0, 0, 0, 0),
+  ('GIANGVIEN', 'Khoa', 0, 1, 0, 0),
+  ('GIANGVIEN', 'LopHocPhan', 0, 1, 0, 0),
+  ('GIANGVIEN', 'LopHocPhan_LopSinhVien', 0, 1, 0, 0),
+  ('GIANGVIEN', 'LopSinhVien', 0, 1, 0, 0),
+  ('GIANGVIEN', 'MonHoc', 0, 1, 0, 0),
+  ('GIANGVIEN', 'NhatKyHeThong', 0, 0, 0, 0),
+  ('GIANGVIEN', 'PhanCongDayThay', 1, 1, 0, 0),
+  ('GIANGVIEN', 'PhongHoc', 0, 1, 0, 0),
+  ('GIANGVIEN', 'Resources', 0, 0, 0, 0),
+  ('GIANGVIEN', 'RolePermissions', 0, 0, 0, 0),
+  ('GIANGVIEN', 'Roles', 0, 0, 0, 0),
+  ('GIANGVIEN', 'TepNhap', 0, 0, 0, 0),
+  ('GIANGVIEN', 'ThoiKhoaBieu', 0, 1, 0, 0),
+  ('GIANGVIEN', 'ThongBao', 0, 1, 1, 0),
+  ('GIANGVIEN', 'ThongBaoDaDoc', 0, 1, 1, 0),
+  ('GIANGVIEN', 'TietHoc', 0, 1, 0, 0),
+  ('GIANGVIEN', 'ToaNha', 0, 1, 0, 0),
+  ('GIANGVIEN', 'Users', 0, 0, 0, 0),
+  ('GIANGVIEN', 'YeuCauNghi', 1, 1, 1, 1),
+  ('KHOA', 'ApiKeys', 0, 0, 0, 0),
+  ('KHOA', 'BoMon', 0, 0, 0, 0),
+  ('KHOA', 'BuoiHoc', 0, 0, 0, 0),
+  ('KHOA', 'ChiTietNhap', 0, 0, 0, 0),
+  ('KHOA', 'DangKyDayBu', 0, 0, 0, 0),
+  ('KHOA', 'GiangVien', 0, 0, 0, 0),
+  ('KHOA', 'HocKy', 0, 0, 0, 0),
+  ('KHOA', 'KeyTokens', 0, 0, 0, 0),
+  ('KHOA', 'Khoa', 0, 0, 0, 0),
+  ('KHOA', 'LopHocPhan', 0, 0, 0, 0),
+  ('KHOA', 'LopHocPhan_LopSinhVien', 0, 0, 0, 0),
+  ('KHOA', 'LopSinhVien', 0, 0, 0, 0),
+  ('KHOA', 'MonHoc', 0, 0, 0, 0),
+  ('KHOA', 'NhatKyHeThong', 0, 0, 0, 0),
+  ('KHOA', 'PhanCongDayThay', 0, 0, 0, 0),
+  ('KHOA', 'PhongHoc', 0, 0, 0, 0),
+  ('KHOA', 'Resources', 0, 0, 0, 0),
+  ('KHOA', 'RolePermissions', 0, 0, 0, 0),
+  ('KHOA', 'Roles', 0, 0, 0, 0),
+  ('KHOA', 'TepNhap', 0, 0, 0, 0),
+  ('KHOA', 'ThoiKhoaBieu', 0, 0, 0, 0),
+  ('KHOA', 'ThongBao', 0, 0, 0, 0),
+  ('KHOA', 'TietHoc', 0, 0, 0, 0),
+  ('KHOA', 'ToaNha', 0, 0, 0, 0),
+  ('KHOA', 'Users', 0, 0, 0, 0),
+  ('KHOA', 'YeuCauNghi', 0, 0, 0, 0),
+  ('PHONGDAOTAO', 'ApiKeys', 0, 0, 0, 0),
+  ('PHONGDAOTAO', 'BienDongLich', 1, 1, 1, 1),
+  ('PHONGDAOTAO', 'BoMon', 1, 1, 1, 1),
+  ('PHONGDAOTAO', 'BuoiHoc', 1, 1, 1, 1),
+  ('PHONGDAOTAO', 'ChiTietNhap', 1, 1, 1, 1),
+  ('PHONGDAOTAO', 'DangKyDayBu', 1, 1, 1, 1),
+  ('PHONGDAOTAO', 'DuyetYeuCau', 1, 1, 1, 1),
+  ('PHONGDAOTAO', 'GiangVien', 1, 1, 1, 1),
+  ('PHONGDAOTAO', 'HocKy', 1, 1, 1, 1),
+  ('PHONGDAOTAO', 'KeyTokens', 0, 0, 0, 0),
+  ('PHONGDAOTAO', 'Khoa', 1, 1, 1, 1),
+  ('PHONGDAOTAO', 'LopHocPhan', 1, 1, 1, 1),
+  ('PHONGDAOTAO', 'LopHocPhan_LopSinhVien', 1, 1, 1, 1),
+  ('PHONGDAOTAO', 'LopSinhVien', 1, 1, 1, 1),
+  ('PHONGDAOTAO', 'MonHoc', 1, 1, 1, 1),
+  ('PHONGDAOTAO', 'NhatKyHeThong', 0, 0, 0, 0),
+  ('PHONGDAOTAO', 'PhanCongDayThay', 1, 1, 1, 1),
+  ('PHONGDAOTAO', 'PhongHoc', 1, 1, 1, 1),
+  ('PHONGDAOTAO', 'Resources', 0, 0, 0, 0),
+  ('PHONGDAOTAO', 'RolePermissions', 0, 0, 0, 0),
+  ('PHONGDAOTAO', 'Roles', 0, 0, 0, 0),
+  ('PHONGDAOTAO', 'TepNhap', 1, 1, 1, 1),
+  ('PHONGDAOTAO', 'ThoiKhoaBieu', 1, 1, 1, 1),
+  ('PHONGDAOTAO', 'ThongBao', 0, 0, 0, 0),
+  ('PHONGDAOTAO', 'ThongBaoDaDoc', 0, 1, 1, 1),
+  ('PHONGDAOTAO', 'TietHoc', 1, 1, 1, 1),
+  ('PHONGDAOTAO', 'ToaNha', 1, 1, 1, 1),
+  ('PHONGDAOTAO', 'Users', 0, 0, 0, 0),
+  ('PHONGDAOTAO', 'YeuCauNghi', 1, 1, 1, 1)
+ON DUPLICATE KEY UPDATE CanCreate=VALUES(CanCreate), CanRead=VALUES(CanRead), CanUpdate=VALUES(CanUpdate), CanDelete=VALUES(CanDelete);
+
+-- 9.4. Tai khoan quan tri vien mac dinh (Users - Password: 123456)
+INSERT INTO Users (UserId, Username, PasswordHash, FullName, Email, Role, IsActive) VALUES
+  ('USR000000000001', 'ADMIN.0001', '$2b$10$cjK/vF.t7Y88podlR1lJ5.4abd83jAp452rdOJj79YDMZoUWKd1k6', 'Admin 01', 'admin@utc.edu.vn', 'ADMIN', 1)
+ON DUPLICATE KEY UPDATE PasswordHash=VALUES(PasswordHash), Role=VALUES(Role), IsActive=VALUES(IsActive);
+
+-- 9.5. API Key mac dinh (ApiKeys)
+INSERT INTO ApiKeys (`Key`, Status, Permissions) VALUES
+  ('lichgiangday_secret_apikey_2026', 1, '0000')
+ON DUPLICATE KEY UPDATE Status=VALUES(Status), Permissions=VALUES(Permissions);

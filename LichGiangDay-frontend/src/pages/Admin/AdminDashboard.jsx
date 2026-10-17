@@ -180,6 +180,7 @@ export default function AdminDashboard() {
           onOpenEditModal={handleOpenEditModal}
           onOpenPasswordModal={handleOpenPasswordModal}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
+          onNavigateTab={setActiveTab}
         />
 
         {/* Main Body Dynamic View Switching */}

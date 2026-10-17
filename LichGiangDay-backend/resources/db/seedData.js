@@ -26,10 +26,15 @@ async function seedData() {
     console.log('Seeding Roles...');
     await connection.query(`
       INSERT INTO Roles (RoleId, RoleName, Description, IsSystem)
-      VALUES ('ADMIN', 'Administrator', 'Quản trị viên hệ thống', 1)
+      VALUES 
+        ('ADMIN', 'Administrator', 'Quản trị viên hệ thống, có tất cả các quyền cấu hình', 1),
+        ('BOMON', 'Bộ môn', 'Tài khoản cấp bộ môn', 0),
+        ('GIANGVIEN', 'Giảng viên', 'Tài khoản của giảng viên, chỉ có thể xem lịch dạy', 0),
+        ('KHOA', 'Khoa', 'Tài khoản cấp khoa', 0),
+        ('PHONGDAOTAO', 'Phòng đào tạo đại học', 'Tài khoản của Phòng Đào Tạo đại học', 0)
       ON DUPLICATE KEY UPDATE RoleName=VALUES(RoleName), Description=VALUES(Description);
     `);
-    console.log('✓ Role Administrator (ADMIN) inserted/updated.');
+    console.log('✓ Roles (ADMIN, BOMON, GIANGVIEN, KHOA, PHONGDAOTAO) inserted/updated.');
 
     // 2. Seed Resources
     console.log('Seeding Resources...');
@@ -58,7 +63,10 @@ async function seedData() {
       { id: 'DangKyDayBu', name: 'Quản lý Dạy bù' },
       { id: 'TepNhap', name: 'Quản lý Tệp nhập' },
       { id: 'ChiTietNhap', name: 'Quản lý Chi tiết nhập' },
+      { id: 'BienDongLich', name: 'Giám sát biến động lịch' },
+      { id: 'DuyetYeuCau', name: 'Duyệt yêu cầu lịch giảng dạy' },
       { id: 'ThongBao', name: 'Quản lý Thông báo' },
+      { id: 'ThongBaoDaDoc', name: 'Quản lý Thông báo đã đọc' },
       { id: 'NhatKyHeThong', name: 'Quản lý Nhật ký hệ thống' }
     ];
 
