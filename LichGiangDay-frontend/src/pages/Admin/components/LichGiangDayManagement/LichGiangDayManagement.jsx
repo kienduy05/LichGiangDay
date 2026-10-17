@@ -102,6 +102,8 @@ export default function LichGiangDayManagement() {
 
   // View mode: 'MATRIX' (Tổng quan) | 'ROOM' (Theo Phòng) | 'LECTURER' (Theo GV) | 'AGENDA' (Theo Ngày)
   const [viewMode, setViewMode] = useState('MATRIX');
+  // Đảm bảo vai trò BOMON không thể ở chế độ xem theo phòng
+  const effectiveViewMode = (isBoMonRole && viewMode === 'ROOM') ? 'MATRIX' : viewMode;
 
   // Matrix data state
   const [matrixData, setMatrixData] = useState({});
@@ -351,8 +353,11 @@ export default function LichGiangDayManagement() {
         handlePrevWeek={handlePrevWeek}
         handleNextWeek={handleNextWeek}
         weekRangeDisplay={weekRangeDisplay}
-        viewMode={viewMode}
-        setViewMode={setViewMode}
+        viewMode={effectiveViewMode}
+        setViewMode={(newMode) => {
+          if (isBoMonRole && newMode === 'ROOM') return;
+          setViewMode(newMode);
+        }}
         stats={stats}
         onRefresh={() => {
           fetchLookups();
@@ -362,7 +367,7 @@ export default function LichGiangDayManagement() {
       />
 
       {/* ─── 4 CHẾ ĐỘ XEM THÔNG MINH ─── */}
-      {viewMode === 'MATRIX' && (
+      {effectiveViewMode === 'MATRIX' && (
         <LichGiangDayMatrixGrid
           matrixData={matrixData}
           weekDays={weekDays}
@@ -373,7 +378,7 @@ export default function LichGiangDayManagement() {
         />
       )}
 
-      {viewMode === 'ROOM' && (
+      {!isBoMonRole && effectiveViewMode === 'ROOM' && (
         <LichGiangDayRoomGrid
           rawList={rawList}
           phongHocList={phongHocList}
@@ -385,7 +390,7 @@ export default function LichGiangDayManagement() {
         />
       )}
 
-      {viewMode === 'LECTURER' && (
+      {effectiveViewMode === 'LECTURER' && (
         <LichGiangDayLecturerGrid
           rawList={rawList}
           giangVienList={giangVienList}
@@ -399,7 +404,7 @@ export default function LichGiangDayManagement() {
         />
       )}
 
-      {viewMode === 'AGENDA' && (
+      {effectiveViewMode === 'AGENDA' && (
         <LichGiangDayAgendaView
           matrixData={matrixData}
           weekDays={weekDays}

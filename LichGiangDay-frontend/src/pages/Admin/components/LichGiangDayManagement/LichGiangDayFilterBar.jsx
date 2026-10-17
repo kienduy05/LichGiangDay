@@ -354,14 +354,16 @@ export default function LichGiangDayFilterBar({
                 <LayoutGrid size={14} />
                 <span>Tổng quan</span>
               </button>
-              <button
-                className={`lgd-persp-btn ${viewMode === 'ROOM' ? 'active' : ''}`}
-                onClick={() => setViewMode('ROOM')}
-                title="Xem theo phòng học"
-              >
-                <Building2 size={14} />
-                <span>Theo Phòng</span>
-              </button>
+              {!isBoMonRole && (
+                <button
+                  className={`lgd-persp-btn ${viewMode === 'ROOM' ? 'active' : ''}`}
+                  onClick={() => setViewMode('ROOM')}
+                  title="Xem theo phòng học"
+                >
+                  <Building2 size={14} />
+                  <span>Theo Phòng</span>
+                </button>
+              )}
               <button
                 className={`lgd-persp-btn ${viewMode === 'LECTURER' ? 'active' : ''}`}
                 onClick={() => setViewMode('LECTURER')}

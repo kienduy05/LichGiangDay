@@ -969,3 +969,14 @@ export const apiGetDashboardMasterData = async ({ maHocKy, maKhoa, sections } = 
   if (!response.ok) throw new Error(data.message || 'Lấy số liệu dashboard thất bại.');
   return data.metadata;
 };
+
+export const apiGetDashboardBoMon = async ({ maHocKy, maBoMon } = {}) => {
+  const params = new URLSearchParams();
+  if (maHocKy) params.append('maHocKy', maHocKy);
+  if (maBoMon) params.append('maBoMon', maBoMon);
+  const url = `${API_BASE_URL}/dashboard/bomon${params.toString() ? '?' + params.toString() : ''}`;
+  const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Lấy số liệu dashboard bộ môn thất bại.');
+  return data.metadata;
+};
