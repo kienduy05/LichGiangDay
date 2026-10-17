@@ -42,6 +42,20 @@ export default function LecturerClassDetailModal({
     return dateStr;
   };
 
+  const getDayLabel = () => {
+    const dow = item.ThuTrongTuan || item.Thu;
+    if (dow && thuLabels[dow]) return thuLabels[dow];
+    if (item.NgayHoc) {
+      const parts = String(item.NgayHoc).split('-');
+      if (parts.length === 3) {
+        const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        const calculatedDow = d.getDay() === 0 ? 8 : d.getDay() + 1;
+        return thuLabels[calculatedDow] || `Thứ ${calculatedDow}`;
+      }
+    }
+    return 'Lịch học';
+  };
+
   const loaiHocCode = (item.LoaiHoc || 'LT').toLowerCase();
 
   return (
@@ -242,10 +256,15 @@ export default function LecturerClassDetailModal({
                 <span className="lgd-modal-label">Thời gian & Ca học</span>
               </div>
               <span className="lgd-highlight-time">
-                {thuLabels[item.ThuTrongTuan] || `Thứ ${item.ThuTrongTuan}`} • {item.TenTiet || `Tiết ${item.MaTiet}`}
+                {getDayLabel()} • {item.TenTiet || `Tiết ${item.MaTiet || 'N/A'}`}
               </span>
+              {item.NgayHoc && (
+                <div style={{ fontSize: '0.84rem', fontWeight: 600, color: '#475569', marginTop: '2px' }}>
+                  Ngày học: <strong>{formatDateVN(item.NgayHoc)}</strong>
+                </div>
+              )}
               {item.GioBatDau && item.GioKetThuc && (
-                <div style={{ fontSize: '0.84rem', fontWeight: 700, color: '#1e293b' }}>
+                <div style={{ fontSize: '0.84rem', fontWeight: 700, color: '#1e293b', marginTop: '2px' }}>
                   Giờ học: {item.GioBatDau} - {item.GioKetThuc}
                 </div>
               )}
@@ -283,7 +302,13 @@ export default function LecturerClassDetailModal({
                 <span className="lgd-modal-label">Chu kỳ áp dụng</span>
               </div>
               <div style={{ fontSize: '0.875rem', color: '#1e293b' }}>
-                Từ <strong>{formatDateVN(item.NgayBatDau)}</strong> đến <strong>{formatDateVN(item.NgayKetThuc)}</strong>
+                {item.NgayBatDau && item.NgayKetThuc ? (
+                  <>Từ <strong>{formatDateVN(item.NgayBatDau)}</strong> đến <strong>{formatDateVN(item.NgayKetThuc)}</strong></>
+                ) : item.NgayHoc ? (
+                  <>Buổi học ngày: <strong>{formatDateVN(item.NgayHoc)}</strong></>
+                ) : (
+                  <span>Áp dụng theo kỳ học</span>
+                )}
               </div>
             </div>
           </div>

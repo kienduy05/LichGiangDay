@@ -8,135 +8,33 @@ import { useAuth } from '../../../../context/AuthContext';
 import { apiGetBienDongLichAll, apiGetBienDongLichBoMon, apiRevokeBienDongLich } from '../../../../utils/apiBienDongLich';
 import './LichBienDongMonitor.css';
 
-// Rich Mock Data for University-wide Schedule Changes (Admin & PĐT)
-const INITIAL_CHANGES_DATA = [
-  {
-    id: 'BD-2601',
-    ngayBienDong: '04/10/2026',
-    loaiBienDong: 'ABSENCE', // Báo nghỉ
-    tenKhoa: 'Công nghệ thông tin',
-    tenBoMon: 'Mạng & HTTT',
-    maLopHocPhan: 'IT1.110.3.2627.1.QT01.K66',
-    tenMonHoc: 'Cơ sở dữ liệu 1-1-26 (QT01)',
-    giangVienGoc: 'ThS. Nguyễn Lê Minh (NLM001)',
-    thoiGianGoc: '06/10/2026 • Tiết 1-3 • P101_A3',
-    chiTietThayDoi: 'Báo nghỉ: Đi tập huấn nghiệp vụ Bộ GD&ĐT',
-    trangThai: 'Pending',
-    nguoiDuyet: 'Chờ Trưởng BM duyệt',
-    ngayDuyet: '-',
-    daDayBu: false
-  },
-  {
-    id: 'BD-2602',
-    ngayBienDong: '03/10/2026',
-    loaiBienDong: 'SUBSTITUTE', // Dạy thay
-    tenKhoa: 'Công nghệ thông tin',
-    tenBoMon: 'Mạng & HTTT',
-    maLopHocPhan: 'IT1.220.3.2627.1.CN02.K66',
-    tenMonHoc: 'Hệ điều hành & Mạng 1-1-26 (CN02)',
-    giangVienGoc: 'ThS. Nguyễn Lê Minh (NLM001)',
-    thoiGianGoc: '08/10/2026 • Tiết 7-9 • P203_A3',
-    chiTietThayDoi: 'Dạy thay: TS. Nguyễn Quốc Tuấn (NQT001)',
-    trangThai: 'Pending',
-    nguoiDuyet: 'Chờ Trưởng BM duyệt',
-    ngayDuyet: '-',
-    daDayBu: false
-  },
-  {
-    id: 'BD-2603',
-    ngayBienDong: '03/10/2026',
-    loaiBienDong: 'SWAP', // Đổi ca
-    tenKhoa: 'Công nghệ thông tin',
-    tenBoMon: 'Mạng & HTTT',
-    maLopHocPhan: 'IT1.330.3.2627.1.HT01.K66',
-    tenMonHoc: 'Lập trình mạng máy tính (HT01)',
-    giangVienGoc: 'ThS. Trần Văn Nam (TVN002)',
-    thoiGianGoc: '07/10/2026 • Tiết 4-6 • P305_A3',
-    chiTietThayDoi: 'Đổi sang: 09/10/2026 • Tiết 10-12 • P305_A3',
-    trangThai: 'Pending',
-    nguoiDuyet: 'Chờ Trưởng BM duyệt',
-    ngayDuyet: '-',
-    daDayBu: false
-  },
-  {
-    id: 'BD-2604',
-    ngayBienDong: '02/10/2026',
-    loaiBienDong: 'MAKEUP', // Dạy bù
-    tenKhoa: 'Công nghệ thông tin',
-    tenBoMon: 'Khoa học máy tính',
-    maLopHocPhan: 'IT1.440.3.2627.1.PM01.K66',
-    tenMonHoc: 'Phân tích thiết kế hệ thống (PM01)',
-    giangVienGoc: 'TS. Lê Thị Thảo (LTT003)',
-    thoiGianGoc: '25/09/2026 (Ca đã nghỉ)',
-    chiTietThayDoi: 'Dạy bù vào: 10/10/2026 • Tiết 7-9 • P102_A3',
-    trangThai: 'Approved',
-    nguoiDuyet: 'PGS. TS. Phạm Văn Hùng (Trưởng BM)',
-    ngayDuyet: '02/10/2026',
-    daDayBu: true
-  },
-  {
-    id: 'BD-2605',
-    ngayBienDong: '28/09/2026',
-    loaiBienDong: 'ABSENCE',
-    tenKhoa: 'Công nghệ thông tin',
-    tenBoMon: 'Mạng & HTTT',
-    maLopHocPhan: 'IT1.110.3.2627.1.QT02.K66',
-    tenMonHoc: 'Cơ sở dữ liệu 1-1-26 (QT02)',
-    giangVienGoc: 'TS. Nguyễn Quốc Tuấn (NQT001)',
-    thoiGianGoc: '28/09/2026 • Tiết 7-9 • P101_A3',
-    chiTietThayDoi: 'Báo nghỉ: Dự hội thảo quốc tế (Chưa xếp bù - Quá 6 ngày)',
-    trangThai: 'Approved',
-    nguoiDuyet: 'TS. Nguyễn Quốc Tuấn (Tự duyệt theo thẩm quyền)',
-    ngayDuyet: '26/09/2026',
-    daDayBu: false
-  },
-  {
-    id: 'BD-2606',
-    ngayBienDong: '20/09/2026',
-    loaiBienDong: 'ABSENCE',
-    tenKhoa: 'Kinh tế vận tải',
-    tenBoMon: 'Kinh tế xây dựng',
-    maLopHocPhan: 'KT1.101.3.2627.1.XD01.K66',
-    tenMonHoc: 'Kinh tế đầu tư xây dựng (XD01)',
-    giangVienGoc: 'ThS. Hoàng Mai Hoa (HMH005)',
-    thoiGianGoc: '20/09/2026 • Tiết 1-3 • P402_A2',
-    chiTietThayDoi: 'Báo nghỉ: Việc gia đình đột xuất (CẢNH BÁO: Quá 14 ngày chưa lập lịch dạy bù)',
-    trangThai: 'Approved',
-    nguoiDuyet: 'TS. Vũ Đình Trọng (Trưởng BM)',
-    ngayDuyet: '19/09/2026',
-    daDayBu: false,
-    overdueWarning: true
-  },
-  {
-    id: 'BD-2607',
-    ngayBienDong: '18/09/2026',
-    loaiBienDong: 'SUBSTITUTE',
-    tenKhoa: 'Điện - Điện tử',
-    tenBoMon: 'Tự động hóa',
-    maLopHocPhan: 'DT1.205.3.2627.1.TD01.K66',
-    tenMonHoc: 'Kỹ thuật vi điều khiển (TD01)',
-    giangVienGoc: 'TS. Đặng Thanh Tùng (DTT008)',
-    thoiGianGoc: '18/09/2026 • Tiết 4-6 • P201_A1',
-    chiTietThayDoi: 'Dạy thay: ThS. Bùi Văn Quý (BVQ010)',
-    trangThai: 'Approved',
-    nguoiDuyet: 'PGS. TS. Trần Hải Long (Trưởng BM)',
-    ngayDuyet: '17/09/2026',
-    daDayBu: false
-  }
-];
+
 
 // Helper chuẩn hóa dữ liệu biến động lịch từ Backend API sang format của UI
 export const normalizeBienDong = (r) => {
   if (!r) return null;
-  const id = r.MaYeuCauNghi || r.MaDangKyDayBu || r.MaBuoiHoc || r.id || '';
+
+  const loai = r.loaiBienDong || r.LoaiYeuCau || (r.LoaiBuoiHoc === 'Makeup' ? 'MAKEUP' : 'ABSENCE');
+
+  // Mã định danh hiển thị đúng theo loại biến động
+  let id = r.MaYeuCauNghi || r.MaDangKyDayBu || r.MaBuoiHoc || r.id || '';
+  if (loai === 'MAKEUP' && r.MaDangKyDayBu) {
+    id = r.MaDangKyDayBu;
+  } else if (loai === 'ABSENCE' && r.MaYeuCauNghi) {
+    id = r.MaYeuCauNghi;
+  }
 
   // Thời gian gốc
   let thoiGianGoc = r.thoiGianGoc || '';
-  if (!thoiGianGoc && r.NgayHoc) {
-    const dStr = typeof r.NgayHoc === 'string' ? r.NgayHoc.slice(0, 10) : '';
-    const tiet = r.TenTiet || (r.MaTiet ? `Tiết ${r.MaTiet}` : '');
-    const phong = r.TenPhong || r.MaPhong || '';
-    thoiGianGoc = `${dStr} • ${tiet} • ${phong}`;
+  if (!thoiGianGoc) {
+    if (loai === 'MAKEUP' && r.NgayHocGoc) {
+      thoiGianGoc = `Nghỉ ca: ${r.NgayHocGoc} • ${r.TenTietGoc || ''} • ${r.TenPhongGoc || ''}`;
+    } else if (r.NgayHoc) {
+      const dStr = typeof r.NgayHoc === 'string' ? r.NgayHoc.slice(0, 10) : '';
+      const tiet = r.TenTiet || (r.MaTiet ? `Tiết ${r.MaTiet}` : '');
+      const phong = r.TenPhong || r.MaPhong || '';
+      thoiGianGoc = `${dStr} • ${tiet} • ${phong}`;
+    }
   }
 
   // Giảng viên gốc
@@ -145,9 +43,9 @@ export const normalizeBienDong = (r) => {
   // Chi tiết thay đổi
   let chiTietThayDoi = r.chiTietThayDoi || '';
   if (!chiTietThayDoi) {
-    const loai = r.loaiBienDong || r.LoaiYeuCau;
     if (loai === 'ABSENCE') {
-      chiTietThayDoi = `Báo nghỉ: ${r.LyDo || 'Nghỉ theo kế hoạch'}`;
+      const daBuText = r.DaDayBu ? ' (Đã xếp dạy bù)' : '';
+      chiTietThayDoi = `Báo nghỉ: ${r.LyDo || 'Nghỉ theo kế hoạch'}${daBuText}`;
     } else if (loai === 'SUBSTITUTE') {
       chiTietThayDoi = `Dạy thay: ${r.TenGiangVienDayThay || r.MaGiangVienDeXuat || 'Đã phân công'}`;
     } else if (loai === 'SWAP') {
@@ -162,16 +60,31 @@ export const normalizeBienDong = (r) => {
   }
 
   // Trạng thái hiển thị
-  let trangThai = r.trangThaiHienThi || r.TrangThaiYeuCau || r.TrangThaiDayBu || r.TrangThaiBuoiHoc || r.trangThai || 'Pending';
+  let trangThai = r.trangThaiHienThi || r.TrangThaiDayBu || r.TrangThaiYeuCau || r.TrangThaiBuoiHoc || r.trangThai || 'Pending';
   if (trangThai === 'Normal') {
-    if (r.loaiBienDong === 'MAKEUP' || r.LoaiBuoiHoc === 'Makeup') trangThai = 'Confirmed';
+    if (loai === 'MAKEUP' || r.LoaiBuoiHoc === 'Makeup') trangThai = 'Confirmed';
     else trangThai = 'Approved';
+  }
+
+  // Người / Đơn vị duyệt (Hiển thị tên Bộ môn theo quy định)
+  let nguoiDuyet = '';
+  if (loai === 'MAKEUP' || r.LoaiBuoiHoc === 'Makeup') {
+    nguoiDuyet = 'Hệ thống tự động';
+  } else if (trangThai === 'Pending') {
+    nguoiDuyet = 'Chờ Bộ môn duyệt';
+  } else {
+    const tenBM = r.TenBoMon || r.tenBoMon || r.MaBoMon || '';
+    if (tenBM) {
+      nguoiDuyet = tenBM.startsWith('Bộ môn') ? tenBM : `Bộ môn ${tenBM}`;
+    } else {
+      nguoiDuyet = r.TenNguoiDuyet || 'Bộ môn';
+    }
   }
 
   return {
     id,
     ngayBienDong: r.NgayHoc ? (typeof r.NgayHoc === 'string' ? r.NgayHoc.slice(0, 10) : '') : (r.ngayBienDong || ''),
-    loaiBienDong: r.loaiBienDong || r.LoaiYeuCau || (r.LoaiBuoiHoc === 'Makeup' ? 'MAKEUP' : 'ABSENCE'),
+    loaiBienDong: loai,
     tenKhoa: r.TenKhoa || r.tenKhoa || '',
     tenBoMon: r.TenBoMon || r.tenBoMon || '',
     maBoMon: r.MaBoMon || r.maBoMon || '',
@@ -181,7 +94,7 @@ export const normalizeBienDong = (r) => {
     thoiGianGoc,
     chiTietThayDoi,
     trangThai,
-    nguoiDuyet: r.TenNguoiDuyet || r.nguoiDuyet || (trangThai === 'Pending' ? 'Chờ Trưởng BM duyệt' : 'Cán bộ quản lý'),
+    nguoiDuyet,
     ngayDuyet: r.ThoiGianDuyet ? (typeof r.ThoiGianDuyet === 'string' ? r.ThoiGianDuyet.slice(0, 10) : '') : (r.ngayDuyet || '-'),
     daDayBu: Boolean(r.DaDayBu),
     overdueWarning: Boolean(r.overdueWarning),
@@ -193,8 +106,8 @@ export default function LichBienDongMonitor() {
   const { user } = useAuth();
   const isBoMon = user?.role === 'BOMON';
 
-  const [data, setData] = useState(() => INITIAL_CHANGES_DATA.map(normalizeBienDong));
-  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [remoteKpi, setRemoteKpi] = useState(null);
   const [selectedHocKy, setSelectedHocKy] = useState('ALL');
   const [selectedKhoa, setSelectedKhoa] = useState('ALL');
@@ -272,11 +185,15 @@ export default function LichBienDongMonitor() {
           if (remoteData.kpi) {
             setRemoteKpi(remoteData.kpi);
           }
+        } else {
+          setData([]);
         }
+      } else {
+        setData([]);
       }
     } catch (err) {
-      console.warn('[LichBienDong] Lỗi tải dữ liệu API, dùng dữ liệu mẫu:', err.message);
-      setData(INITIAL_CHANGES_DATA.map(normalizeBienDong));
+      console.warn('[LichBienDong] Lỗi tải dữ liệu API:', err.message);
+      setData([]);
     } finally {
       setLoading(false);
     }
@@ -375,7 +292,20 @@ export default function LichBienDongMonitor() {
       }
       return <span className="lbd-badge-status approved"><Check size={12} /> Đã duyệt</span>;
     }
-    return <span className="lbd-badge-status rejected"><X size={12} /> Từ chối</span>;
+    if (status === 'Confirmed') {
+      return (
+        <span
+          className="lbd-badge-status approved"
+          style={{ background: '#ecfdf5', color: '#059669', borderColor: '#a7f3d0' }}
+        >
+          <CheckCircle2 size={12} /> Đã xác nhận
+        </span>
+      );
+    }
+    if (status === 'Rejected') {
+      return <span className="lbd-badge-status rejected"><X size={12} /> Từ chối</span>;
+    }
+    return <span className="lbd-badge-status approved"><Check size={12} /> {status}</span>;
   };
 
   return (
@@ -628,30 +558,40 @@ export default function LichBienDongMonitor() {
 
       {/* Table Card */}
       <div className="lbd-table-card">
-        <table className="lbd-table">
-          <thead>
-            <tr>
-              <th style={{ width: '85px' }}>Mã BĐ</th>
-              <th style={{ width: '100px' }}>Loại Biến Động</th>
-              <th>Bộ Môn / Khoa</th>
-              <th>Lớp Học Phần</th>
-              <th>Giảng Viên Gốc</th>
-              <th>Chi Tiết Thay Đổi</th>
-              <th style={{ width: '110px' }}>Trạng Thái</th>
-              <th>Cán Bộ Duyệt</th>
-              <th style={{ width: '130px', textAlign: 'center' }}>Thao Tác</th>
-            </tr>
-          </thead>
+        <div className="lbd-table-responsive">
+          <table className="lbd-table">
+            <thead>
+              <tr>
+                <th style={{ width: '95px' }}>Mã BĐ</th>
+                <th style={{ width: '120px' }}>Loại Biến Động</th>
+                <th>Bộ Môn / Khoa</th>
+                <th>Lớp Học Phần</th>
+                <th>Giảng Viên Gốc</th>
+                <th>Chi Tiết Thay Đổi</th>
+                <th style={{ width: '130px' }}>Trạng Thái</th>
+                <th>Đơn Vị / Cán Bộ Duyệt</th>
+                <th style={{ width: '160px', minWidth: '160px', textAlign: 'center' }}>Thao Tác</th>
+              </tr>
+            </thead>
           <tbody>
-            {filteredData.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan="9" style={{ textAlign: 'center', padding: '2.5rem', color: '#64748b' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                    <RefreshCw size={18} className="animate-spin" color="#3b82f6" />
+                    <span>Đang tải danh sách biến động lịch từ máy chủ...</span>
+                  </div>
+                </td>
+              </tr>
+            ) : filteredData.length === 0 ? (
               <tr>
                 <td colSpan="9" style={{ textAlign: 'center', padding: '2.5rem', color: '#64748b' }}>
                   Không tìm thấy biến động lịch nào phù hợp với bộ lọc hiện tại.
                 </td>
               </tr>
             ) : (
-              filteredData.map(item => (
-                <tr key={item.id}>
+              filteredData.map((item, idx) => (
+                <tr key={`${item.id || 'item'}-${idx}`}>
                   <td>
                     <span style={{ fontWeight: 700, color: '#2563eb' }}>{item.id}</span>
                   </td>
@@ -710,6 +650,7 @@ export default function LichBienDongMonitor() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* =======================================================================
@@ -764,7 +705,7 @@ export default function LichBienDongMonitor() {
               </div>
 
               <div style={{ background: '#f8fafc', padding: '0.85rem', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.8125rem', color: '#334155' }}>
-                <div><strong>Cán bộ phê duyệt của Bộ môn:</strong> {detailItem.nguoiDuyet} ({detailItem.ngayDuyet})</div>
+                <div><strong>Đơn vị phê duyệt:</strong> {detailItem.nguoiDuyet} ({detailItem.ngayDuyet})</div>
                 {detailItem.lyDoThuHoi && (
                   <div style={{ marginTop: '0.5rem', color: '#dc2626' }}>
                     <strong>Lý do PĐT thu hồi:</strong> {detailItem.lyDoThuHoi}

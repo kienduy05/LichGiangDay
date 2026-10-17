@@ -3,7 +3,7 @@ import { useAuth } from '../../../../context/AuthContext';
 import {
   Network, School, UserCheck, BookOpen, Plus, Search, X, RefreshCw,
   AlertCircle, Loader2, Edit2, Trash2, ShieldAlert, CheckCircle2,
-  ArrowLeft, Users, GraduationCap
+  ArrowLeft, Users, GraduationCap, UserCog
 } from 'lucide-react';
 import {
   apiGetBoMonList,
@@ -11,7 +11,9 @@ import {
   apiUpdateBoMon,
   apiDeleteBoMon,
   apiGetBoMonChiTiet,
-  apiGetKhoaList
+  apiGetKhoaList,
+  apiGetGiangVienByBoMon,
+  apiAssignTruongBoMon
 } from '../../../../utils/api';
 import './BoMonManagement.css';
 
@@ -50,6 +52,16 @@ export default function BoMonManagement() {
   const [deletingBoMon, setDeletingBoMon] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+
+  // ─── Modal Phân công Trưởng bộ môn ───
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [assigningBoMon, setAssigningBoMon] = useState(null);
+  const [giangVienList, setGiangVienList] = useState([]);
+  const [giangVienLoading, setGiangVienLoading] = useState(false);
+  const [selectedGV, setSelectedGV] = useState('');
+  const [assignLoading, setAssignLoading] = useState(false);
+  const [assignError, setAssignError] = useState('');
+  const [assignSuccess, setAssignSuccess] = useState('');
 
   // ─── Fetch danh sách Bộ môn (lọc theo khoa nếu có) ───
   const fetchBoMonList = async (maKhoa = '') => {
@@ -206,6 +218,155 @@ export default function BoMonManagement() {
     }
   };
 
+  // ─── Modal Phân công Trưởng bộ môn ───
+  const handleOpenAssign = async (item) => {
+    setAssigningBoMon(item);
+    setSelectedGV(item.MaTruongBoMon || '');
+    setAssignError('');
+    setAssignSuccess('');
+    setGiangVienLoading(true);
+    setIsAssignModalOpen(true);
+    try {
+      const list = await apiGetGiangVienByBoMon(item.MaBoMon);
+      setGiangVienList(list || []);
+    } catch (err) {
+      setGiangVienList([]);
+      setAssignError(err.message || 'Không thể tải danh sách giảng viên.');
+    } finally {
+      setGiangVienLoading(false);
+    }
+  };
+
+  const handleConfirmAssign = async () => {
+    if (!assigningBoMon) return;
+    setAssignLoading(true);
+    setAssignError('');
+    setAssignSuccess('');
+    try {
+      // selectedGV = '' nghĩa là bãi nhiệm
+      await apiAssignTruongBoMon(assigningBoMon.MaBoMon, selectedGV || null);
+      setAssignSuccess(selectedGV ? 'Phân công Trưởng bộ môn thành công!' : 'Bãi nhiệm Trưởng bộ môn thành công!');
+      await fetchBoMonList(selectedKhoa);
+
+      // Nếu đang ở màn hình chi tiết của chính bộ môn này, reload lại dữ liệu chi tiết
+      if (view === 'detail' && detailData?.boMon?.MaBoMon === assigningBoMon.MaBoMon) {
+        const updatedDetail = await apiGetBoMonChiTiet(assigningBoMon.MaBoMon);
+        setDetailData(updatedDetail);
+      }
+
+      setTimeout(() => {
+        setIsAssignModalOpen(false);
+        setAssignSuccess('');
+      }, 1000);
+    } catch (err) {
+      setAssignError(err.message || 'Thao tác phân công thất bại.');
+    } finally {
+      setAssignLoading(false);
+    }
+  };
+
+  // ─── Render Modal Phân công Trưởng bộ môn ───
+  const renderAssignModal = () => {
+    if (!isAssignModalOpen || !assigningBoMon) return null;
+    return (
+      <div className="modal-overlay">
+        <div className="modal-card">
+          <div className="modal-header">
+            <h3 className="modal-title">
+              <UserCog size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+              Phân Công Trưởng Bộ Môn
+            </h3>
+            <button onClick={() => setIsAssignModalOpen(false)} className="modal-close-btn">
+              <X size={20} />
+            </button>
+          </div>
+
+          {assignSuccess && (
+            <div className="alert-banner success">
+              <CheckCircle2 size={18} />
+              <span>{assignSuccess}</span>
+            </div>
+          )}
+          {assignError && (
+            <div className="alert-banner error">
+              <AlertCircle size={18} />
+              <span>{assignError}</span>
+            </div>
+          )}
+
+          <p className="truongbomon-modal-desc">
+            Bộ môn: <b>{assigningBoMon.TenBoMon}</b> ({assigningBoMon.MaBoMon})
+            <br />
+            Trưởng bộ môn hiện tại:{' '}
+            <b>{assigningBoMon.TenTruongBoMon || 'Chưa phân công'}</b>
+          </p>
+
+          <div className="modal-form-group">
+            <label className="modal-label">Chọn Trưởng Bộ Môn</label>
+            {giangVienLoading ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 0', color: 'var(--admin-text-sub)', fontSize: '0.88rem' }}>
+                <Loader2 size={16} className="animate-spin" />
+                Đang tải danh sách giảng viên của bộ môn...
+              </div>
+            ) : (
+              <div className="truongbomon-select-wrap">
+                <select
+                  className="modal-input"
+                  value={selectedGV}
+                  onChange={(e) => setSelectedGV(e.target.value)}
+                >
+                  {/* Chỉ hiện option bãi nhiệm khi bộ môn có giảng viên */}
+                  {giangVienList.length > 0 && (
+                    <option value="">— Bãi nhiệm (không phân công) —</option>
+                  )}
+                  {giangVienList.map(gv => (
+                    <option key={gv.MaGiangVien} value={gv.MaGiangVien}>
+                      {gv.HoTen} ({gv.MaGiangVien})
+                    </option>
+                  ))}
+                </select>
+                {giangVienList.length === 0 && !giangVienLoading ? (
+                  <div className="alert-banner warning" style={{ marginTop: '8px', fontSize: '0.82rem' }}>
+                    <AlertCircle size={15} />
+                    <span>
+                      Bộ môn chưa có giảng viên nào trực thuộc, không thể phân công hoặc bãi nhiệm.
+                    </span>
+                  </div>
+                ) : selectedGV === '' ? (
+                  <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-sub)', marginTop: '4px' }}>
+                    Chọn "Bãi nhiệm" để xóa phân công hiện tại.
+                  </span>
+                ) : null}
+              </div>
+            )}
+          </div>
+
+          <div className="modal-footer">
+            <button type="button" onClick={() => setIsAssignModalOpen(false)} className="btn-cancel">
+              Hủy
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmAssign}
+              className="btn-save"
+              disabled={assignLoading || giangVienLoading || (selectedGV === '' && giangVienList.length === 0)}
+            >
+              {assignLoading ? (
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Loader2 size={16} className="animate-spin" /> Đang lưu...
+                </span>
+              ) : selectedGV ? (
+                'Xác Nhận Phân Công'
+              ) : (
+                'Xác Nhận Bãi Nhiệm'
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // ════════════════════════════════════════════════
   // RENDER — Detail View
   // ════════════════════════════════════════════════
@@ -227,12 +388,22 @@ export default function BoMonManagement() {
                   <div className="bomon-detail-title">
                     {boMon?.TenBoMon} ({boMon?.MaBoMon})
                   </div>
-                  <div className="bomon-detail-subtitle">
-                    Khoa: {boMon?.TenKhoa}
-                    {' · '}
-                    Trưởng bộ môn: {boMon?.TenTruongBoMon || 'Chưa phân công'}
-                    {' · '}
-                    {giangVienList.length} giảng viên · {monHocList.length} môn học
+                  <div className="bomon-detail-subtitle" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                    <span>Khoa: {boMon?.TenKhoa}</span>
+                    <span>·</span>
+                    <span>Trưởng bộ môn: {boMon?.TenTruongBoMon || 'Chưa phân công'}</span>
+                    {hasPermission('BoMon', 'CanUpdate') && (
+                      <button
+                        className="btn-assign"
+                        title="Phân công / Thay đổi Trưởng bộ môn"
+                        onClick={() => handleOpenAssign(boMon)}
+                      >
+                        <UserCog size={13} />
+                        {boMon?.MaTruongBoMon ? 'Thay đổi' : 'Phân công'}
+                      </button>
+                    )}
+                    <span>·</span>
+                    <span>{giangVienList.length} giảng viên · {monHocList.length} môn học</span>
                   </div>
                 </>
               )}
@@ -364,6 +535,9 @@ export default function BoMonManagement() {
             </div>
           )}
         </div>
+
+        {/* Modal Phân công Trưởng Bộ Môn */}
+        {renderAssignModal()}
       </div>
     );
   }
@@ -498,7 +672,7 @@ export default function BoMonManagement() {
                 <th style={{ width: '130px' }}>Mã Bộ Môn</th>
                 <th>Tên Bộ Môn</th>
                 <th style={{ width: '190px' }}>Khoa trực thuộc</th>
-                <th style={{ width: '200px' }}>Trưởng Bộ Môn</th>
+                <th style={{ width: '220px' }}>Trưởng Bộ Môn</th>
                 <th style={{ width: '110px', textAlign: 'center' }}>Giảng viên</th>
                 <th style={{ width: '110px', textAlign: 'center' }}>Môn học</th>
                 <th style={{ width: '120px', textAlign: 'center' }}>Thao tác</th>
@@ -556,13 +730,23 @@ export default function BoMonManagement() {
                       </span>
                     </td>
 
-                    {/* Trưởng Bộ Môn — chỉ xem, không chỉnh sửa */}
+                    {/* Trưởng Bộ Môn */}
                     <td>
                       <div className="truongbomon-cell">
                         {item.TenTruongBoMon ? (
                           <span className="truongbomon-name">{item.TenTruongBoMon}</span>
                         ) : (
                           <span className="truongbomon-empty">Chưa phân công</span>
+                        )}
+                        {hasPermission('BoMon', 'CanUpdate') && (
+                          <button
+                            className="btn-assign"
+                            title="Phân công / Thay đổi Trưởng bộ môn"
+                            onClick={() => handleOpenAssign(item)}
+                          >
+                            <UserCog size={13} />
+                            {item.MaTruongBoMon ? 'Thay đổi' : 'Phân công'}
+                          </button>
                         )}
                       </div>
                     </td>
@@ -815,6 +999,9 @@ export default function BoMonManagement() {
           </div>
         </div>
       )}
+
+      {/* Modal Phân công Trưởng Bộ Môn */}
+      {renderAssignModal()}
     </div>
   );
 }

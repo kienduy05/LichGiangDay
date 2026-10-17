@@ -16,6 +16,15 @@ router.get('/', checkPermission('BoMon', 'CanRead'), boMonController.getAll);
 // GET /v1/api/bomon/:maBoMon/chitiet
 router.get('/:maBoMon/chitiet', checkPermission('BoMon', 'CanRead'), boMonController.getChiTiet);
 
+// --- Danh sách Giảng viên Active thuộc Bộ môn (cho dropdown chọn Trưởng bộ môn) ---
+// GET /v1/api/bomon/:maBoMon/giangvien
+router.get('/:maBoMon/giangvien', checkPermission('BoMon', 'CanRead'), boMonController.getGiangVien);
+
+// --- Phân công / Bãi nhiệm Trưởng Bộ Môn ---
+// PATCH /v1/api/bomon/:maBoMon/truongbomon
+// Body: { maGiangVien: string | null }
+router.patch('/:maBoMon/truongbomon', checkPermission('BoMon', 'CanUpdate'), boMonController.assignTruongBoMon);
+
 // --- Thông tin cơ bản 1 Bộ môn ---
 // GET /v1/api/bomon/:maBoMon
 router.get('/:maBoMon', checkPermission('BoMon', 'CanRead'), boMonController.getById);

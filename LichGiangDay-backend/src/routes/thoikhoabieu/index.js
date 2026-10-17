@@ -71,6 +71,22 @@ router.post('/bomon/assign-lecturer', thoiKhoaBieuController.assignLecturerToCla
 // POST /v1/api/thoikhoabieu/bomon/unassign-lecturer
 router.post('/bomon/unassign-lecturer', thoiKhoaBieuController.unassignLecturerFromClass);
 
+// ================================================================
+// ADMIN & PHONGDAOTAO: CÁC ROUTE KHÓA / MỞ KHÓA THỜI KHÓA BIỂU
+// ================================================================
+
+// 16. Khóa lịch lớp học phần (Chốt lịch sau khi Bộ môn phân công)
+// POST /v1/api/thoikhoabieu/lock-class
+router.post('/lock-class', checkPermission('ThoiKhoaBieu', 'CanUpdate'), thoiKhoaBieuController.lockSchedule);
+
+// 17. Mở khóa lịch lớp học phần
+// POST /v1/api/thoikhoabieu/unlock-class
+router.post('/unlock-class', checkPermission('ThoiKhoaBieu', 'CanUpdate'), thoiKhoaBieuController.unlockSchedule);
+
+// 18. Khóa đồng loạt tất cả các lớp đã phân công trong học kỳ
+// POST /v1/api/thoikhoabieu/lock-all
+router.post('/lock-all', checkPermission('ThoiKhoaBieu', 'CanUpdate'), thoiKhoaBieuController.lockAllSemesterSchedules);
+
 module.exports = router;
 
 

@@ -3,7 +3,10 @@ import { useAuth } from '../../../../context/AuthContext';
 import {
   apiGetThoiKhoaBieuTreeView,
   apiGetThoiKhoaBieuList,
-  apiDeleteSchedulesByLopHocPhan
+  apiDeleteSchedulesByLopHocPhan,
+  apiLockClassSchedule,
+  apiUnlockClassSchedule,
+  apiLockAllSemesterSchedules
 } from '../../../../utils/apiThoiKhoaBieu';
 import { apiGetHocKyList } from '../../../../utils/api';
 
@@ -15,7 +18,7 @@ import ThoiKhoaBieuScheduleModal from './ThoiKhoaBieuScheduleModal';
 import {
   Calendar, LayoutGrid, List, RefreshCw, CheckCircle2,
   AlertCircle, Building2, School, Network, Filter, Search,
-  FolderTree, PanelLeftClose, PanelLeftOpen
+  FolderTree, PanelLeftClose, PanelLeftOpen, Lock, Unlock
 } from 'lucide-react';
 import './ThoiKhoaBieuManagement.css';
 
@@ -156,6 +159,65 @@ export default function ThoiKhoaBieuManagement() {
       fetchTableData();
     } catch (err) {
       showToast(err.message || 'Xóa lịch thất bại.', 'error');
+    }
+  };
+
+  // --- Khóa lịch học cho 1 LHP (Admin / Phòng Đào Tạo) ---
+  const handleLockSchedule = async (lhp) => {
+    if (!lhp.MaGiangVien) {
+      showToast('Lớp học phần này chưa được Bộ môn phân công giảng viên. Vui lòng chờ Bộ môn phân công trước khi khóa.', 'error');
+      return;
+    }
+
+    try {
+      const res = await apiLockClassSchedule(lhp.MaLopHocPhan);
+      showToast(res.message || `Đã khóa lịch lớp ${lhp.MaLopHocPhan} thành công!`);
+      fetchTreeView();
+      fetchTableData();
+    } catch (err) {
+      showToast(err.message || 'Khóa lịch thất bại.', 'error');
+    }
+  };
+
+  // --- Mở khóa lịch học cho 1 LHP (Admin / Phòng Đào Tạo) ---
+  const handleUnlockSchedule = async (lhp) => {
+    if (!window.confirm(`Bạn có chắc muốn MỞ KHÓA lịch cho lớp "${lhp.TenMonHoc || lhp.MaLopHocPhan}" không?\n\nSau khi mở khóa, bạn có thể chỉnh sửa lại TKB và Bộ môn có thể điều chỉnh phân công giảng viên.`)) {
+      return;
+    }
+
+    try {
+      const res = await apiUnlockClassSchedule(lhp.MaLopHocPhan);
+      showToast(res.message || `Đã mở khóa lịch lớp ${lhp.MaLopHocPhan}.`);
+      fetchTreeView();
+      fetchTableData();
+    } catch (err) {
+      showToast(err.message || 'Mở khóa lịch thất bại.', 'error');
+    }
+  };
+
+  // --- Khóa đồng loạt tất cả các lớp đã được phân công ---
+  const handleLockAllSemester = async () => {
+    const assignedUnconfirmed = lopHocPhans.filter(l => l.MaGiangVien && l.TrangThaiPhanCong !== 'Locked');
+    if (assignedUnconfirmed.length === 0) {
+      showToast('Hiện không có lớp học phần nào đã phân công giảng viên cần khóa.', 'info');
+      return;
+    }
+
+    if (!window.confirm(`Bạn có chắc muốn CHỐT & KHÓA LỊCH cho ${assignedUnconfirmed.length} lớp học phần đã được Bộ môn phân công trong học kỳ này không?\n\nSau khi khóa, giảng viên sẽ nhận được lịch chính thức và toàn bộ TKB sẽ được bảo vệ chống sửa/xóa nhầm.`)) {
+      return;
+    }
+
+    try {
+      const res = await apiLockAllSemesterSchedules({
+        maHocKy: selectedHocKy,
+        maKhoa: selectedKhoaId !== 'ALL' ? selectedKhoaId : '',
+        maBoMon: selectedBoMonId !== 'ALL' ? selectedBoMonId : ''
+      });
+      showToast(res.message || 'Đã khóa toàn bộ lịch các lớp đã phân công!');
+      fetchTreeView();
+      fetchTableData();
+    } catch (err) {
+      showToast(err.message || 'Lỗi khi khóa lịch.', 'error');
     }
   };
 
@@ -326,6 +388,27 @@ export default function ThoiKhoaBieuManagement() {
                 </div>
               )}
 
+              {/* Nút Khóa lịch đồng loạt cho Admin / Phòng Đào Tạo */}
+              {lopHocPhans.some(l => l.MaGiangVien && l.TrangThaiPhanCong !== 'Locked') && (
+                <button
+                  type="button"
+                  className="tkb-btn-refresh-content"
+                  style={{
+                    background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
+                    color: '#fff',
+                    border: 'none',
+                    fontWeight: 700,
+                    boxShadow: '0 2px 6px rgba(124, 58, 237, 0.25)'
+                  }}
+                  onClick={handleLockAllSemester}
+                  disabled={loadingTable}
+                  title="Chốt và khóa toàn bộ các lớp đã được Bộ môn phân công trong học kỳ này"
+                >
+                  <Lock size={14} />
+                  <span>Khóa Lịch Đã Phân</span>
+                </button>
+              )}
+
               <button
                 type="button"
                 className="tkb-btn-refresh-content"
@@ -346,6 +429,8 @@ export default function ThoiKhoaBieuManagement() {
               loading={loadingTable}
               onScheduleClick={handleOpenScheduleModal}
               onDeleteSchedule={handleDeleteSchedule}
+              onLockSchedule={handleLockSchedule}
+              onUnlockSchedule={handleUnlockSchedule}
             />
           ) : (
             <ThoiKhoaBieuGrid

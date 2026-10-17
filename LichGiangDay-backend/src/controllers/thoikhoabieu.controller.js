@@ -431,6 +431,90 @@ class ThoiKhoaBieuController {
       });
     }
   };
+
+  // ================================================================
+  // 16. [ADMIN / PHONGDAOTAO] Khóa lịch Lớp học phần
+  // ================================================================
+  lockSchedule = async (req, res) => {
+    try {
+      if (req.user?.role !== 'ADMIN' && req.user?.role !== 'PHONGDAOTAO') {
+        return res.status(403).json({
+          status: 'error', code: 403,
+          message: 'Quyền hạn bị từ chối: Chức năng Khóa lịch là đặc quyền của Quản trị viên (ADMIN) và Phòng Đào Tạo.'
+        });
+      }
+
+      const { maLopHocPhan } = req.body;
+      const result = await ThoiKhoaBieuService.lockScheduleForClass({ maLopHocPhan });
+
+      return res.status(200).json({
+        status: 'success', code: 200,
+        message: result.message,
+        metadata: result
+      });
+    } catch (error) {
+      return res.status(400).json({
+        status: 'error', code: 400,
+        message: error.message || 'Lỗi khi khóa thời khóa biểu.'
+      });
+    }
+  };
+
+  // ================================================================
+  // 17. [ADMIN / PHONGDAOTAO] Mở khóa lịch Lớp học phần
+  // ================================================================
+  unlockSchedule = async (req, res) => {
+    try {
+      if (req.user?.role !== 'ADMIN' && req.user?.role !== 'PHONGDAOTAO') {
+        return res.status(403).json({
+          status: 'error', code: 403,
+          message: 'Quyền hạn bị từ chối: Chức năng Mở khóa lịch là đặc quyền của Quản trị viên (ADMIN) và Phòng Đào Tạo.'
+        });
+      }
+
+      const { maLopHocPhan } = req.body;
+      const result = await ThoiKhoaBieuService.unlockScheduleForClass({ maLopHocPhan });
+
+      return res.status(200).json({
+        status: 'success', code: 200,
+        message: result.message,
+        metadata: result
+      });
+    } catch (error) {
+      return res.status(400).json({
+        status: 'error', code: 400,
+        message: error.message || 'Lỗi khi mở khóa thời khóa biểu.'
+      });
+    }
+  };
+
+  // ================================================================
+  // 18. [ADMIN / PHONGDAOTAO] Khóa đồng loạt tất cả các lớp đã phân công trong học kỳ
+  // ================================================================
+  lockAllSemesterSchedules = async (req, res) => {
+    try {
+      if (req.user?.role !== 'ADMIN' && req.user?.role !== 'PHONGDAOTAO') {
+        return res.status(403).json({
+          status: 'error', code: 403,
+          message: 'Quyền hạn bị từ chối: Chức năng Khóa lịch là đặc quyền của Quản trị viên (ADMIN) và Phòng Đào Tạo.'
+        });
+      }
+
+      const { maHocKy, maKhoa, maBoMon } = req.body;
+      const result = await ThoiKhoaBieuService.lockAllAssignedClasses({ maHocKy, maKhoa, maBoMon });
+
+      return res.status(200).json({
+        status: 'success', code: 200,
+        message: result.message,
+        metadata: result
+      });
+    } catch (error) {
+      return res.status(400).json({
+        status: 'error', code: 400,
+        message: error.message || 'Lỗi khi khóa lịch học kỳ.'
+      });
+    }
+  };
 }
 
 module.exports = new ThoiKhoaBieuController();

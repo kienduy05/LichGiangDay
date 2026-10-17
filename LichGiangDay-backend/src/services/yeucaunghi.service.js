@@ -41,6 +41,8 @@ class YeuCauNghiService {
              bh.LoaiBuoiHoc, bh.TrangThai, bh.MaBuoiHocGoc, bh.DaDayBu, bh.GhiChu,
              bh.NgayGocDoiCa, bh.MaTietGocDoiCa, bh.MaPhongGocDoiCa,
              lhp.TenLopHocPhan, lhp.LoaiHoc, lhp.SiSoDangKy, lhp.MaBoMon,
+             DATE_FORMAT(lhp.NgayBatDau, '%Y-%m-%d') AS NgayBatDau,
+             DATE_FORMAT(lhp.NgayKetThuc, '%Y-%m-%d') AS NgayKetThuc,
              mh.MaMonHoc, mh.TenMonHoc,
              ph.TenPhong, ph.SucChua,
              th.TenTiet, th.GioBatDau, th.GioKetThuc,
@@ -151,10 +153,11 @@ class YeuCauNghiService {
         throw err;
       }
 
-      // 3. Validate ngày học >= hôm nay
+      // 3. Validate ngày học >= hôm nay (Chỉ bắt buộc ở môi trường Production)
+      const isProd = process.env.NODE_ENV === 'production';
       const todayStr = new Date().toISOString().slice(0, 10);
-      const ngayHocStr = new Date(buoiHoc.NgayHoc).toISOString().slice(0, 10);
-      if (ngayHocStr < todayStr) {
+      const ngayHocStr = String(buoiHoc.NgayHoc).slice(0, 10);
+      if (isProd && ngayHocStr < todayStr) {
         const err = new Error('Không thể gửi yêu cầu cho buổi học trong quá khứ.');
         err.status = 400;
         throw err;
@@ -185,7 +188,7 @@ class YeuCauNghiService {
           throw err;
         }
 
-        if (ngayDeXuat < todayStr) {
+        if (isProd && ngayDeXuat < todayStr) {
           const err = new Error('Ngày đổi ca đề xuất phải từ ngày hôm nay trở đi.');
           err.status = 400;
           throw err;

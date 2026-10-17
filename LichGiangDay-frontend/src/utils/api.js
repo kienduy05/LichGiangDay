@@ -569,6 +569,27 @@ export const apiDeleteBoMon = async (maBoMon) => {
   return data.metadata;
 };
 
+export const apiGetGiangVienByBoMon = async (maBoMon) => {
+  const response = await fetch(`${API_BASE_URL}/bomon/${maBoMon}/giangvien`, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Lấy danh sách giảng viên thuộc bộ môn thất bại.');
+  return data.metadata;
+};
+
+export const apiAssignTruongBoMon = async (maBoMon, maGiangVien) => {
+  const response = await fetch(`${API_BASE_URL}/bomon/${maBoMon}/truongbomon`, {
+    method: 'PATCH',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ maGiangVien })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Phân công trưởng bộ môn thất bại.');
+  return data.metadata;
+};
+
 
 
 // ==========================================

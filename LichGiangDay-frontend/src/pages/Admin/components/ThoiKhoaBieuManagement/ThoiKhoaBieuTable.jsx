@@ -2,7 +2,7 @@ import React from 'react';
 import {
   Calendar, Clock, Building2, User, Users,
   Edit3, Plus, Trash2, CheckCircle2, AlertCircle,
-  BookOpen, Layers, Sparkles
+  BookOpen, Layers, Sparkles, Lock, Unlock, Eye
 } from 'lucide-react';
 import './ThoiKhoaBieuComponents.css';
 
@@ -15,7 +15,9 @@ export default function ThoiKhoaBieuTable({
   lopHocPhans = [],
   loading = false,
   onScheduleClick,
-  onDeleteSchedule
+  onDeleteSchedule,
+  onLockSchedule,
+  onUnlockSchedule
 }) {
   if (loading) {
     return (
@@ -53,10 +55,11 @@ export default function ThoiKhoaBieuTable({
         <tbody>
           {lopHocPhans.map((lhp, index) => {
             const hasSchedule = lhp.hasSchedule && lhp.schedules && lhp.schedules.length > 0;
+            const isLocked = lhp.TrangThaiPhanCong === 'Locked';
 
             return (
               <tr key={lhp.MaLopHocPhan} className={`tkb-row ${hasSchedule ? 'row-scheduled' : 'row-unscheduled'}`}>
-                
+
                 {/* 1. STT */}
                 <td className="text-center text-muted font-mono">{index + 1}</td>
 
@@ -116,6 +119,23 @@ export default function ThoiKhoaBieuTable({
                 {/* 6. Khung Thời Khóa Biểu */}
                 <td>
                   <div className="schedule-slots-container">
+                    {isLocked && (
+                      <div style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        padding: '2px 8px',
+                        background: '#f5f3ff',
+                        color: '#7c3aed',
+                        borderRadius: '12px',
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        border: '1px solid #ddd6fe',
+                        marginBottom: '6px'
+                      }}>
+                        <Lock size={11} /> Đã khóa lịch
+                      </div>
+                    )}
                     {hasSchedule ? (
                       <div className="schedule-badges-list">
                         {lhp.schedules.map((s, sIdx) => {
@@ -144,13 +164,20 @@ export default function ThoiKhoaBieuTable({
                 {/* 7. Thao tác */}
                 <td className="text-center">
                   <div className="action-buttons-group">
+                    {/* Nút Sửa / Xem lịch */}
                     <button
                       type="button"
-                      className={`btn-action-schedule ${hasSchedule ? 'edit' : 'add'}`}
+                      className={`btn-action-schedule ${hasSchedule ? (isLocked ? 'locked' : 'edit') : 'add'}`}
                       onClick={() => onScheduleClick(lhp)}
-                      title={hasSchedule ? 'Chỉnh sửa thời khóa biểu' : 'Xếp thời khóa biểu'}
+                      title={isLocked ? 'Xem chi tiết TKB (Đã khóa)' : (hasSchedule ? 'Chỉnh sửa thời khóa biểu' : 'Xếp thời khóa biểu')}
+                      style={isLocked ? { background: '#f8fafc', borderColor: '#cbd5e1', color: '#475569' } : {}}
                     >
-                      {hasSchedule ? (
+                      {isLocked ? (
+                        <>
+                          <Eye size={13} color="#64748b" />
+                          <span>Xem lịch</span>
+                        </>
+                      ) : hasSchedule ? (
                         <>
                           <Edit3 size={13} />
                           <span>Sửa lịch</span>
@@ -163,7 +190,50 @@ export default function ThoiKhoaBieuTable({
                       )}
                     </button>
 
+                    {/* Nút Khóa / Mở khóa lịch (Phía Admin/Phòng Đào Tạo) */}
                     {hasSchedule && (
+                      isLocked ? (
+                        <button
+                          type="button"
+                          className="btn-action-schedule"
+                          style={{
+                            background: '#eff6ff',
+                            borderColor: '#bfdbfe',
+                            color: '#1d4ed8',
+                            padding: '0.35rem 0.65rem',
+                            fontWeight: 600
+                          }}
+                          onClick={() => onUnlockSchedule && onUnlockSchedule(lhp)}
+                          title="Mở khóa lịch lớp này để cho phép sửa đổi"
+                        >
+                          <Unlock size={13} color="#2563eb" />
+                          <span>Mở khóa</span>
+                        </button>
+                      ) : (
+                        lhp.MaGiangVien ? (
+                          <button
+                            type="button"
+                            className="btn-action-schedule"
+                            style={{
+                              background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
+                              border: 'none',
+                              color: '#ffffff',
+                              padding: '0.35rem 0.65rem',
+                              fontWeight: 700,
+                              boxShadow: '0 1px 4px rgba(124, 58, 237, 0.25)'
+                            }}
+                            onClick={() => onLockSchedule && onLockSchedule(lhp)}
+                            title="Bộ môn đã phân công: Chốt & Khóa lịch lớp học phần"
+                          >
+                            <Lock size={13} />
+                            <span>Khóa lịch</span>
+                          </button>
+                        ) : null
+                      )
+                    )}
+
+                    {/* Nút Xóa toàn bộ lịch */}
+                    {hasSchedule && !isLocked && (
                       <button
                         type="button"
                         className="btn-action-delete"

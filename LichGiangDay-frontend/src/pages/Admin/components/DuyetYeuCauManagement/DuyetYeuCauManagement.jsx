@@ -8,99 +8,6 @@ import { apiGetYeuCauNghiByBoMon, apiDuyetYeuCauNghi, apiCheckConflictYeuCau } f
 import { useAuth } from '../../../../context/AuthContext';
 import './DuyetYeuCauManagement.css';
 
-// Initial Mock Requests Data (Bộ môn Mạng & Các hệ thống thông tin)
-const INITIAL_REQUESTS = [
-  {
-    id: 'YCN-001',
-    loaiYeuCau: 'ABSENCE', // Báo nghỉ
-    maGiangVien: 'NLM001',
-    tenGiangVien: 'ThS. Nguyễn Lê Minh',
-    maLopHocPhan: 'IT1.110.3.2627.1.QT01.K66',
-    tenMonHoc: 'Cơ sở dữ liệu 1-1-26 (QT01)',
-    ngayGoc: '2026-10-06',
-    tietGoc: 'Tiết 1 - 3 (Sáng)',
-    phongGoc: 'P101_A3',
-    lyDo: 'Tham gia tập huấn chuyên môn nghiệp vụ tại Bộ GD&ĐT',
-    thoiGianGui: '04/10/2026 08:30',
-    trangThai: 'Pending', // Pending | Approved | Rejected
-    lyDoTuChoi: '',
-    minhChung: 'Giay_trieu_tap_tap_huan.pdf'
-  },
-  {
-    id: 'YCN-002',
-    loaiYeuCau: 'SUBSTITUTE', // Nhờ dạy thay
-    maGiangVien: 'NLM001',
-    tenGiangVien: 'ThS. Nguyễn Lê Minh',
-    maGiangVienThay: 'NQT001',
-    tenGiangVienThay: 'TS. Nguyễn Quốc Tuấn',
-    maLopHocPhan: 'IT1.220.3.2627.1.CN02.K66',
-    tenMonHoc: 'Hệ điều hành & Mạng 1-1-26 (CN02)',
-    ngayGoc: '2026-10-08',
-    tietGoc: 'Tiết 7 - 9 (Chiều)',
-    phongGoc: 'P203_A3',
-    lyDo: 'Trùng lịch chấm bảo vệ khóa luận tốt nghiệp đợt 1',
-    thoiGianGui: '03/10/2026 14:15',
-    trangThai: 'Pending',
-    lyDoTuChoi: '',
-    conflictCheck: { safe: true, message: 'TS. Nguyễn Quốc Tuấn không có lịch dạy vào Chiều Thứ 5. Khả dụng dạy thay!' }
-  },
-  {
-    id: 'YCN-003',
-    loaiYeuCau: 'SWAP', // Đổi ca
-    maGiangVien: 'TVN002',
-    tenGiangVien: 'ThS. Trần Văn Nam',
-    maLopHocPhan: 'IT1.330.3.2627.1.HT01.K66',
-    tenMonHoc: 'Lập trình mạng máy tính (HT01)',
-    ngayGoc: '2026-10-07',
-    tietGoc: 'Tiết 4 - 6 (Sáng)',
-    phongGoc: 'P305_A3',
-    ngayDeXuat: '2026-10-09',
-    tietDeXuat: 'Tiết 10 - 12 (Chiều)',
-    phongDeXuat: 'P305_A3',
-    lyDo: 'Lớp sinh viên có lịch thi học phần giáo dục thể chất sáng Thứ 4',
-    thoiGianGui: '03/10/2026 10:20',
-    trangThai: 'Pending',
-    lyDoTuChoi: '',
-    conflictCheck: { safe: true, message: 'Phòng P305_A3 và giảng viên đều trống vào Chiều Thứ 6!' }
-  },
-  {
-    id: 'YCN-004',
-    loaiYeuCau: 'MAKEUP', // Đăng ký dạy bù
-    maGiangVien: 'LTT003',
-    tenGiangVien: 'TS. Lê Thị Thảo',
-    maLopHocPhan: 'IT1.440.3.2627.1.PM01.K66',
-    tenMonHoc: 'Phân tích thiết kế hệ thống (PM01)',
-    ngayGoc: '2026-09-25 (Đã nghỉ)',
-    tietGoc: 'Tiết 1 - 3 (Sáng)',
-    phongGoc: 'P102_A3',
-    ngayDeXuat: '2026-10-10',
-    tietDeXuat: 'Tiết 7 - 9 (Chiều Thứ 7)',
-    phongDeXuat: 'P102_A3',
-    lyDo: 'Dạy bù cho ca báo nghỉ ốm ngày 25/09/2026 đã được duyệt',
-    thoiGianGui: '02/10/2026 16:45',
-    trangThai: 'Pending',
-    lyDoTuChoi: '',
-    conflictCheck: { safe: true, message: 'Phòng P102_A3 khả dụng vào Thứ 7!' }
-  },
-  {
-    id: 'YCN-005',
-    loaiYeuCau: 'ABSENCE',
-    maGiangVien: 'NQT001',
-    tenGiangVien: 'TS. Nguyễn Quốc Tuấn',
-    maLopHocPhan: 'IT1.110.3.2627.1.QT02.K66',
-    tenMonHoc: 'Cơ sở dữ liệu 1-1-26 (QT02)',
-    ngayGoc: '2026-09-28',
-    tietGoc: 'Tiết 7 - 9 (Chiều)',
-    phongGoc: 'P101_A3',
-    lyDo: 'Đi công tác dự hội thảo chuyên đề quốc tế',
-    thoiGianGui: '26/09/2026 09:00',
-    trangThai: 'Approved',
-    nguoiDuyet: 'TS. Nguyễn Quốc Tuấn (Trưởng BM)',
-    thoiGianDuyet: '26/09/2026 11:00',
-    lyDoTuChoi: ''
-  }
-];
-
 // Helper chuẩn hóa dữ liệu từ Backend API (PascalCase) sang định dạng UI Component
 export const normalizeRequest = (r) => {
   if (!r) return null;
@@ -127,7 +34,7 @@ export const normalizeRequest = (r) => {
     trangThai: r.TrangThai || r.trangThai || 'Pending',
     lyDoTuChoi: r.LyDoTuChoi || r.lyDoTuChoi || '',
     minhChung: r.MinhChungUrl || r.minhChung || '',
-    nguoiDuyet: r.NguoiDuyet || r.nguoiDuyet || (r.MaGiangVienDuyet ? `GV ${r.MaGiangVienDuyet}` : ''),
+    nguoiDuyet: r.NguoiDuyet || r.nguoiDuyet || (r.TenBoMon ? (r.TenBoMon.startsWith('Bộ môn') ? r.TenBoMon : `Bộ môn ${r.TenBoMon}`) : (r.MaBoMon ? `Bộ môn ${r.MaBoMon}` : 'Bộ môn')),
     thoiGianDuyet: r.ThoiGianDuyet ? (typeof r.ThoiGianDuyet === 'string' ? r.ThoiGianDuyet.slice(0, 19).replace('T', ' ') : r.ThoiGianDuyet) : (r.thoiGianDuyet || ''),
     conflictCheck: r.conflictCheck || null,
     maBuoiHoc: r.MaBuoiHoc || r.maBuoiHoc || '',
@@ -138,8 +45,8 @@ export const normalizeRequest = (r) => {
 export default function DuyetYeuCauManagement() {
   const { user } = useAuth();
   const isBoMon = user?.role === 'BOMON';
-  const [requests, setRequests] = useState(() => INITIAL_REQUESTS.map(normalizeRequest));
-  const [loading, setLoading] = useState(false);
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('ALL'); // ALL | ABSENCE | SUBSTITUTE | SWAP | MAKEUP
   const [statusFilter, setStatusFilter] = useState('ALL'); // ALL | Pending | Approved | Rejected
   const [searchTerm, setSearchTerm] = useState('');
@@ -182,10 +89,12 @@ export default function DuyetYeuCauManagement() {
       const remoteData = await apiGetYeuCauNghiByBoMon();
       if (remoteData && Array.isArray(remoteData)) {
         setRequests(remoteData.map(normalizeRequest));
+      } else {
+        setRequests([]);
       }
     } catch (err) {
-      console.warn('[DuyetYeuCau] Lỗi tải dữ liệu API, dùng dữ liệu mẫu:', err.message);
-      setRequests(INITIAL_REQUESTS.map(normalizeRequest));
+      console.warn('[DuyetYeuCau] Lỗi tải dữ liệu API:', err.message);
+      setRequests([]);
     } finally {
       setLoading(false);
     }
@@ -230,7 +139,7 @@ export default function DuyetYeuCauManagement() {
         return {
           ...r,
           trangThai: 'Approved',
-          nguoiDuyet: 'Trưởng Bộ Môn (Đã duyệt)',
+          nguoiDuyet: r.tenBoMon ? (r.tenBoMon.startsWith('Bộ môn') ? r.tenBoMon : `Bộ môn ${r.tenBoMon}`) : 'Bộ môn',
           thoiGianDuyet: new Date().toLocaleString('vi-VN')
         };
       }
@@ -272,7 +181,7 @@ export default function DuyetYeuCauManagement() {
           ...r,
           trangThai: 'Rejected',
           lyDoTuChoi: rejectReason.trim(),
-          nguoiDuyet: 'Trưởng Bộ Môn (Từ chối)',
+          nguoiDuyet: r.tenBoMon ? (r.tenBoMon.startsWith('Bộ môn') ? r.tenBoMon : `Bộ môn ${r.tenBoMon}`) : 'Bộ môn',
           thoiGianDuyet: new Date().toLocaleString('vi-VN')
         };
       }
@@ -306,13 +215,13 @@ export default function DuyetYeuCauManagement() {
   const renderTypeBadge = (type) => {
     switch (type) {
       case 'ABSENCE':
-        return <span className="badge-type type-absence"><XCircle size={12} /> Báo Nghỉ</span>;
+        return <span className="badge-type type-absence"><XCircle size={13} /> Báo Nghỉ</span>;
       case 'SUBSTITUTE':
-        return <span className="badge-type type-substitute"><Users size={12} /> Dạy Thay</span>;
+        return <span className="badge-type type-substitute"><Users size={13} /> Dạy Thay</span>;
       case 'SWAP':
-        return <span className="badge-type type-swap"><RefreshCw size={12} /> Đổi Ca</span>;
+        return <span className="badge-type type-swap"><RefreshCw size={13} /> Đổi Ca</span>;
       case 'MAKEUP':
-        return <span className="badge-type type-makeup"><CheckCircle2 size={12} /> Dạy Bù</span>;
+        return <span className="badge-type type-makeup"><CheckCircle2 size={13} /> Dạy Bù</span>;
       default:
         return type;
     }
@@ -321,11 +230,26 @@ export default function DuyetYeuCauManagement() {
   const renderStatusBadge = (status) => {
     switch (status) {
       case 'Pending':
-        return <span className="badge-status status-pending"><Clock size={12} /> Chờ duyệt</span>;
+        return (
+          <span className="badge-status status-pending">
+            <span className="status-dot-pending" />
+            Chờ duyệt
+          </span>
+        );
       case 'Approved':
-        return <span className="badge-status status-approved"><Check size={12} /> Đã chấp thuận</span>;
+        return (
+          <span className="badge-status status-approved">
+            <Check size={13} />
+            Đã chấp thuận
+          </span>
+        );
       case 'Rejected':
-        return <span className="badge-status status-rejected"><X size={12} /> Đã từ chối</span>;
+        return (
+          <span className="badge-status status-rejected">
+            <X size={13} />
+            Đã từ chối
+          </span>
+        );
       default:
         return status;
     }
@@ -343,8 +267,8 @@ export default function DuyetYeuCauManagement() {
           background: '#0f172a',
           color: '#ffffff',
           padding: '0.85rem 1.25rem',
-          borderRadius: '10px',
-          boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+          borderRadius: '12px',
+          boxShadow: '0 12px 28px rgba(0,0,0,0.25)',
           display: 'flex',
           alignItems: 'center',
           gap: '0.65rem',
@@ -374,85 +298,77 @@ export default function DuyetYeuCauManagement() {
           </div>
         </div>
 
-        <div className="dyc-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-          <button
-            type="button"
-            className="dyc-btn-action"
-            onClick={fetchData}
-            title="Tải lại dữ liệu từ hệ thống"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              padding: '0.45rem 0.85rem',
-              borderRadius: '8px',
-              border: '1px solid #cbd5e1',
-              background: '#ffffff',
-              color: '#334155',
-              fontWeight: 600,
-              fontSize: '0.8125rem',
-              cursor: 'pointer'
-            }}
-          >
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-            <span>{loading ? 'Đang tải...' : 'Làm mới'}</span>
-          </button>
-          <span style={{
-            fontSize: '0.8125rem',
-            background: isBoMon ? '#eff6ff' : '#f0fdf4',
-            color: isBoMon ? '#1d4ed8' : '#15803d',
-            padding: '0.4rem 0.85rem',
-            borderRadius: '8px',
-            fontWeight: 700,
-            border: isBoMon ? '1px solid #bfdbfe' : '1px solid #bbf7d0'
-          }}>
+        <div className="dyc-header-actions">
+          <span className="dyc-scope-badge">
+            <span className="dyc-scope-dot" />
             {isBoMon
               ? (requests.find(r => r.tenBoMon)?.tenBoMon ? `Bộ môn: ${requests.find(r => r.tenBoMon).tenBoMon}` : 'Bộ môn của tôi')
               : 'Phạm vi: Toàn trường (PĐT & Admin)'}
           </span>
+          <button
+            type="button"
+            className="dyc-btn-refresh"
+            onClick={fetchData}
+            title="Tải lại dữ liệu từ hệ thống"
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            <span>{loading ? 'Đang tải...' : 'Làm mới'}</span>
+          </button>
         </div>
       </div>
 
       {/* KPI Cards Strip */}
       <div className="dyc-kpi-grid">
         <div className="dyc-kpi-card kpi-pending">
-          <div className="dyc-kpi-icon">
-            <Clock size={22} />
+          <div className="dyc-kpi-left">
+            <div className="dyc-kpi-icon">
+              <Clock size={22} />
+            </div>
+            <div className="dyc-kpi-info">
+              <span className="dyc-kpi-value">{kpiData.pending}</span>
+              <span className="dyc-kpi-label">Yêu cầu chờ duyệt</span>
+            </div>
           </div>
-          <div className="dyc-kpi-info">
-            <span className="dyc-kpi-value">{kpiData.pending}</span>
-            <span className="dyc-kpi-label">Yêu cầu chờ duyệt</span>
-          </div>
+          <span className="dyc-kpi-tag">Cần xử lý</span>
         </div>
 
         <div className="dyc-kpi-card kpi-approved">
-          <div className="dyc-kpi-icon">
-            <CheckCircle2 size={22} />
+          <div className="dyc-kpi-left">
+            <div className="dyc-kpi-icon">
+              <CheckCircle2 size={22} />
+            </div>
+            <div className="dyc-kpi-info">
+              <span className="dyc-kpi-value">{kpiData.approved}</span>
+              <span className="dyc-kpi-label">Đã phê duyệt</span>
+            </div>
           </div>
-          <div className="dyc-kpi-info">
-            <span className="dyc-kpi-value">{kpiData.approved}</span>
-            <span className="dyc-kpi-label">Đã phê duyệt</span>
-          </div>
+          <span className="dyc-kpi-tag">Hoàn tất</span>
         </div>
 
         <div className="dyc-kpi-card kpi-absence">
-          <div className="dyc-kpi-icon">
-            <XCircle size={22} />
+          <div className="dyc-kpi-left">
+            <div className="dyc-kpi-icon">
+              <XCircle size={22} />
+            </div>
+            <div className="dyc-kpi-info">
+              <span className="dyc-kpi-value">{kpiData.absence}</span>
+              <span className="dyc-kpi-label">Đơn xin nghỉ</span>
+            </div>
           </div>
-          <div className="dyc-kpi-info">
-            <span className="dyc-kpi-value">{kpiData.absence}</span>
-            <span className="dyc-kpi-label">Đơn xin nghỉ</span>
-          </div>
+          <span className="dyc-kpi-tag">Báo nghỉ</span>
         </div>
 
         <div className="dyc-kpi-card kpi-substitute">
-          <div className="dyc-kpi-icon">
-            <Users size={22} />
+          <div className="dyc-kpi-left">
+            <div className="dyc-kpi-icon">
+              <Users size={22} />
+            </div>
+            <div className="dyc-kpi-info">
+              <span className="dyc-kpi-value">{kpiData.substitute}</span>
+              <span className="dyc-kpi-label">Nhờ dạy thay</span>
+            </div>
           </div>
-          <div className="dyc-kpi-info">
-            <span className="dyc-kpi-value">{kpiData.substitute}</span>
-            <span className="dyc-kpi-label">Nhờ dạy thay</span>
-          </div>
+          <span className="dyc-kpi-tag">Dạy thay</span>
         </div>
       </div>
 
@@ -502,16 +418,26 @@ export default function DuyetYeuCauManagement() {
           </button>
         </div>
 
-        {/* Right Search & Status Filter */}
+        {/* Search & Status Filter */}
         <div className="dyc-filter-right">
           <div className="dyc-search-input">
-            <Search size={16} color="#94a3b8" />
+            <Search size={15} color="#94a3b8" />
             <input
               type="text"
               placeholder="Tìm GV, môn học, mã LHP..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />
+            {searchTerm && (
+              <button
+                type="button"
+                className="dyc-search-clear"
+                onClick={() => setSearchTerm('')}
+                title="Xóa tìm kiếm"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
 
           <select
@@ -527,125 +453,143 @@ export default function DuyetYeuCauManagement() {
         </div>
       </div>
 
-      {/* Main Request Table Card */}
+      {/* Main Request Table Card with Responsive Horizontal Scroll */}
       <div className="dyc-table-card">
-        {filteredRequests.length === 0 ? (
+        {loading ? (
+          <div className="dyc-empty-state">
+            <RefreshCw size={36} color="#3b82f6" className="animate-spin" />
+            <div style={{ fontWeight: 600, color: '#334155', marginTop: '0.5rem' }}>Đang tải dữ liệu từ máy chủ...</div>
+          </div>
+        ) : filteredRequests.length === 0 ? (
           <div className="dyc-empty-state">
             <ClipboardCheck size={48} color="#cbd5e1" />
             <div style={{ fontWeight: 700, color: '#334155' }}>Không tìm thấy yêu cầu nào</div>
             <div style={{ fontSize: '0.8125rem' }}>Không có đơn đề xuất nào phù hợp với bộ lọc hiện tại.</div>
           </div>
         ) : (
-          <table className="dyc-table">
-            <thead>
-              <tr>
-                <th style={{ width: '90px' }}>Mã Đơn</th>
-                <th style={{ width: '110px' }}>Loại Đơn</th>
-                <th>Giảng Viên Gửi</th>
-                <th>Lớp Học Phần</th>
-                <th>Thời Gian Gốc</th>
-                <th>Đề Xuất / Thay Đổi</th>
-                <th style={{ width: '120px' }}>Trạng Thái</th>
-                <th style={{ width: '160px', textAlign: 'center' }}>Thao Tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRequests.map(item => (
-                <tr key={item.id}>
-                  <td>
-                    <span style={{ fontWeight: 700, color: '#2563eb' }}>{item.id}</span>
-                  </td>
-                  <td>{renderTypeBadge(item.loaiYeuCau)}</td>
-                  <td>
-                    <div style={{ fontWeight: 700, color: '#0f172a' }}>{item.tenGiangVien}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Mã: {item.maGiangVien}</div>
-                  </td>
-                  <td>
-                    <div style={{ fontWeight: 600, color: '#0f172a' }}>{item.tenMonHoc}</div>
-                    <div style={{ fontSize: '0.71875rem', color: '#64748b' }}>{item.maLopHocPhan}</div>
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#1e293b' }}>
-                      <Calendar size={13} color="#2563eb" />
-                      <span>{item.ngayGoc}</span>
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{item.tietGoc} • {item.phongGoc}</div>
-                  </td>
-                  <td>
-                    {item.loaiYeuCau === 'ABSENCE' && (
-                      <span style={{ color: '#dc2626', fontSize: '0.78125rem', fontWeight: 600 }}>
-                        Báo nghỉ buổi học
-                      </span>
-                    )}
-                    {item.loaiYeuCau === 'SUBSTITUTE' && (
-                      <div>
-                        <span style={{ color: '#7c3aed', fontWeight: 700, fontSize: '0.8125rem' }}>
-                          Dạy thay: {item.tenGiangVienThay}
-                        </span>
-                        <div style={{ fontSize: '0.71875rem', color: '#64748b' }}>Mã GV: {item.maGiangVienThay}</div>
-                      </div>
-                    )}
-                    {item.loaiYeuCau === 'SWAP' && (
-                      <div>
-                        <span style={{ color: '#1d4ed8', fontWeight: 700, fontSize: '0.78125rem' }}>
-                          Đổi sang: {item.ngayDeXuat}
-                        </span>
-                        <div style={{ fontSize: '0.71875rem', color: '#64748b' }}>
-                          {item.tietDeXuat} @ {item.phongDeXuat}
-                        </div>
-                      </div>
-                    )}
-                    {item.loaiYeuCau === 'MAKEUP' && (
-                      <div>
-                        <span style={{ color: '#059669', fontWeight: 700, fontSize: '0.78125rem' }}>
-                          Dạy bù: {item.ngayDeXuat}
-                        </span>
-                        <div style={{ fontSize: '0.71875rem', color: '#64748b' }}>
-                          {item.tietDeXuat} @ {item.phongDeXuat}
-                        </div>
-                      </div>
-                    )}
-                  </td>
-                  <td>{renderStatusBadge(item.trangThai)}</td>
-                  <td>
-                    <div className="dyc-action-group" style={{ justifyContent: 'center' }}>
-                      {item.trangThai === 'Pending' ? (
-                        <>
-                          <button
-                            type="button"
-                            className="dyc-btn-action btn-approve"
-                            onClick={() => handleApprove(item)}
-                            title="Chấp thuận yêu cầu này"
-                          >
-                            <Check size={13} />
-                            <span>Duyệt</span>
-                          </button>
-                          <button
-                            type="button"
-                            className="dyc-btn-action btn-reject"
-                            onClick={() => handleOpenReject(item)}
-                            title="Từ chối yêu cầu này"
-                          >
-                            <X size={13} />
-                            <span>Từ chối</span>
-                          </button>
-                        </>
-                      ) : null}
-                      <button
-                        type="button"
-                        className="dyc-btn-action btn-inspect"
-                        onClick={() => handleOpenInspect(item)}
-                        title="Xem chi tiết & Kiểm tra xung đột"
-                      >
-                        <FileText size={13} />
-                        <span>Chi tiết</span>
-                      </button>
-                    </div>
-                  </td>
+          <div className="dyc-table-responsive">
+            <table className="dyc-table">
+              <thead>
+                <tr>
+                  <th style={{ width: '125px' }}>Mã Đơn</th>
+                  <th style={{ width: '120px' }}>Loại Đơn</th>
+                  <th style={{ width: '190px' }}>Giảng Viên Gửi</th>
+                  <th style={{ width: '220px' }}>Lớp Học Phần</th>
+                  <th style={{ width: '175px' }}>Thời Gian Gốc</th>
+                  <th style={{ width: '195px' }}>Đề Xuất / Thay Đổi</th>
+                  <th style={{ width: '140px' }}>Trạng Thái</th>
+                  <th style={{ width: '240px', minWidth: '240px', textAlign: 'center' }}>Thao Tác</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredRequests.map((item, idx) => (
+                  <tr key={`${item.id || 'item'}-${idx}`}>
+                    <td>
+                      <code className="dyc-code-badge">{item.id}</code>
+                    </td>
+                    <td>{renderTypeBadge(item.loaiYeuCau)}</td>
+                    <td>
+                      <div className="dyc-gv-cell">
+                        <div className="dyc-gv-avatar">
+                          {item.tenGiangVien ? item.tenGiangVien.trim().split(' ').slice(-1)[0][0] : 'G'}
+                        </div>
+                        <div>
+                          <div className="dyc-gv-name">{item.tenGiangVien}</div>
+                          <div className="dyc-gv-code">Mã GV: {item.maGiangVien}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div>
+                        <div className="dyc-lhp-name">{item.tenMonHoc}</div>
+                        <div className="dyc-lhp-code">{item.maLopHocPhan}</div>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="dyc-time-box">
+                        <div className="dyc-time-date">
+                          <Calendar size={13} color="#2563eb" />
+                          <span>{item.ngayGoc}</span>
+                        </div>
+                        <div className="dyc-time-detail">{item.tietGoc} • {item.phongGoc}</div>
+                      </div>
+                    </td>
+                    <td>
+                      {item.loaiYeuCau === 'ABSENCE' && (
+                        <span style={{ color: '#e11d48', fontSize: '0.8125rem', fontWeight: 700 }}>
+                          Báo nghỉ buổi học
+                        </span>
+                      )}
+                      {item.loaiYeuCau === 'SUBSTITUTE' && (
+                        <div>
+                          <span style={{ color: '#7c3aed', fontWeight: 700, fontSize: '0.8125rem' }}>
+                            Dạy thay: {item.tenGiangVienThay}
+                          </span>
+                          <div style={{ fontSize: '0.71875rem', color: '#64748b' }}>Mã GV: {item.maGiangVienThay}</div>
+                        </div>
+                      )}
+                      {item.loaiYeuCau === 'SWAP' && (
+                        <div>
+                          <span style={{ color: '#1d4ed8', fontWeight: 700, fontSize: '0.8125rem' }}>
+                            Đổi sang: {item.ngayDeXuat}
+                          </span>
+                          <div style={{ fontSize: '0.71875rem', color: '#64748b' }}>
+                            {item.tietDeXuat} @ {item.phongDeXuat}
+                          </div>
+                        </div>
+                      )}
+                      {item.loaiYeuCau === 'MAKEUP' && (
+                        <div>
+                          <span style={{ color: '#059669', fontWeight: 700, fontSize: '0.8125rem' }}>
+                            Dạy bù: {item.ngayDeXuat}
+                          </span>
+                          <div style={{ fontSize: '0.71875rem', color: '#64748b' }}>
+                            {item.tietDeXuat} @ {item.phongDeXuat}
+                          </div>
+                        </div>
+                      )}
+                    </td>
+                    <td>{renderStatusBadge(item.trangThai)}</td>
+                    <td style={{ textAlign: 'center' }}>
+                      <div className="dyc-action-group">
+                        {item.trangThai === 'Pending' ? (
+                          <>
+                            <button
+                              type="button"
+                              className="dyc-btn-action btn-approve"
+                              onClick={() => handleApprove(item)}
+                              title="Chấp thuận yêu cầu này"
+                            >
+                              <Check size={14} />
+                              <span>Duyệt</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="dyc-btn-action btn-reject"
+                              onClick={() => handleOpenReject(item)}
+                              title="Từ chối yêu cầu này"
+                            >
+                              <X size={14} />
+                              <span>Từ chối</span>
+                            </button>
+                          </>
+                        ) : null}
+                        <button
+                          type="button"
+                          className="dyc-btn-action btn-inspect"
+                          onClick={() => handleOpenInspect(item)}
+                          title="Xem chi tiết & Kiểm tra xung đột"
+                        >
+                          <FileText size={14} />
+                          <span>Chi tiết</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 

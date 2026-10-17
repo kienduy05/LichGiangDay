@@ -1,10 +1,8 @@
-import { useState, useEffect } from 'react';
-import { X, CalendarPlus, Calendar, Clock, Building, Send, AlertCircle, CheckCircle2, History, Loader2, ArrowRight, ArrowLeft } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { X, CalendarPlus, Building, Send, AlertCircle, CheckCircle2, Loader2, ArrowRight, ArrowLeft, Search, Check } from 'lucide-react';
 import { apiGetCaNghiChuaDayBu, apiGetPhongTrongDayBu, apiSubmitDangKyDayBu } from '../../../utils/apiBienDongLich';
 
 export default function TaoLichDayBuModal({ isOpen, onClose, defaultClass = null, onSuccess }) {
-  if (!isOpen) return null;
-
   // Multi-step: 1 = Chọn ca nghỉ, 2 = Chọn ngày & tiết, 3 = Chọn phòng học, 4 = Thành công
   const [step, setStep] = useState(1);
   const [caNghiList, setCaNghiList] = useState([]);
@@ -21,6 +19,8 @@ export default function TaoLichDayBuModal({ isOpen, onClose, defaultClass = null
   const [availableRooms, setAvailableRooms] = useState([]);
   const [loadingRooms, setLoadingRooms] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
+  const [selectedBuilding, setSelectedBuilding] = useState('ALL');
+  const [searchRoomText, setSearchRoomText] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -73,6 +73,8 @@ export default function TaoLichDayBuModal({ isOpen, onClose, defaultClass = null
       // Lọc các phòng đúng ngày đã chọn
       const filtered = (rooms || []).filter(r => r.ngayHoc === ngayDayBu && String(r.maTiet) === String(maTietDayBu));
       setAvailableRooms(filtered);
+      setSelectedBuilding('ALL');
+      setSearchRoomText('');
       if (filtered.length > 0) {
         setSelectedRoom(filtered[0]);
       } else {
@@ -84,6 +86,37 @@ export default function TaoLichDayBuModal({ isOpen, onClose, defaultClass = null
       setLoadingRooms(false);
     }
   };
+
+  // Group buildings from availableRooms
+  const buildingTabs = useMemo(() => {
+    const map = new Map();
+    availableRooms.forEach(r => {
+      const id = r.maToaNha || r.tenToaNha || 'OTHER';
+      const name = r.tenToaNha || (r.maToaNha ? `Tòa ${r.maToaNha}` : 'Khác');
+      if (!map.has(id)) {
+        map.set(id, { id, name, count: 0 });
+      }
+      map.get(id).count += 1;
+    });
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [availableRooms]);
+
+  // Filtered rooms by selectedBuilding and search text
+  const displayedRooms = useMemo(() => {
+    return availableRooms.filter(r => {
+      const matchBuilding =
+        selectedBuilding === 'ALL' ||
+        (r.maToaNha && r.maToaNha === selectedBuilding) ||
+        (r.tenToaNha && r.tenToaNha === selectedBuilding);
+
+      const matchSearch =
+        !searchRoomText.trim() ||
+        (r.tenPhong && r.tenPhong.toLowerCase().includes(searchRoomText.toLowerCase())) ||
+        (r.maPhong && r.maPhong.toLowerCase().includes(searchRoomText.toLowerCase()));
+
+      return matchBuilding && matchSearch;
+    });
+  }, [availableRooms, selectedBuilding, searchRoomText]);
 
   const handleConfirmSubmit = async () => {
     if (!selectedRoom) {
@@ -120,13 +153,17 @@ export default function TaoLichDayBuModal({ isOpen, onClose, defaultClass = null
   const handleResetAndClose = () => {
     setStep(1);
     setError('');
+    setSelectedBuilding('ALL');
+    setSearchRoomText('');
     setSubmittedData(null);
     onClose();
   };
 
+  if (!isOpen) return null;
+
   return (
     <div className="lgd-modal-overlay" onClick={handleResetAndClose}>
-      <div className="lgd-modal-content" style={{ maxWidth: '680px' }} onClick={e => e.stopPropagation()}>
+      <div className="lgd-modal-content" style={{ maxWidth: '750px' }} onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="lgd-modal-header" style={{ background: 'linear-gradient(135deg, #059669 0%, #0284c7 100%)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
@@ -321,14 +358,41 @@ export default function TaoLichDayBuModal({ isOpen, onClose, defaultClass = null
           {/* STEP 3: CHỌN PHÒNG TRỐNG */}
           {step === 3 && (
             <div>
-              <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.95rem', color: '#0f172a' }}>
-                Bước 3: Chọn phòng học khả dụng (Sức chứa ≥ Sĩ số lớp)
-              </h4>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '0.95rem', color: '#0f172a' }}>
+                    Bước 3: Chọn phòng học khả dụng
+                  </h4>
+                  <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.78125rem', color: '#64748b' }}>
+                    Ngày: <strong>{new Date(ngayDayBu).toLocaleDateString('vi-VN')}</strong> • {availableRooms[0]?.tenTiet || 'Tiết ' + maTietDayBu} • Sĩ số: <strong>{selectedCaNghi?.SiSoDangKy || selectedCaNghi?.SiSoDuKien || 50} SV</strong>
+                  </p>
+                </div>
+                {/* Search room filter */}
+                {availableRooms.length > 0 && (
+                  <div style={{ position: 'relative', width: '210px' }}>
+                    <Search size={14} style={{ position: 'absolute', left: '0.65rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                    <input
+                      type="text"
+                      placeholder="Tìm phòng..."
+                      value={searchRoomText}
+                      onChange={e => setSearchRoomText(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.45rem 0.65rem 0.45rem 2.1rem',
+                        fontSize: '0.8125rem',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '6px',
+                        outline: 'none'
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
 
               {loadingRooms ? (
-                <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>
-                  <Loader2 size={24} className="animate-spin" />
-                  <p style={{ marginTop: '0.5rem' }}>Đang tra cứu danh sách phòng trống từ hệ thống...</p>
+                <div style={{ padding: '2.5rem', textAlign: 'center', color: '#64748b' }}>
+                  <Loader2 size={26} className="animate-spin" style={{ margin: '0 auto 0.5rem auto', color: '#059669' }} />
+                  <p style={{ margin: 0, fontWeight: 600 }}>Đang tra cứu danh sách phòng trống từ hệ thống...</p>
                 </div>
               ) : availableRooms.length === 0 ? (
                 <div style={{ padding: '2rem', textAlign: 'center', background: '#fffbeb', borderRadius: '10px', color: '#b45309' }}>
@@ -344,35 +408,150 @@ export default function TaoLichDayBuModal({ isOpen, onClose, defaultClass = null
                   </button>
                 </div>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem', maxHeight: '280px', overflowY: 'auto' }}>
-                  {availableRooms.map(r => {
-                    const isSelected = selectedRoom?.maPhong === r.maPhong;
-                    return (
-                      <div
-                        key={r.maPhong}
-                        onClick={() => setSelectedRoom(r)}
+                <>
+                  {/* BƯỚC CHỌN TÒA NHÀ TRƯỚC */}
+                  <div style={{ marginBottom: '1rem', background: '#f8fafc', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <Building size={15} style={{ color: '#059669' }} />
+                      <span>Chọn tòa nhà trước ({buildingTabs.length} tòa có phòng trống):</span>
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedBuilding('ALL')}
                         style={{
-                          border: isSelected ? '2px solid #059669' : '1px solid #e2e8f0',
-                          background: isSelected ? '#f0fdf4' : '#ffffff',
-                          padding: '0.85rem',
-                          borderRadius: '8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          padding: '0.42rem 0.8rem',
+                          borderRadius: '6px',
+                          fontSize: '0.8125rem',
+                          fontWeight: 600,
+                          border: selectedBuilding === 'ALL' ? '1.5px solid #059669' : '1px solid #cbd5e1',
+                          background: selectedBuilding === 'ALL' ? '#059669' : '#ffffff',
+                          color: selectedBuilding === 'ALL' ? '#ffffff' : '#334155',
                           cursor: 'pointer',
-                          transition: 'all 0.15s'
+                          transition: 'all 0.15s ease'
                         }}
                       >
-                        <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.9rem' }}>
-                          {r.tenPhong || r.maPhong}
-                        </div>
-                        <div style={{ fontSize: '0.78125rem', color: '#64748b', marginTop: '0.25rem' }}>
-                          Toà nhà: <strong>{r.tenToaNha || 'Khu A3'}</strong>
-                        </div>
-                        <div style={{ fontSize: '0.78125rem', color: '#059669', fontWeight: 600, marginTop: '0.25rem' }}>
-                          Sức chứa: {r.sucChua} chỗ ({r.loaiPhong})
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                        <span>Tất cả tòa nhà</span>
+                        <span style={{
+                          fontSize: '0.72rem',
+                          padding: '1px 6px',
+                          borderRadius: '10px',
+                          background: selectedBuilding === 'ALL' ? 'rgba(255,255,255,0.25)' : '#e2e8f0',
+                          color: selectedBuilding === 'ALL' ? '#ffffff' : '#475569'
+                        }}>
+                          {availableRooms.length}
+                        </span>
+                      </button>
+
+                      {buildingTabs.map(b => {
+                        const isBuildingActive = selectedBuilding === b.id;
+                        return (
+                          <button
+                            key={b.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedBuilding(b.id);
+                              // Tự động chuyển phòng được chọn sang phòng đầu tiên của tòa này nếu phòng hiện tại không thuộc tòa này
+                              const firstOfB = availableRooms.find(r => (r.maToaNha && r.maToaNha === b.id) || (r.tenToaNha && r.tenToaNha === b.id));
+                              if (firstOfB && selectedRoom?.maToaNha !== b.id) {
+                                setSelectedRoom(firstOfB);
+                              }
+                            }}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.35rem',
+                              padding: '0.42rem 0.8rem',
+                              borderRadius: '6px',
+                              fontSize: '0.8125rem',
+                              fontWeight: 600,
+                              border: isBuildingActive ? '1.5px solid #059669' : '1px solid #cbd5e1',
+                              background: isBuildingActive ? '#059669' : '#ffffff',
+                              color: isBuildingActive ? '#ffffff' : '#334155',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease'
+                            }}
+                          >
+                            <span>{b.name}</span>
+                            <span style={{
+                              fontSize: '0.72rem',
+                              padding: '1px 6px',
+                              borderRadius: '10px',
+                              background: isBuildingActive ? 'rgba(255,255,255,0.25)' : '#e2e8f0',
+                              color: isBuildingActive ? '#ffffff' : '#475569'
+                            }}>
+                              {b.count}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* LƯỚI PHÒNG HỌC CỦA TÒA NHÀ ĐÃ CHỌN */}
+                  {displayedRooms.length === 0 ? (
+                    <div style={{ padding: '2rem', textAlign: 'center', background: '#f8fafc', borderRadius: '8px', color: '#64748b', fontSize: '0.85rem' }}>
+                      Không có phòng trống nào thuộc tòa nhà này phù hợp với từ khóa tìm kiếm.
+                    </div>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem', maxHeight: '250px', overflowY: 'auto', paddingRight: '4px' }}>
+                      {displayedRooms.map(r => {
+                        const isSelected = selectedRoom?.maPhong === r.maPhong;
+                        return (
+                          <div
+                            key={r.maPhong}
+                            onClick={() => setSelectedRoom(r)}
+                            style={{
+                              border: isSelected ? '2px solid #059669' : '1px solid #cbd5e1',
+                              background: isSelected ? '#f0fdf4' : '#ffffff',
+                              padding: '0.8rem 0.95rem',
+                              borderRadius: '8px',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                              position: 'relative',
+                              boxShadow: isSelected ? '0 2px 6px rgba(5,150,105,0.15)' : 'none'
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.92rem' }}>
+                                {r.tenPhong || r.maPhong}
+                              </div>
+                              {isSelected ? (
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.72rem', color: '#059669', background: '#dcfce7', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                                  <Check size={12} /> Đã chọn
+                                </span>
+                              ) : (
+                                <span style={{ fontSize: '0.7rem', color: '#059669', fontWeight: 600, background: '#f0fdf4', padding: '2px 5px', borderRadius: '4px' }}>
+                                  Khả dụng
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ fontSize: '0.78125rem', color: '#64748b', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <Building size={13} style={{ color: '#94a3b8' }} />
+                              <span>Toà nhà: <strong>{r.tenToaNha || 'Khu A3'}</strong></span>
+                            </div>
+                            <div style={{ fontSize: '0.78125rem', color: '#059669', fontWeight: 600, marginTop: '0.2rem' }}>
+                              Sức chứa: {r.sucChua} chỗ ({r.loaiPhong || 'Phòng lý thuyết'})
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* THANH THÔNG BÁO PHÒNG ĐÃ CHỌN */}
+                  {selectedRoom && (
+                    <div style={{ marginTop: '0.85rem', padding: '0.65rem 0.85rem', background: '#ecfdf5', borderRadius: '6px', border: '1px solid #a7f3d0', fontSize: '0.8125rem', color: '#065f46', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <CheckCircle2 size={16} style={{ color: '#059669', flexShrink: 0 }} />
+                      <span>
+                        Phòng đã chọn: <strong>{selectedRoom.tenPhong || selectedRoom.maPhong}</strong> ({selectedRoom.tenToaNha || 'Tòa nhà'}) • Sức chứa: <strong>{selectedRoom.sucChua} chỗ</strong>
+                      </span>
+                    </div>
+                  )}
+                </>
               )}
 
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1.5rem' }}>
