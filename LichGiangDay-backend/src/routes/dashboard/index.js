@@ -8,7 +8,7 @@ const router = express.Router();
 router.use(authentication);
 
 // GET /v1/api/dashboard/master-data — Toàn bộ thống kê (Admin / Phòng đào tạo)
-router.get('/master-data', checkPermission('Dashboard', 'CanRead'), dashboardController.getMasterData);
+router.get('/master-data', dashboardController.getMasterData);
 
 // GET /v1/api/dashboard/hom-nay — Thống kê buổi học hôm nay (Lecturer Home & BM Home)
 router.get('/hom-nay', dashboardController.getDashboardHomNay);
