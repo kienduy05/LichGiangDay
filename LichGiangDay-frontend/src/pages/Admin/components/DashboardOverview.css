@@ -457,3 +457,198 @@
     justify-content: flex-end;
   }
 }
+
+/* ====================================================
+   DOMAIN TABS (Dữ liệu nền / Thời khóa biểu / Biến động lịch)
+   ==================================================== */
+.dashboard-domain-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 28px;
+  padding: 6px;
+  background: var(--admin-card-bg, #ffffff);
+  border: 1px solid var(--admin-border, #e2e8f0);
+  border-radius: 14px;
+  box-shadow: var(--admin-shadow);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.dashboard-domain-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.domain-tab {
+  --tab-color: #2563eb;
+  --tab-bg: #eff6ff;
+  flex: 1 1 0;
+  min-width: max-content;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 11px 20px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--admin-text-muted, #64748b);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.domain-tab:hover {
+  background: #f8fafc;
+  color: var(--admin-text-main, #0f172a);
+}
+
+.domain-tab.active {
+  background: var(--tab-bg);
+  color: var(--tab-color);
+  border-color: color-mix(in srgb, var(--tab-color) 25%, transparent);
+  box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--tab-color) 30%, transparent);
+}
+
+.domain-tab:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tab-color) 25%, transparent);
+}
+
+.domain-tab-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: #f1f5f9;
+  color: var(--admin-text-muted, #64748b);
+  transition: all 0.2s ease;
+}
+
+.domain-tab.active .domain-tab-icon {
+  background: var(--tab-color);
+  color: #ffffff;
+}
+
+/* ====================================================
+   KPI GRID VARIANTS (TKB: 6 cột, Biến động: 7 cột)
+   ==================================================== */
+.dashboard-kpi-grid.kpi-6col {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.dashboard-kpi-grid.kpi-7col {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (min-width: 1500px) {
+  .dashboard-kpi-grid.kpi-7col {
+    grid-template-columns: repeat(7, 1fr);
+  }
+}
+
+/* Thẻ KPI hẹp: cho phép label xuống dòng thay vì bị cắt */
+.kpi-6col .kpi-label,
+.kpi-7col .kpi-label {
+  white-space: normal;
+  line-height: 1.3;
+}
+
+.kpi-6col .dashboard-kpi-card,
+.kpi-7col .dashboard-kpi-card {
+  padding: 16px;
+}
+
+/* ====================================================
+   EMPTY DOMAIN (chưa có dữ liệu TKB / Biến động)
+   ==================================================== */
+.dashboard-empty-domain {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 360px;
+  padding: 40px 24px;
+  text-align: center;
+  background: var(--admin-card-bg, #ffffff);
+  border: 2px dashed var(--admin-border, #e2e8f0);
+  border-radius: 16px;
+  color: var(--admin-text-sub, #94a3b8);
+  animation: fadeInUp 0.4s ease both;
+}
+
+.dashboard-empty-domain svg {
+  opacity: 0.6;
+  margin-bottom: 6px;
+}
+
+.dashboard-empty-domain p {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--admin-text-muted, #64748b);
+}
+
+.dashboard-empty-domain span {
+  font-size: 0.85rem;
+}
+
+/* ====================================================
+   BADGES & SPINNER
+   ==================================================== */
+.chart-card-badge.pie { /* giữ nguyên, badge dùng chung cho TKB / BĐ */ }
+
+@keyframes dashboardSpin {
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: dashboardSpin 1s linear infinite;
+}
+
+.btn-refresh-dashboard:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Đổi domain tab → các khối fade in lại mượt hơn */
+.dashboard-warnings-grid .warning-item:nth-child(1) { animation-delay: 0.02s; }
+.dashboard-warnings-grid .warning-item:nth-child(2) { animation-delay: 0.05s; }
+.dashboard-warnings-grid .warning-item:nth-child(3) { animation-delay: 0.08s; }
+.dashboard-warnings-grid .warning-item:nth-child(4) { animation-delay: 0.11s; }
+
+/* ====================================================
+   RESPONSIVE – bổ sung cho domain tabs & KPI variants
+   (đặt sau để thắng độ ưu tiên của .kpi-6col / .kpi-7col)
+   ==================================================== */
+@media (max-width: 1400px) {
+  .dashboard-kpi-grid.kpi-6col {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 1100px) {
+  .dashboard-kpi-grid.kpi-6col,
+  .dashboard-kpi-grid.kpi-7col {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-kpi-grid.kpi-6col,
+  .dashboard-kpi-grid.kpi-7col {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .domain-tab {
+    flex: 0 0 auto;
+    padding: 10px 14px;
+    font-size: 0.85rem;
+  }
+  .dashboard-empty-domain {
+    min-height: 260px;
+  }
+}

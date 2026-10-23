@@ -108,10 +108,10 @@ export default function LopSinhVienDetailView({
           <button
             type="button"
             className="action-btn edit"
-            style={{ padding: '8px 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', height: 'auto' }}
+            style={{ padding: '6px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', width: 'auto', height: 'auto', flexShrink: 0, whiteSpace: 'nowrap', fontSize: '0.84rem', fontWeight: 600 }}
             onClick={() => onEdit(lopSinhVien)}
           >
-            <Edit2 size={15} /> Sửa thông tin
+            <Edit2 size={15} /> Sửa
           </button>
         )}
       </div>

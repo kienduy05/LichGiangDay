@@ -33,7 +33,7 @@ export default function MonHocDetailView({
             display: 'inline-flex',
             alignItems: 'center',
             gap: '6px',
-            padding: '8px 14px',
+            padding: '8px',
             borderRadius: '8px',
             border: '1px solid #cbd5e1',
             background: '#ffffff',
@@ -124,10 +124,10 @@ export default function MonHocDetailView({
           <button
             type="button"
             className="action-btn edit"
-            style={{ padding: '8px 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', height: 'auto' }}
+            style={{ padding: '6px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', width: 'auto', height: 'auto', flexShrink: 0, whiteSpace: 'nowrap', fontSize: '0.84rem', fontWeight: 600 }}
             onClick={() => onEdit(monHoc)}
           >
-            <Edit2 size={15} /> Sửa môn học
+            <Edit2 size={20} /> Sửa
           </button>
         )}
       </div>

@@ -831,8 +831,12 @@
   border-radius: 16px;
   max-width: 680px;
   width: 100%;
-  max-height: 92vh;
-  overflow-y: auto;
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;              /* không cuộn ở lớp này nữa */
+  box-sizing: border-box;
   box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
   border: 1px solid rgba(226, 232, 240, 0.8);
 }
@@ -846,6 +850,7 @@
   align-items: center;
   border-top-left-radius: 16px;
   border-top-right-radius: 16px;
+   flex-shrink: 0;
 }
 
 .lgd-modal-title {
@@ -874,10 +879,18 @@
 }
 
 .lgd-modal-body {
-  padding: 1.5rem;
+  padding: 1.25rem 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1rem;
+  min-width: 0;
+  flex: 1 1 auto;
+  min-height: 0;                 /* bắt buộc để vùng này co lại và cuộn được */
+  overflow-y: auto;              /* body mới là vùng cuộn */
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 transparent;
 }
 
 /* Modal Hero Box */
@@ -991,20 +1004,32 @@
 .lgd-modal-subject-meta {
   color: #64748b;
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
+
   gap: 0.4rem;
+  min-width: 0;
+  flex: 1 1 100%;
 }
 
 /* Info Grid */
 .lgd-modal-info-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
 }
-
+.lgd-span-2 {
+  grid-column: span 2;
+}
 @media (max-width: 640px) {
   .lgd-modal-info-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .lgd-span-2 {
+    grid-column: auto;
+  }
+  .lgd-modal-body {
+    padding: 1rem;
   }
 }
 
@@ -1019,6 +1044,8 @@
   border-left-width: 4px;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
   transition: transform 0.15s, box-shadow 0.15s;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .lgd-modal-info-item:hover {
@@ -1139,3 +1166,28 @@
   color: #1d4ed8;
   border: 1px solid #bfdbfe;
 }
+.lgd-modal-class-name,
+.lgd-modal-subject-name,
+.lgd-highlight-name,
+.lgd-highlight-room,
+.lgd-highlight-time,
+.lgd-modal-value {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.lgd-highlight-room {
+  max-width: 100%;
+}
+
+.lgd-modal-subject-box {
+  min-width: 0;
+}
+
+.lgd-modal-hero {
+  min-width: 0;
+}
+.lgd-modal-body::-webkit-scrollbar { display: block; width: 8px; }
+.lgd-modal-body::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+.lgd-modal-body::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+.lgd-modal-body::-webkit-scrollbar-track { background: transparent; }
