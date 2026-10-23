@@ -29,7 +29,7 @@ class DashboardService {
    */
   static getMasterData = async ({ maHocKy, maKhoa, sections }) => {
     // --- Parse sections ---
-    const allSections = ['kpi', 'pie', 'bar', 'warnings'];
+    const allSections = ['kpi', 'pie', 'bar', 'warnings', 'schedule', 'biendong'];
     const requestedSections = sections
       ? sections.split(',').map(s => s.trim().toLowerCase()).filter(s => allSections.includes(s))
       : allSections;
@@ -70,6 +70,20 @@ class DashboardService {
     // ========================================================
     if (requestedSections.includes('warnings')) {
       tasks.warnings = this._getWarnings({ maHocKy, maKhoa });
+    }
+
+    // ========================================================
+    // KHU VỰC E: Thời khóa biểu & Xếp lịch (Phân hệ 2)
+    // ========================================================
+    if (requestedSections.includes('schedule')) {
+      tasks.schedule = this._getScheduleStats({ maHocKy, maKhoa });
+    }
+
+    // ========================================================
+    // KHU VỰC F: Biến động lịch & Duyệt yêu cầu (Phân hệ 3)
+    // ========================================================
+    if (requestedSections.includes('biendong')) {
+      tasks.biendong = this._getBienDongStats({ maHocKy, maKhoa });
     }
 
     // Chạy tất cả song song
@@ -642,6 +656,539 @@ class DashboardService {
       warnings[key] = results[i][0][0].total;
     });
     return warnings;
+  };
+
+  // ============================================================
+  // KHU VỰC E: Thời khóa biểu & Xếp lịch (Phân hệ 2)
+  // ============================================================
+  static _getScheduleStats = async ({ maHocKy, maKhoa }) => {
+    const kpiQ = {};
+    const pieQ = {};
+    const barQ = {};
+    const warnQ = {};
+
+    // --- Điều kiện JOIN chung ---
+    const joinBM = maKhoa ? 'JOIN BoMon bm ON lhp.MaBoMon = bm.MaBoMon' : '';
+    const andKhoa = maKhoa ? ' AND bm.MaKhoa = ?' : '';
+    const baseParams = maHocKy && maKhoa ? [maHocKy, maKhoa] : maHocKy ? [maHocKy] : [];
+
+    // ======================== KPI ========================
+
+    // S1: Tổng lịch TKB đã xếp
+    if (maHocKy) {
+      kpiQ.tongTKB = db.query(`
+        SELECT COUNT(*) AS total FROM ThoiKhoaBieu tkb
+        JOIN LopHocPhan lhp ON tkb.MaLopHocPhan = lhp.MaLopHocPhan
+        ${joinBM}
+        WHERE lhp.MaHocKy = ?${andKhoa}
+      `, baseParams);
+    } else {
+      kpiQ.tongTKB = Promise.resolve([[{ total: 0 }]]);
+    }
+
+    // S2: LHP đã xếp lịch / Tổng LHP (tỷ lệ hoàn thành)
+    if (maHocKy) {
+      kpiQ.lhpDaXepLich = db.query(`
+        SELECT COUNT(DISTINCT tkb.MaLopHocPhan) AS total
+        FROM ThoiKhoaBieu tkb
+        JOIN LopHocPhan lhp ON tkb.MaLopHocPhan = lhp.MaLopHocPhan
+        ${joinBM}
+        WHERE lhp.MaHocKy = ?${andKhoa}
+      `, baseParams);
+
+      kpiQ.tongLHP = db.query(`
+        SELECT COUNT(*) AS total FROM LopHocPhan lhp
+        ${joinBM}
+        WHERE lhp.MaHocKy = ?${andKhoa}
+      `, baseParams);
+    } else {
+      kpiQ.lhpDaXepLich = Promise.resolve([[{ total: 0 }]]);
+      kpiQ.tongLHP = Promise.resolve([[{ total: 0 }]]);
+    }
+
+    // S3: Tổng buổi học đã sinh
+    if (maHocKy) {
+      kpiQ.tongBuoiHoc = db.query(`
+        SELECT COUNT(*) AS total FROM BuoiHoc bh
+        JOIN LopHocPhan lhp ON bh.MaLopHocPhan = lhp.MaLopHocPhan
+        ${joinBM}
+        WHERE lhp.MaHocKy = ?${andKhoa}
+      `, baseParams);
+    } else {
+      kpiQ.tongBuoiHoc = Promise.resolve([[{ total: 0 }]]);
+    }
+
+    // S4: Tổng phòng học đang sử dụng trong TKB
+    if (maHocKy) {
+      kpiQ.phongDangDung = db.query(`
+        SELECT COUNT(DISTINCT tkb.MaPhong) AS total
+        FROM ThoiKhoaBieu tkb
+        JOIN LopHocPhan lhp ON tkb.MaLopHocPhan = lhp.MaLopHocPhan
+        ${joinBM}
+        WHERE lhp.MaHocKy = ?${andKhoa}
+      `, baseParams);
+    } else {
+      kpiQ.phongDangDung = Promise.resolve([[{ total: 0 }]]);
+    }
+
+    // ======================== PIE ========================
+
+    // S5: LHP đã xếp lịch vs chưa xếp
+    if (maHocKy) {
+      pieQ.lhpXepLichPie = db.query(`
+        SELECT
+          CASE WHEN EXISTS (
+            SELECT 1 FROM ThoiKhoaBieu tkb WHERE tkb.MaLopHocPhan = lhp.MaLopHocPhan
+          ) THEN 'Đã xếp lịch' ELSE 'Chưa xếp lịch' END AS label,
+          COUNT(*) AS value
+        FROM LopHocPhan lhp
+        ${joinBM}
+        WHERE lhp.MaHocKy = ?${andKhoa}
+        GROUP BY label
+      `, baseParams);
+    } else {
+      pieQ.lhpXepLichPie = Promise.resolve([[]]);
+    }
+
+    // S6: TKB theo thứ trong tuần
+    if (maHocKy) {
+      pieQ.tkbTheoThu = db.query(`
+        SELECT
+          CASE tkb.ThuTrongTuan
+            WHEN 2 THEN 'Thứ 2'
+            WHEN 3 THEN 'Thứ 3'
+            WHEN 4 THEN 'Thứ 4'
+            WHEN 5 THEN 'Thứ 5'
+            WHEN 6 THEN 'Thứ 6'
+            WHEN 7 THEN 'Thứ 7'
+            WHEN 8 THEN 'Chủ nhật'
+            ELSE CONCAT('Thứ ', tkb.ThuTrongTuan)
+          END AS label,
+          COUNT(*) AS value
+        FROM ThoiKhoaBieu tkb
+        JOIN LopHocPhan lhp ON tkb.MaLopHocPhan = lhp.MaLopHocPhan
+        ${joinBM}
+        WHERE lhp.MaHocKy = ?${andKhoa}
+        GROUP BY tkb.ThuTrongTuan
+        ORDER BY tkb.ThuTrongTuan
+      `, baseParams);
+    } else {
+      pieQ.tkbTheoThu = Promise.resolve([[]]);
+    }
+
+    // S7: Phân công GV (Assigned / Unassigned)
+    if (maHocKy) {
+      pieQ.phanCongGV = db.query(`
+        SELECT
+          CASE
+            WHEN lhp.TrangThaiPhanCong = 'Unassigned' THEN 'Chưa phân công'
+            ELSE 'Đã phân công'
+          END AS label,
+          COUNT(*) AS value
+        FROM LopHocPhan lhp
+        ${joinBM}
+        WHERE lhp.MaHocKy = ?${andKhoa}
+        GROUP BY label
+      `, baseParams);
+    } else {
+      pieQ.phanCongGV = Promise.resolve([[]]);
+    }
+
+    // ======================== BAR ========================
+
+    // S8: Số lịch TKB theo bộ môn
+    if (maHocKy) {
+      barQ.tkbTheoBM = db.query(`
+        SELECT bm2.TenBoMon AS label, COUNT(tkb.MaThoiKhoaBieu) AS value
+        FROM BoMon bm2
+        LEFT JOIN LopHocPhan lhp2 ON bm2.MaBoMon = lhp2.MaBoMon AND lhp2.MaHocKy = ?
+        LEFT JOIN ThoiKhoaBieu tkb ON lhp2.MaLopHocPhan = tkb.MaLopHocPhan
+        ${maKhoa ? 'WHERE bm2.MaKhoa = ?' : ''}
+        GROUP BY bm2.MaBoMon, bm2.TenBoMon
+        ORDER BY value DESC
+      `, baseParams);
+    } else {
+      barQ.tkbTheoBM = Promise.resolve([[]]);
+    }
+
+    // S9: Top 10 phòng học được sử dụng nhiều nhất
+    if (maHocKy) {
+      barQ.topPhongHoc = db.query(`
+        SELECT ph.TenPhong AS label, COUNT(tkb.MaThoiKhoaBieu) AS value
+        FROM ThoiKhoaBieu tkb
+        JOIN PhongHoc ph ON tkb.MaPhong = ph.MaPhong
+        JOIN LopHocPhan lhp ON tkb.MaLopHocPhan = lhp.MaLopHocPhan
+        ${joinBM}
+        WHERE lhp.MaHocKy = ?${andKhoa}
+        GROUP BY tkb.MaPhong, ph.TenPhong
+        ORDER BY value DESC
+        LIMIT 10
+      `, baseParams);
+    } else {
+      barQ.topPhongHoc = Promise.resolve([[]]);
+    }
+
+    // S10: Số lượng lịch theo ca/tiết
+    if (maHocKy) {
+      barQ.tkbTheoTiet = db.query(`
+        SELECT th.TenTiet AS label, COUNT(tkb.MaThoiKhoaBieu) AS value
+        FROM ThoiKhoaBieu tkb
+        JOIN TietHoc th ON tkb.MaTiet = th.MaTiet
+        JOIN LopHocPhan lhp ON tkb.MaLopHocPhan = lhp.MaLopHocPhan
+        ${joinBM}
+        WHERE lhp.MaHocKy = ?${andKhoa}
+        GROUP BY tkb.MaTiet, th.TenTiet
+        ORDER BY tkb.MaTiet
+      `, baseParams);
+    } else {
+      barQ.tkbTheoTiet = Promise.resolve([[]]);
+    }
+
+    // ======================== WARNINGS ========================
+
+    // S11: LHP chưa xếp lịch
+    if (maHocKy) {
+      warnQ.lhpChuaXepLich = db.query(`
+        SELECT COUNT(*) AS total FROM LopHocPhan lhp
+        ${joinBM}
+        WHERE lhp.MaHocKy = ?${andKhoa}
+          AND NOT EXISTS (
+            SELECT 1 FROM ThoiKhoaBieu tkb WHERE tkb.MaLopHocPhan = lhp.MaLopHocPhan
+          )
+      `, baseParams);
+    } else {
+      warnQ.lhpChuaXepLich = Promise.resolve([[{ total: 0 }]]);
+    }
+
+    // S12: LHP chưa phân công GV
+    if (maHocKy) {
+      warnQ.lhpChuaPhanCongGV = db.query(`
+        SELECT COUNT(*) AS total FROM LopHocPhan lhp
+        ${joinBM}
+        WHERE lhp.MaHocKy = ?${andKhoa}
+          AND (lhp.TrangThaiPhanCong = 'Unassigned' OR lhp.MaGiangVien IS NULL)
+      `, baseParams);
+    } else {
+      warnQ.lhpChuaPhanCongGV = Promise.resolve([[{ total: 0 }]]);
+    }
+
+    // --- Chạy song song tất cả ---
+    const [kpiKeys, kpiVals] = [Object.keys(kpiQ), await Promise.all(Object.values(kpiQ))];
+    const [pieKeys, pieVals] = [Object.keys(pieQ), await Promise.all(Object.values(pieQ))];
+    const [barKeys, barVals] = [Object.keys(barQ), await Promise.all(Object.values(barQ))];
+    const [warnKeys, warnVals] = [Object.keys(warnQ), await Promise.all(Object.values(warnQ))];
+
+    // Xây kpi
+    const kpi = {};
+    kpiKeys.forEach((k, i) => { kpi[k] = kpiVals[i][0][0].total; });
+    // Tính tỷ lệ xếp lịch %
+    kpi.tyLeXepLich = kpi.tongLHP > 0
+      ? Math.round((kpi.lhpDaXepLich / kpi.tongLHP) * 100)
+      : 0;
+
+    // Xây pie
+    const pie = {};
+    pieKeys.forEach((k, i) => { pie[k] = pieVals[i][0] || []; });
+
+    // Xây bar
+    const bar = {};
+    barKeys.forEach((k, i) => { bar[k] = barVals[i][0] || []; });
+
+    // Xây warnings
+    const warnings = {};
+    warnKeys.forEach((k, i) => { warnings[k] = warnVals[i][0][0].total; });
+
+    return { kpi, pie, bar, warnings };
+  };
+
+  // ============================================================
+  // KHU VỰC F: Biến động lịch & Duyệt yêu cầu (Phân hệ 3)
+  // ============================================================
+  static _getBienDongStats = async ({ maHocKy, maKhoa }) => {
+    const kpiQ = {};
+    const pieQ = {};
+    const barQ = {};
+    const warnQ = {};
+
+    // --- Điều kiện JOIN chung ---
+    const joinBM = maKhoa ? 'JOIN BoMon bm ON lhp.MaBoMon = bm.MaBoMon' : '';
+    const andKhoa = maKhoa ? ' AND bm.MaKhoa = ?' : '';
+    const baseParams = maHocKy && maKhoa ? [maHocKy, maKhoa] : maHocKy ? [maHocKy] : [];
+
+    // ======================== KPI ========================
+
+    // B1: Tổng yêu cầu (Nghỉ/Đổi ca/Dạy thay)
+    if (maHocKy) {
+      kpiQ.tongYeuCau = db.query(`
+        SELECT COUNT(*) AS total FROM YeuCauNghi ycn
+        JOIN BuoiHoc bh ON ycn.MaBuoiHoc = bh.MaBuoiHoc
+        JOIN LopHocPhan lhp ON bh.MaLopHocPhan = lhp.MaLopHocPhan
+        ${joinBM}
+        WHERE lhp.MaHocKy = ?${andKhoa}
+      `, baseParams);
+    } else {
+      kpiQ.tongYeuCau = Promise.resolve([[{ total: 0 }]]);
+    }
+
+    // B2: Yêu cầu chờ duyệt
+    if (maHocKy) {
+      kpiQ.yeuCauChoDuyet = db.query(`
+        SELECT COUNT(*) AS total FROM YeuCauNghi ycn
+        JOIN BuoiHoc bh ON ycn.MaBuoiHoc = bh.MaBuoiHoc
+        JOIN LopHocPhan lhp ON bh.MaLopHocPhan = lhp.MaLopHocPhan
+        ${joinBM}
+        WHERE lhp.MaHocKy = ?${andKhoa}
+          AND ycn.TrangThai = 'Pending'
+      `, baseParams);
+    } else {
+      kpiQ.yeuCauChoDuyet = Promise.resolve([[{ total: 0 }]]);
+    }
+
+    // B3: Tổng buổi đã nghỉ (BuoiHoc.TrangThai = 'Absent')
+    if (maHocKy) {
+      kpiQ.buoiDaNghi = db.query(`
+        SELECT COUNT(*) AS total FROM BuoiHoc bh
+        JOIN LopHocPhan lhp ON bh.MaLopHocPhan = lhp.MaLopHocPhan
+        ${joinBM}
+        WHERE lhp.MaHocKy = ?${andKhoa}
+          AND bh.TrangThai = 'Absent'
+      `, baseParams);
+    } else {
+      kpiQ.buoiDaNghi = Promise.resolve([[{ total: 0 }]]);
+    }
+
+    // B4: Tổng buổi dạy bù đã tạo
+    if (maHocKy) {
+      kpiQ.buoiDayBu = db.query(`
+        SELECT COUNT(*) AS total FROM BuoiHoc bh
+        JOIN LopHocPhan lhp ON bh.MaLopHocPhan = lhp.MaLopHocPhan
+        ${joinBM}
+        WHERE lhp.MaHocKy = ?${andKhoa}
+          AND bh.LoaiBuoiHoc = 'Makeup'
+      `, baseParams);
+    } else {
+      kpiQ.buoiDayBu = Promise.resolve([[{ total: 0 }]]);
+    }
+
+    // B5: Tổng buổi dạy thay
+    if (maHocKy) {
+      kpiQ.buoiDayThay = db.query(`
+        SELECT COUNT(*) AS total FROM BuoiHoc bh
+        JOIN LopHocPhan lhp ON bh.MaLopHocPhan = lhp.MaLopHocPhan
+        ${joinBM}
+        WHERE lhp.MaHocKy = ?${andKhoa}
+          AND bh.TrangThai = 'Substituted'
+      `, baseParams);
+    } else {
+      kpiQ.buoiDayThay = Promise.resolve([[{ total: 0 }]]);
+    }
+
+    // B6: Ca nghỉ quá hạn chưa bù (>14 ngày)
+    if (maHocKy) {
+      kpiQ.caQuaHan = db.query(`
+        SELECT COUNT(*) AS total FROM BuoiHoc bh
+        JOIN LopHocPhan lhp ON bh.MaLopHocPhan = lhp.MaLopHocPhan
+        ${joinBM}
+        WHERE lhp.MaHocKy = ?${andKhoa}
+          AND bh.TrangThai = 'Absent'
+          AND bh.DaDayBu = 0
+          AND DATEDIFF(CURDATE(), bh.NgayHoc) > 14
+      `, baseParams);
+    } else {
+      kpiQ.caQuaHan = Promise.resolve([[{ total: 0 }]]);
+    }
+
+    // ======================== PIE ========================
+
+    // B7: Yêu cầu theo loại (Absence / Swap / Substitute)
+    if (maHocKy) {
+      pieQ.ycTheoLoai = db.query(`
+        SELECT
+          CASE ycn.LoaiYeuCau
+            WHEN 'Absence' THEN 'Báo nghỉ'
+            WHEN 'ABSENCE' THEN 'Báo nghỉ'
+            WHEN 'Swap' THEN 'Đổi ca'
+            WHEN 'SWAP' THEN 'Đổi ca'
+            WHEN 'Substitute' THEN 'Dạy thay'
+            WHEN 'SUBSTITUTE' THEN 'Dạy thay'
+            ELSE ycn.LoaiYeuCau
+          END AS label,
+          COUNT(*) AS value
+        FROM YeuCauNghi ycn
+        JOIN BuoiHoc bh ON ycn.MaBuoiHoc = bh.MaBuoiHoc
+        JOIN LopHocPhan lhp ON bh.MaLopHocPhan = lhp.MaLopHocPhan
+        ${joinBM}
+        WHERE lhp.MaHocKy = ?${andKhoa}
+        GROUP BY label
+        ORDER BY value DESC
+      `, baseParams);
+    } else {
+      pieQ.ycTheoLoai = Promise.resolve([[]]);
+    }
+
+    // B8: Yêu cầu theo trạng thái (Pending / Approved / Rejected / Cancelled)
+    if (maHocKy) {
+      pieQ.ycTheoTrangThai = db.query(`
+        SELECT
+          CASE ycn.TrangThai
+            WHEN 'Pending' THEN 'Chờ duyệt'
+            WHEN 'Approved' THEN 'Đã duyệt'
+            WHEN 'Rejected' THEN 'Từ chối'
+            WHEN 'Cancelled' THEN 'Đã hủy'
+            WHEN 'Revoked' THEN 'Thu hồi'
+            ELSE ycn.TrangThai
+          END AS label,
+          COUNT(*) AS value
+        FROM YeuCauNghi ycn
+        JOIN BuoiHoc bh ON ycn.MaBuoiHoc = bh.MaBuoiHoc
+        JOIN LopHocPhan lhp ON bh.MaLopHocPhan = lhp.MaLopHocPhan
+        ${joinBM}
+        WHERE lhp.MaHocKy = ?${andKhoa}
+        GROUP BY label
+        ORDER BY value DESC
+      `, baseParams);
+    } else {
+      pieQ.ycTheoTrangThai = Promise.resolve([[]]);
+    }
+
+    // B9: Buổi học theo trạng thái biến động
+    if (maHocKy) {
+      pieQ.buoiHocTheoTrangThai = db.query(`
+        SELECT
+          CASE bh.TrangThai
+            WHEN 'Normal' THEN 'Bình thường'
+            WHEN 'Absence_Pending' THEN 'Chờ duyệt nghỉ'
+            WHEN 'Absent' THEN 'Đã nghỉ'
+            WHEN 'Substitute_Pending' THEN 'Chờ dạy thay'
+            WHEN 'Substituted' THEN 'Đã dạy thay'
+            WHEN 'Swap_Pending' THEN 'Chờ đổi ca'
+            WHEN 'Swapped' THEN 'Đã đổi ca'
+            ELSE bh.TrangThai
+          END AS label,
+          COUNT(*) AS value
+        FROM BuoiHoc bh
+        JOIN LopHocPhan lhp ON bh.MaLopHocPhan = lhp.MaLopHocPhan
+        ${joinBM}
+        WHERE lhp.MaHocKy = ?${andKhoa}
+          AND bh.TrangThai != 'Normal'
+        GROUP BY label
+        ORDER BY value DESC
+      `, baseParams);
+    } else {
+      pieQ.buoiHocTheoTrangThai = Promise.resolve([[]]);
+    }
+
+    // ======================== BAR ========================
+
+    // B10: Top 10 GV có nhiều ca biến động nhất
+    if (maHocKy) {
+      barQ.topGVBienDong = db.query(`
+        SELECT gv.HoTen AS label, COUNT(ycn.MaYeuCauNghi) AS value
+        FROM YeuCauNghi ycn
+        JOIN GiangVien gv ON ycn.MaGiangVien = gv.MaGiangVien
+        JOIN BuoiHoc bh ON ycn.MaBuoiHoc = bh.MaBuoiHoc
+        JOIN LopHocPhan lhp ON bh.MaLopHocPhan = lhp.MaLopHocPhan
+        ${joinBM}
+        WHERE lhp.MaHocKy = ?${andKhoa}
+        GROUP BY ycn.MaGiangVien, gv.HoTen
+        ORDER BY value DESC
+        LIMIT 10
+      `, baseParams);
+    } else {
+      barQ.topGVBienDong = Promise.resolve([[]]);
+    }
+
+    // B11: Số yêu cầu biến động theo bộ môn
+    if (maHocKy) {
+      barQ.bienDongTheoBM = db.query(`
+        SELECT bm2.TenBoMon AS label, COUNT(ycn.MaYeuCauNghi) AS value
+        FROM BoMon bm2
+        LEFT JOIN LopHocPhan lhp2 ON bm2.MaBoMon = lhp2.MaBoMon AND lhp2.MaHocKy = ?
+        LEFT JOIN BuoiHoc bh2 ON lhp2.MaLopHocPhan = bh2.MaLopHocPhan
+        LEFT JOIN YeuCauNghi ycn ON bh2.MaBuoiHoc = ycn.MaBuoiHoc
+        ${maKhoa ? 'WHERE bm2.MaKhoa = ?' : ''}
+        GROUP BY bm2.MaBoMon, bm2.TenBoMon
+        ORDER BY value DESC
+      `, baseParams);
+    } else {
+      barQ.bienDongTheoBM = Promise.resolve([[]]);
+    }
+
+    // B12: Số buổi biến động theo tháng (timeline)
+    if (maHocKy) {
+      barQ.bienDongTheoThang = db.query(`
+        SELECT
+          DATE_FORMAT(bh.NgayHoc, '%Y-%m') AS label,
+          COUNT(*) AS value
+        FROM BuoiHoc bh
+        JOIN LopHocPhan lhp ON bh.MaLopHocPhan = lhp.MaLopHocPhan
+        ${joinBM}
+        WHERE lhp.MaHocKy = ?${andKhoa}
+          AND bh.TrangThai != 'Normal'
+        GROUP BY label
+        ORDER BY label
+      `, baseParams);
+    } else {
+      barQ.bienDongTheoThang = Promise.resolve([[]]);
+    }
+
+    // ======================== WARNINGS ========================
+
+    // B13: Ca nghỉ quá hạn chưa dạy bù (>14 ngày) — chi tiết
+    if (maHocKy) {
+      warnQ.caQuaHanChuaBu = db.query(`
+        SELECT COUNT(*) AS total FROM BuoiHoc bh
+        JOIN LopHocPhan lhp ON bh.MaLopHocPhan = lhp.MaLopHocPhan
+        ${joinBM}
+        WHERE lhp.MaHocKy = ?${andKhoa}
+          AND bh.TrangThai = 'Absent'
+          AND bh.DaDayBu = 0
+          AND DATEDIFF(CURDATE(), bh.NgayHoc) > 14
+      `, baseParams);
+    } else {
+      warnQ.caQuaHanChuaBu = Promise.resolve([[{ total: 0 }]]);
+    }
+
+    // B14: Đơn dạy bù đang chờ xử lý
+    if (maHocKy) {
+      warnQ.donDayBuChoDuyet = db.query(`
+        SELECT COUNT(*) AS total FROM DangKyDayBu dkdb
+        JOIN LopHocPhan lhp ON dkdb.MaLopHocPhan = lhp.MaLopHocPhan
+        ${joinBM}
+        WHERE lhp.MaHocKy = ?${andKhoa}
+          AND dkdb.TrangThai IN ('Pending', 'Processing')
+      `, baseParams);
+    } else {
+      warnQ.donDayBuChoDuyet = Promise.resolve([[{ total: 0 }]]);
+    }
+
+    // --- Chạy song song tất cả ---
+    const [kpiKeys, kpiVals] = [Object.keys(kpiQ), await Promise.all(Object.values(kpiQ))];
+    const [pieKeys, pieVals] = [Object.keys(pieQ), await Promise.all(Object.values(pieQ))];
+    const [barKeys, barVals] = [Object.keys(barQ), await Promise.all(Object.values(barQ))];
+    const [warnKeys, warnVals] = [Object.keys(warnQ), await Promise.all(Object.values(warnQ))];
+
+    // Xây kpi
+    const kpi = {};
+    kpiKeys.forEach((k, i) => { kpi[k] = kpiVals[i][0][0].total; });
+    // Tính tỷ lệ hoàn thành dạy bù
+    kpi.tyLeHoanThanhBu = kpi.buoiDaNghi > 0
+      ? Math.round((kpi.buoiDayBu / kpi.buoiDaNghi) * 100)
+      : 0;
+
+    // Xây pie
+    const pie = {};
+    pieKeys.forEach((k, i) => { pie[k] = pieVals[i][0] || []; });
+
+    // Xây bar
+    const bar = {};
+    barKeys.forEach((k, i) => { bar[k] = barVals[i][0] || []; });
+
+    // Xây warnings
+    const warnings = {};
+    warnKeys.forEach((k, i) => { warnings[k] = warnVals[i][0][0].total; });
+
+    return { kpi, pie, bar, warnings };
   };
 }
 
