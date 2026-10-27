@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../../../context/AuthContext';
 import {
-  BookMarked, Plus, AlertCircle, Loader2, ShieldAlert, CheckCircle2,
-  BookOpen, Hash, GraduationCap, Calendar, Layers
+  BookMarked, Plus, AlertCircle, Loader2, ShieldAlert,
+  BookOpen, Hash, GraduationCap, Calendar
 } from 'lucide-react';
 import {
   apiGetLopHocPhanList,
@@ -27,6 +27,7 @@ import LopHocPhanTable from './LopHocPhanTable';
 import LopHocPhanFormModal from './LopHocPhanFormModal';
 import LopHocPhanDetailView from './LopHocPhanDetailView';
 import LopHocPhanImportExport from './LopHocPhanImportExport';
+import { AttachLopSinhVienModal, DetachLopSinhVienModal } from './LopHocPhanAssignModal';
 
 import './LopHocPhanManagement.css';
 import './LopHocPhanComponents.css';
@@ -57,6 +58,8 @@ export default function LopHocPhanManagement() {
   const [view, setView] = useState('list');
   const [detailData, setDetailData] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [isAttachLsvOpen, setIsAttachLsvOpen] = useState(false);
+  const [isDetachLsvOpen, setIsDetachLsvOpen] = useState(false);
 
   // ─── Lookup data ───
   const [hocKyList, setHocKyList] = useState([]);
@@ -245,6 +248,21 @@ export default function LopHocPhanManagement() {
       setDetailData(data);
     } catch {
       setDetailData({ lopHocPhan: item });
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const refreshDetail = async () => {
+    const maLopHocPhan = detailData?.lopHocPhan?.MaLopHocPhan;
+    if (!maLopHocPhan) return;
+    setDetailLoading(true);
+    try {
+      const data = await apiGetLopHocPhanChiTiet(maLopHocPhan);
+      setDetailData(data);
+      await handleRefresh();
+    } catch (err) {
+      setLhpError(err.message || 'Không thể cập nhật danh sách lớp sinh viên ghép.');
     } finally {
       setDetailLoading(false);
     }
@@ -597,6 +615,8 @@ export default function LopHocPhanManagement() {
                   setDetailData(null);
                 }}
                 onEdit={handleOpenEdit}
+                onAttachLopSinhVien={() => setIsAttachLsvOpen(true)}
+                onDetachLopSinhVien={() => setIsDetachLsvOpen(true)}
               />
             ) : (
               <div className="admin-card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -679,6 +699,25 @@ export default function LopHocPhanManagement() {
         scopedBoMonId={scopedBoMonId}
         departmentFullName={departmentFullName}
       />
+
+      {isAttachLsvOpen && detailData?.lopHocPhan && (
+        <AttachLopSinhVienModal
+          isOpen
+          lopHocPhan={detailData.lopHocPhan}
+          onClose={() => setIsAttachLsvOpen(false)}
+          onSuccess={refreshDetail}
+        />
+      )}
+
+      {isDetachLsvOpen && detailData?.lopHocPhan && (
+        <DetachLopSinhVienModal
+          isOpen
+          lopHocPhan={detailData.lopHocPhan}
+          currentList={detailData.lopSinhVienList || []}
+          onClose={() => setIsDetachLsvOpen(false)}
+          onSuccess={refreshDetail}
+        />
+      )}
 
       {/* ══════════ MODAL: Xóa ══════════ */}
       {isDeleteOpen && deletingItem && (
