@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Loader2, AlertCircle, CheckCircle2, Search, Network } from 'lucide-react';
+import { X, Loader2, AlertCircle, CheckCircle2, Search } from 'lucide-react';
 import { apiGetGiangVienList } from '../../../../utils/api';
 import { apiAssignGiangVien, apiGetSuggestedLopSinhVien, apiAttachLopSinhVien, apiDetachLopSinhVien } from '../../../../utils/apiLopHocPhan';
 
@@ -131,24 +131,24 @@ export function AttachLopSinhVienModal({ isOpen, lopHocPhan, onClose, onSuccess 
   const [selected, setSelected] = useState([]);
   const [searchLSV, setSearchLSV] = useState('');
   const [loading, setLoading] = useState(false);
-  const [fetchLoading, setFetchLoading] = useState(false);
+  const [fetchLoading, setFetchLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
     if (!isOpen) return;
-    setSelected([]); setError(''); setSuccess(''); setSearchLSV('');
-    fetchSuggested();
-  }, [isOpen]);
-
-  const fetchSuggested = async () => {
-    setFetchLoading(true);
-    try {
-      const data = await apiGetSuggestedLopSinhVien(lopHocPhan.MaLopHocPhan);
-      setAllLSV(data || []);
-    } catch { setAllLSV([]); }
-    finally { setFetchLoading(false); }
-  };
+    let active = true;
+    apiGetSuggestedLopSinhVien(lopHocPhan.MaLopHocPhan)
+      .then(data => active && setAllLSV(data || []))
+      .catch(err => {
+        if (active) {
+          setAllLSV([]);
+          setError(err.message || 'Không thể tải danh sách lớp sinh viên.');
+        }
+      })
+      .finally(() => active && setFetchLoading(false));
+    return () => { active = false; };
+  }, [isOpen, lopHocPhan.MaLopHocPhan]);
 
   const toggleSelect = (maLSV) => {
     setSelected(prev => prev.includes(maLSV) ? prev.filter(m => m !== maLSV) : [...prev, maLSV]);
@@ -238,11 +238,6 @@ export function DetachLopSinhVienModal({ isOpen, lopHocPhan, currentList, onClos
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-
-  useEffect(() => {
-    if (!isOpen) return;
-    setSelected([]); setError(''); setSuccess('');
-  }, [isOpen]);
 
   const toggleSelect = (maLSV) => {
     setSelected(prev => prev.includes(maLSV) ? prev.filter(m => m !== maLSV) : [...prev, maLSV]);

@@ -251,6 +251,32 @@
   flex-wrap: wrap;
 }
 
+.tkb-btn-auto-schedule {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border: 0;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #4f46e5, #2563eb);
+  color: #fff;
+  font-size: .82rem;
+  font-weight: 750;
+  cursor: pointer;
+  box-shadow: 0 4px 11px rgba(79, 70, 229, .22);
+  transition: transform .16s ease, box-shadow .16s ease;
+}
+
+.tkb-btn-auto-schedule:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 7px 16px rgba(79, 70, 229, .28);
+}
+
+.tkb-btn-auto-schedule:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
 .tkb-search-box {
   position: relative;
   display: flex;

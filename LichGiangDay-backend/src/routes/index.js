@@ -53,6 +53,9 @@ router.use('/v1/api/lophocphan', require('./lophocphan'));
 // Schedule (ThoiKhoaBieu) management routes
 router.use('/v1/api/thoikhoabieu', require('./thoikhoabieu'));
 
+// Automatic schedule generation and draft sessions
+router.use('/v1/api/xeplich', require('../modules/xeplich/xeplich.routes'));
+
 // Dashboard statistics routes
 router.use('/v1/api/dashboard', require('./dashboard'));
 

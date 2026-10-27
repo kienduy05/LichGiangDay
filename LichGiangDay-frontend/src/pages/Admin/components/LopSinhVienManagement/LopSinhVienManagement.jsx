@@ -17,6 +17,7 @@ import LopSinhVienFilterBar from './LopSinhVienFilterBar';
 import LopSinhVienTable from './LopSinhVienTable';
 import LopSinhVienDetailView from './LopSinhVienDetailView';
 import LopSinhVienFormModal from './LopSinhVienFormModal';
+import LopSinhVienAttachClassesModal from './LopSinhVienAttachClassesModal';
 import './LopSinhVienManagement.css';
 import './LopSinhVienComponents.css';
 
@@ -27,6 +28,8 @@ export default function LopSinhVienManagement() {
   const [view, setView] = useState('list');
   const [detailData, setDetailData] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState('');
+  const [isAttachClassesOpen, setIsAttachClassesOpen] = useState(false);
 
   // ─── Danh mục Khoa ───
   const [khoaList, setKhoaList] = useState([]);
@@ -146,12 +149,30 @@ export default function LopSinhVienManagement() {
   // ─────────────────────────────────────────────────────────────
   const handleViewDetail = async (item) => {
     setDetailLoading(true);
+    setDetailError('');
     setView('detail');
     try {
       const data = await apiGetLopSinhVienChiTiet(item.MaLopSinhVien);
       setDetailData(data);
-    } catch {
+    } catch (err) {
+      setDetailError(err.message || 'Không thể tải danh sách lớp học phần đã gắn.');
       setDetailData({ lopSinhVien: item, lopHocPhanList: [] });
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const refreshDetail = async () => {
+    const maLopSinhVien = detailData?.lopSinhVien?.MaLopSinhVien;
+    if (!maLopSinhVien) return;
+    setDetailLoading(true);
+    setDetailError('');
+    try {
+      const data = await apiGetLopSinhVienChiTiet(maLopSinhVien);
+      setDetailData(data);
+      await Promise.all([fetchMetadata(), fetchFilteredList()]);
+    } catch (err) {
+      setDetailError(err.message || 'Không thể cập nhật chi tiết lớp sinh viên.');
     } finally {
       setDetailLoading(false);
     }
@@ -348,8 +369,10 @@ export default function LopSinhVienManagement() {
             <LopSinhVienDetailView
               detailData={detailData}
               loading={detailLoading}
+              error={detailError}
               onBack={handleBackToList}
               onEdit={handleOpenEdit}
+              onAttachClasses={() => setIsAttachClassesOpen(true)}
               hasPermission={hasPermission}
             />
           ) : (
@@ -403,6 +426,15 @@ export default function LopSinhVienManagement() {
         error={formError}
         success={formSuccess}
       />
+
+      {isAttachClassesOpen && detailData?.lopSinhVien && (
+        <LopSinhVienAttachClassesModal
+          lopSinhVien={detailData.lopSinhVien}
+          currentList={detailData.lopHocPhanList || []}
+          onClose={() => setIsAttachClassesOpen(false)}
+          onSuccess={refreshDetail}
+        />
+      )}
 
       {/* ══════════ MODAL: Xóa Lớp Sinh Viên ══════════ */}
       {isDeleteModalOpen && deletingLSV && (
