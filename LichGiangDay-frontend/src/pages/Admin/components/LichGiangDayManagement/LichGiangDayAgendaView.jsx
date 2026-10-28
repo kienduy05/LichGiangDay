@@ -3,6 +3,7 @@ import {
   Calendar, Clock, User, Building, Users, BookOpen,
   CheckCircle, AlertCircle, Info, Sparkles, ChevronRight, Layers
 } from 'lucide-react';
+import { getStatusCardProps } from './lichGiangDayStatusHelper';
 import './LichGiangDayComponents.css';
 
 const PERIOD_ROWS = [
@@ -157,10 +158,11 @@ export default function LichGiangDayAgendaView({
                 <div className="lgd-agenda-cards-grid">
                   {groupClasses.map((item, idx) => {
                     const loaiClass = `loai-${(item.LoaiHoc || 'LT').toLowerCase()}`;
+                    const { statusClass, statusBadge } = getStatusCardProps(item);
                     return (
                       <div
-                        key={item.MaThoiKhoaBieu || idx}
-                        className={`lgd-class-card ${loaiClass}`}
+                        key={item.MaBuoiHoc || item.MaThoiKhoaBieu || idx}
+                        className={`lgd-class-card ${loaiClass} ${statusClass}`}
                         onClick={() => onCardClick && onCardClick(item)}
                         style={{ padding: '0.85rem' }}
                       >
@@ -172,6 +174,12 @@ export default function LichGiangDayAgendaView({
                             {loaiHocLabels[item.LoaiHoc] || item.LoaiHoc || 'Lý thuyết'}
                           </span>
                         </div>
+
+                        {statusBadge && (
+                          <div style={{ marginTop: '0.35rem' }}>
+                            {statusBadge}
+                          </div>
+                        )}
 
                         <div className="lgd-card-meta" style={{ marginTop: '0.4rem', gap: '0.35rem' }}>
                           <div className="lgd-card-meta-row">

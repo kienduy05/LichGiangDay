@@ -2,6 +2,7 @@ import React from 'react';
 import {
   X, Calendar, Clock, User, Building, Users, BookOpen, Layers
 } from 'lucide-react';
+import { getStatusCardProps } from './lichGiangDayStatusHelper';
 import './LichGiangDayComponents.css';
 
 export default function LichGiangDaySlotModal({
@@ -45,10 +46,11 @@ export default function LichGiangDaySlotModal({
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.85rem' }}>
             {slotInfo.classes?.map((item, idx) => {
               const loaiClass = `loai-${(item.LoaiHoc || 'LT').toLowerCase()}`;
+              const { statusClass, statusBadge } = getStatusCardProps(item);
               return (
                 <div
-                  key={item.MaThoiKhoaBieu || idx}
-                  className={`lgd-class-card ${loaiClass}`}
+                  key={item.MaBuoiHoc || item.MaThoiKhoaBieu || idx}
+                  className={`lgd-class-card ${loaiClass} ${statusClass}`}
                   style={{ padding: '0.85rem', cursor: 'pointer' }}
                   onClick={() => {
                     onClose();
@@ -64,6 +66,12 @@ export default function LichGiangDaySlotModal({
                       {loaiHocLabels[item.LoaiHoc] || item.LoaiHoc || 'LT'}
                     </span>
                   </div>
+
+                  {statusBadge && (
+                    <div style={{ marginTop: '0.35rem' }}>
+                      {statusBadge}
+                    </div>
+                  )}
 
                   <div className="lgd-card-meta" style={{ marginTop: '0.4rem', gap: '0.3rem' }}>
                     <div className="lgd-card-meta-row">
