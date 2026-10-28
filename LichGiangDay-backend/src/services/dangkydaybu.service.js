@@ -162,7 +162,10 @@ class DangKyDayBuService {
         throw err;
       }
 
-      // 2. Kiểm tra xung đột đa chiều trong transaction
+      // 2. Khóa dòng phòng đề xuất để ngăn chặn race condition khi 2 yêu cầu gửi cùng lúc
+      await connection.query('SELECT MaPhong FROM PhongHoc WHERE MaPhong = ? FOR UPDATE', [maPhong]);
+
+      // Kiểm tra xung đột đa chiều trong transaction
       const conflictRes = await ConflictService.checkConflict({
         maLopHocPhan: buoiHocGoc.MaLopHocPhan,
         ngayHoc: ngayDeXuat,
@@ -172,8 +175,8 @@ class DangKyDayBuService {
       }, connection);
 
       if (!conflictRes.ok) {
-        // Kiểm tra nếu là xung đột phòng do vừa bị chiếm
-        const roomClash = conflictRes.conflicts.find(c => c.type === 'ROOM');
+        // Kiểm tra nếu là xung đột phòng do vừa bị chiếm hoặc đang chờ duyệt
+        const roomClash = conflictRes.conflicts.find(c => c.type === 'ROOM' || c.type === 'ROOM_PENDING');
         if (roomClash) {
           // Lấy danh sách phòng trống mới để gợi ý
           const newAvailableRooms = await ConflictService.findAvailableRooms({
@@ -184,7 +187,11 @@ class DangKyDayBuService {
             connection
           });
 
-          const err = new Error('Phòng học vừa được đặt bởi buổi học khác. Vui lòng chọn phòng học hoặc thời gian khác.');
+          const err = new Error(
+            roomClash.type === 'ROOM_PENDING'
+              ? roomClash.message
+              : 'Phòng học vừa được đặt bởi buổi học khác. Vui lòng chọn phòng học hoặc thời gian khác.'
+          );
           err.status = 409;
           err.metadata = {
             conflicts: conflictRes.conflicts,

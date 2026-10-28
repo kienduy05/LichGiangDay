@@ -82,7 +82,7 @@ export default function LichGiangDayLecturerGrid({
                 Ca / Tiết
               </th>
               {weekDays.map(d => {
-                const isToday = d.value === todayDayOfWeek;
+                const isToday = d.isToday;
                 return (
                   <th key={d.value} className={`lgd-th-day ${isToday ? 'is-today' : ''}`}>
                     <div className="lgd-day-name">{d.label}</div>
@@ -136,7 +136,7 @@ export default function LichGiangDayLecturerGrid({
                     {/* Day Cells */}
                     {weekDays.map(d => {
                       const item = gvMatrix[gv.MaGiangVien]?.[d.value]?.[period.maTiet];
-                      const isTodayCol = d.value === todayDayOfWeek;
+                      const isTodayCol = d.isToday;
 
                       return (
                         <td key={d.value} className={`lgd-td-cell ${isTodayCol ? 'is-today-col' : ''}`} style={{ minHeight: '80px', height: '80px' }}>

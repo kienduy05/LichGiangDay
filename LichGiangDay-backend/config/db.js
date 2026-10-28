@@ -15,4 +15,9 @@ const pool = mysql.createPool({
   dateStrings: true
 });
 
+// Thiết lập múi giờ Việt Nam (UTC+7) cho mọi kết nối tạo trong Pool
+pool.on('connection', (connection) => {
+  connection.query("SET time_zone = '+07:00'");
+});
+
 module.exports = pool;

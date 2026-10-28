@@ -26,7 +26,9 @@ export default function LopHocPhanDetailView({
     }
   };
 
-  const isAssigned = lopHocPhan?.TrangThaiPhanCong === 'Assigned';
+  const isLocked = lopHocPhan?.TrangThaiPhanCong === 'Locked';
+  const hasLecturer = Boolean(lopHocPhan?.MaGiangVien || lopHocPhan?.TenGiangVien);
+  const isAssigned = lopHocPhan?.TrangThaiPhanCong === 'Assigned' || hasLecturer || isLocked;
   const fillRate = lopHocPhan?.SiSoDuKien && lopHocPhan.SiSoDuKien > 0
     ? Math.min(100, Math.round(((lopHocPhan.SiSoDangKy || 0) / lopHocPhan.SiSoDuKien) * 100))
     : 0;
@@ -60,8 +62,8 @@ export default function LopHocPhanDetailView({
                   <span className="lhp-detail-code-badge">
                     {lopHocPhan?.MaLopHocPhan}
                   </span>
-                  <span className={`lhp-badge-status ${isAssigned ? 'assigned' : 'unassigned'}`}>
-                    {isAssigned ? '✓ Đã phân công GV' : '⏳ Chưa phân công GV'}
+                  <span className={`lhp-badge-status ${isLocked ? 'locked' : isAssigned ? 'assigned' : 'unassigned'}`}>
+                    {isLocked ? '🔒 Đã khóa lịch' : isAssigned ? '✓ Đã phân công GV' : '⏳ Chưa phân công GV'}
                   </span>
                   {lopHocPhan?.LoaiHoc && (
                     <span className="lhp-badge-loai">
@@ -154,7 +156,9 @@ export default function LopHocPhanDetailView({
                 {lopHocPhan?.TenGiangVien || 'Chưa phân công giảng viên'}
               </div>
               <div className="lhp-detail-card-sub">
-                Trạng thái: <b>{isAssigned ? 'Đã gán giảng viên' : 'Chưa gán'}</b>
+                Trạng thái: <b style={{ color: isLocked ? '#1d4ed8' : isAssigned ? '#16a34a' : '#ea580c' }}>
+                  {isLocked ? 'Đã khóa lịch' : isAssigned ? 'Đã gán giảng viên' : 'Chưa gán'}
+                </b>
               </div>
             </div>
 

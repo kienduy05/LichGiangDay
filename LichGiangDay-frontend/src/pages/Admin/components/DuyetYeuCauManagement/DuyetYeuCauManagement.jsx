@@ -734,63 +734,351 @@ export default function DuyetYeuCauManagement() {
       )}
 
       {/* =======================================================================
-          MODAL 2: TỪ CHỐI ĐƠN & NHẬP LÝ DO (REJECT REASON MODAL)
+          MODAL 2: TỪ CHỐI ĐƠN & NHẬP LÝ DO (REJECT REASON MODAL) - REDESIGNED
           ======================================================================= */}
-      {rejectItem && (
-        <div className="lgd-modal-overlay" onClick={() => setRejectItem(null)}>
-          <div className="lgd-modal-content" style={{ maxWidth: '480px' }} onClick={e => e.stopPropagation()}>
-            <div className="lgd-modal-header" style={{ background: '#dc2626' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                <XCircle size={20} />
-                <h3 className="lgd-modal-title">Từ Chối Yêu Cầu [{rejectItem.id}]</h3>
-              </div>
-              <button className="lgd-modal-close" onClick={() => setRejectItem(null)}>
-                <X size={20} />
-              </button>
-            </div>
+      {rejectItem && (() => {
+        const getLoaiYeuCauBadge = (type) => {
+          switch (type) {
+            case 'ABSENCE':
+              return { label: 'Báo nghỉ buổi học', bg: '#fef2f2', color: '#dc2626', border: '#fecaca' };
+            case 'SWAP':
+              return { label: 'Xin đổi ca giảng dạy', bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' };
+            case 'SUBSTITUTE':
+              return { label: 'Nhờ đồng nghiệp dạy thay', bg: '#f5f3ff', color: '#7c3aed', border: '#ddd6fe' };
+            default:
+              return { label: 'Yêu cầu biến động', bg: '#f1f5f9', color: '#475569', border: '#e2e8f0' };
+          }
+        };
 
-            <form onSubmit={handleConfirmReject}>
-              <div className="lgd-modal-body" style={{ padding: '1.25rem' }}>
-                <p style={{ margin: '0 0 0.85rem 0', fontSize: '0.8125rem', color: '#475569' }}>
-                  Bạn đang từ chối yêu cầu của <strong>{rejectItem.tenGiangVien}</strong> ({rejectItem.tenMonHoc}).
-                  Vui lòng cung cấp lý do cụ thể để gửi thông báo lại cho giảng viên:
-                </p>
+        const typeInfo = getLoaiYeuCauBadge(rejectItem.loaiYeuCau);
+        const quickReasons = [
+          'Trùng lịch kiểm tra / thi giữa kỳ của lớp',
+          'Chưa đảm bảo tiến độ giảng dạy theo kế hoạch',
+          'Phòng học đề xuất không khả dụng vào ca này',
+          'Giảng viên thay thế đã vượt định mức giờ dạy',
+          'Minh chứng hoặc lý do chưa đủ căn cứ phê duyệt'
+        ];
 
-                <div className="lgd-form-group">
-                  <label className="lgd-label" style={{ fontWeight: 700 }}>
-                    Lý do từ chối: <span style={{ color: '#dc2626' }}>*</span>
-                  </label>
-                  <textarea
-                    className="lgd-textarea"
-                    rows={4}
-                    required
-                    placeholder="VD: Không thể duyệt do tuần này lớp cần hoàn thành tiến độ kiểm tra giữa kỳ; hoặc giảng viên thay thế đã quá tải giờ dạy..."
-                    value={rejectReason}
-                    onChange={e => setRejectReason(e.target.value)}
-                  />
+        const handleAddReason = (reason) => {
+          if (!rejectReason.trim()) {
+            setRejectReason(reason);
+          } else if (!rejectReason.includes(reason)) {
+            setRejectReason(prev => `${prev.trim()}; ${reason}`);
+          }
+        };
+
+        return (
+          <div className="lgd-modal-overlay" onClick={() => setRejectItem(null)}>
+            <div
+              className="lgd-modal-content"
+              style={{
+                maxWidth: '600px',
+                borderRadius: '16px',
+                overflow: 'hidden',
+                boxShadow: '0 25px 50px -12px rgba(220, 38, 38, 0.25), 0 10px 25px -5px rgba(0, 0, 0, 0.1)'
+              }}
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div
+                className="lgd-modal-header"
+                style={{
+                  background: 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)',
+                  padding: '1.25rem 1.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  borderBottom: 'none'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                  <div style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '12px',
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    backdropFilter: 'blur(8px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#ffffff',
+                    flexShrink: 0
+                  }}>
+                    <XCircle size={24} />
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.01em' }}>
+                      Từ Chối Phê Duyệt Yêu Cầu
+                    </h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginTop: '0.2rem' }}>
+                      <span style={{
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        padding: '2px 8px',
+                        borderRadius: '6px',
+                        background: 'rgba(0, 0, 0, 0.25)',
+                        color: '#fecaca',
+                        fontFamily: 'monospace'
+                      }}>
+                        {rejectItem.id}
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.85)' }}>
+                        • {typeInfo.label}
+                      </span>
+                    </div>
+                  </div>
                 </div>
+
+                <button
+                  className="lgd-modal-close"
+                  onClick={() => setRejectItem(null)}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.15)',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '32px',
+                    height: '32px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#ffffff',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                  title="Đóng"
+                >
+                  <X size={18} />
+                </button>
               </div>
 
-              <div className="lgd-modal-footer" style={{ padding: '1rem 1.25rem', display: 'flex', justifyContent: 'flex-end', gap: '0.65rem' }}>
-                <button
-                  type="button"
-                  className="lgd-btn lgd-btn-secondary"
-                  onClick={() => setRejectItem(null)}
+              {/* Form & Body */}
+              <form onSubmit={handleConfirmReject}>
+                <div className="lgd-modal-body" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
+                  
+                  {/* Request Summary Card */}
+                  <div style={{
+                    background: '#fef2f2',
+                    border: '1px solid #fecaca',
+                    borderRadius: '12px',
+                    padding: '1rem 1.15rem',
+                    position: 'relative'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                        <div style={{
+                          width: '38px',
+                          height: '38px',
+                          borderRadius: '10px',
+                          background: '#fee2e2',
+                          color: '#dc2626',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 800,
+                          fontSize: '0.95rem'
+                        }}>
+                          {rejectItem.tenGiangVien?.charAt(0) || 'G'}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.95rem' }}>
+                            {rejectItem.tenGiangVien}
+                            <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 500, marginLeft: '0.4rem' }}>
+                              ({rejectItem.maGiangVien})
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '0.8125rem', color: '#334155', fontWeight: 600, marginTop: '2px' }}>
+                            {rejectItem.tenMonHoc}
+                            {rejectItem.tenLopHocPhan && rejectItem.tenLopHocPhan !== rejectItem.tenMonHoc && (
+                              <span style={{ color: '#64748b', fontWeight: 400 }}> - {rejectItem.tenLopHocPhan}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <span style={{
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        padding: '3px 9px',
+                        borderRadius: '20px',
+                        background: typeInfo.bg,
+                        color: typeInfo.color,
+                        border: `1px solid ${typeInfo.border}`,
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {typeInfo.label}
+                      </span>
+                    </div>
+
+                    <div style={{
+                      marginTop: '0.75rem',
+                      paddingTop: '0.65rem',
+                      borderTop: '1px dashed #fca5a5',
+                      fontSize: '0.8rem',
+                      color: '#475569',
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: '0.85rem'
+                    }}>
+                      <span>📅 Lịch: <strong>{rejectItem.ngayGoc ? new Date(rejectItem.ngayGoc).toLocaleDateString('vi-VN') : '-'}</strong></span>
+                      <span>⏰ <strong>{rejectItem.tietGoc || '-'}</strong></span>
+                      <span>🏫 Phòng: <strong>{rejectItem.phongGoc || '-'}</strong></span>
+                    </div>
+
+                    {rejectItem.lyDo && (
+                      <div style={{
+                        marginTop: '0.5rem',
+                        fontSize: '0.78rem',
+                        color: '#6b7280',
+                        fontStyle: 'italic',
+                        background: 'rgba(255, 255, 255, 0.7)',
+                        padding: '0.35rem 0.65rem',
+                        borderRadius: '6px',
+                        border: '1px solid #fee2e2'
+                      }}>
+                        💬 <strong>Lý do GV đề xuất:</strong> "{rejectItem.lyDo}"
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Quick Reason Suggestions */}
+                  <div>
+                    <label style={{
+                      fontSize: '0.8125rem',
+                      fontWeight: 700,
+                      color: '#334155',
+                      display: 'block',
+                      marginBottom: '0.45rem'
+                    }}>
+                      ⚡ Chọn nhanh lý do từ chối thường gặp:
+                    </label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                      {quickReasons.map((reason, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleAddReason(reason)}
+                          style={{
+                            fontSize: '0.75rem',
+                            padding: '0.35rem 0.65rem',
+                            borderRadius: '8px',
+                            background: rejectReason.includes(reason) ? '#fee2e2' : '#f8fafc',
+                            border: rejectReason.includes(reason) ? '1px solid #f87171' : '1px solid #e2e8f0',
+                            color: rejectReason.includes(reason) ? '#b91c1c' : '#475569',
+                            fontWeight: rejectReason.includes(reason) ? 700 : 500,
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                            textAlign: 'left'
+                          }}
+                        >
+                          + {reason}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Lý do từ chối (Textarea chuẩn) */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label style={{ fontSize: '0.84rem', fontWeight: 700, color: '#0f172a' }}>
+                        Lý do từ chối cụ thể <span style={{ color: '#ef4444' }}>*</span>
+                      </label>
+                      <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+                        {rejectReason.length}/500 ký tự
+                      </span>
+                    </div>
+
+                    <textarea
+                      rows={4}
+                      required
+                      maxLength={500}
+                      value={rejectReason}
+                      onChange={e => setRejectReason(e.target.value)}
+                      placeholder="Nhập lý do từ chối cụ thể và hướng dẫn (nếu có) để hệ thống gửi thông báo phản hồi lại cho giảng viên..."
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem 0.85rem',
+                        fontSize: '0.875rem',
+                        lineHeight: 1.5,
+                        borderRadius: '10px',
+                        border: '1.5px solid #cbd5e1',
+                        outline: 'none',
+                        transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+                        boxSizing: 'border-box',
+                        resize: 'vertical'
+                      }}
+                      onFocus={e => {
+                        e.target.style.borderColor = '#ef4444';
+                        e.target.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.15)';
+                      }}
+                      onBlur={e => {
+                        e.target.style.borderColor = '#cbd5e1';
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    />
+
+                    <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.75rem', color: '#64748b' }}>
+                      ℹ️ Giảng viên sẽ nhận được thông báo kèm lý do từ chối này ngay sau khi bạn xác nhận.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Footer Actions */}
+                <div
+                  className="lgd-modal-footer"
+                  style={{
+                    padding: '1rem 1.5rem',
+                    background: '#f8fafc',
+                    borderTop: '1px solid #f1f5f9',
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    gap: '0.75rem'
+                  }}
                 >
-                  Hủy bỏ
-                </button>
-                <button
-                  type="submit"
-                  className="lgd-btn lgd-btn-danger"
-                >
-                  <Send size={15} />
-                  <span>Xác Nhận Từ Chối</span>
-                </button>
-              </div>
-            </form>
+                  <button
+                    type="button"
+                    onClick={() => setRejectItem(null)}
+                    style={{
+                      padding: '0.6rem 1.3rem',
+                      background: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '8px',
+                      color: '#475569',
+                      fontWeight: 600,
+                      fontSize: '0.875rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    Hủy bỏ
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!rejectReason.trim()}
+                    style={{
+                      padding: '0.6rem 1.6rem',
+                      background: !rejectReason.trim() ? '#94a3b8' : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                      border: 'none',
+                      borderRadius: '8px',
+                      color: '#ffffff',
+                      fontWeight: 700,
+                      fontSize: '0.875rem',
+                      cursor: !rejectReason.trim() ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.45rem',
+                      boxShadow: !rejectReason.trim() ? 'none' : '0 4px 12px rgba(239, 68, 68, 0.35)',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <XCircle size={16} />
+                    <span>Xác Nhận Từ Chối</span>
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

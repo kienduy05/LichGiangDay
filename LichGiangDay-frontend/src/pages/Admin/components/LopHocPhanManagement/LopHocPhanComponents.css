@@ -705,6 +705,12 @@
   border: 1px solid #a7f3d0;
 }
 
+.lhp-badge-status.locked {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
 .lhp-badge-status.unassigned {
   background: #fff7ed;
   color: #ea580c;

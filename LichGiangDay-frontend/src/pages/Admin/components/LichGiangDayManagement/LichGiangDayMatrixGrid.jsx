@@ -53,7 +53,7 @@ export default function LichGiangDayMatrixGrid({
             <tr>
               <th className="lgd-th-period">Ca / Tiết Học</th>
               {weekDays.map(d => {
-                const isToday = d.value === todayDayOfWeek;
+                const isToday = d.isToday;
                 return (
                   <th key={d.value} className={`lgd-th-day ${isToday ? 'is-today' : ''}`}>
                     <div className="lgd-day-name">{d.label}</div>
@@ -79,7 +79,7 @@ export default function LichGiangDayMatrixGrid({
                 {/* Day Columns */}
                 {weekDays.map(d => {
                   const items = matrixData[d.value]?.[period.maTiet] || [];
-                  const isTodayCol = d.value === todayDayOfWeek;
+                  const isTodayCol = d.isToday;
 
                   return (
                     <td key={d.value} className={`lgd-td-cell ${isTodayCol ? 'is-today-col' : ''}`}>

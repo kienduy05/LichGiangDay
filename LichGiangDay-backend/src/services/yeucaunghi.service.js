@@ -194,7 +194,10 @@ class YeuCauNghiService {
           throw err;
         }
 
-        // Kiểm tra xung đột đa chiều
+        // Khóa dòng phòng học để tránh race condition khi 2 yêu cầu gửi cùng lúc
+        await connection.query('SELECT MaPhong FROM PhongHoc WHERE MaPhong = ? FOR UPDATE', [maPhongDeXuat]);
+
+        // Kiểm tra xung đột đa chiều (bao gồm cả các yêu cầu đổi ca đang Pending khác)
         const conflictRes = await ConflictService.checkConflict({
           maBuoiHocHienTai: maBuoiHoc,
           maLopHocPhan: buoiHoc.MaLopHocPhan,
@@ -688,6 +691,26 @@ class YeuCauNghiService {
           `, [ycn.MaBuoiHoc]);
 
         } else if (ycn.LoaiYeuCau === 'SWAP') {
+          // Khóa dòng phòng đề xuất trước khi duyệt
+          await connection.query('SELECT MaPhong FROM PhongHoc WHERE MaPhong = ? FOR UPDATE', [ycn.MaPhongDeXuat]);
+
+          // Re-check kiểm tra lại xung đột để tránh trùng phòng/trùng lịch phát sinh
+          const conflictRes = await ConflictService.checkConflict({
+            maBuoiHocHienTai: ycn.MaBuoiHoc,
+            maYeuCauNghiHienTai: ycn.MaYeuCauNghi,
+            maLopHocPhan: ycn.MaLopHocPhan,
+            ngayHoc: ycn.NgayDeXuat,
+            maTiet: ycn.MaTietDeXuat,
+            maPhong: ycn.MaPhongDeXuat,
+            maGiangVien: ycn.MaGiangVien
+          }, connection);
+
+          if (!conflictRes.ok) {
+            const err = new Error(`Không thể duyệt yêu cầu đổi ca: ${conflictRes.conflicts[0].message}`);
+            err.status = 409;
+            throw err;
+          }
+
           // Lưu thông tin gốc để hoàn nguyên
           await connection.query(`
             UPDATE BuoiHoc 

@@ -244,8 +244,8 @@ export default function GiangVienDetailView({
                         <span className="role-badge">{lhp.LoaiHoc || 'Chính khóa'}</span>
                       </td>
                       <td style={{ textAlign: 'center' }}>
-                        <span className={`status-badge ${lhp.TrangThaiPhanCong === 'Assigned' ? 'active' : ''}`}>
-                          {lhp.TrangThaiPhanCong === 'Assigned' ? 'Đã gán' : lhp.TrangThaiPhanCong || 'Mặc định'}
+                        <span className={`status-badge ${lhp.TrangThaiPhanCong === 'Locked' ? 'primary' : (lhp.TrangThaiPhanCong === 'Assigned' || lhp.MaGiangVien) ? 'active' : ''}`}>
+                          {lhp.TrangThaiPhanCong === 'Locked' ? 'Đã khóa lịch' : (lhp.TrangThaiPhanCong === 'Assigned' || lhp.MaGiangVien) ? 'Đã gán' : 'Chưa gán'}
                         </span>
                       </td>
                     </tr>

@@ -66,7 +66,7 @@ export default function LichGiangDayAgendaView({
       <div className="lgd-day-picker-bar">
         {weekDays.map(d => {
           const isSelected = d.value === selectedDayValue;
-          const isToday = d.value === todayDayOfWeek;
+          const isToday = d.isToday;
           return (
             <button
               key={d.value}
@@ -99,7 +99,7 @@ export default function LichGiangDayAgendaView({
           <span style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#1e293b' }}>
             Lịch học {selectedDayObj.label} ({selectedDayObj.displayDate})
           </span>
-          {selectedDayObj.value === todayDayOfWeek && (
+          {selectedDayObj.isToday && (
             <span className="lgd-today-badge">Hôm nay</span>
           )}
         </div>

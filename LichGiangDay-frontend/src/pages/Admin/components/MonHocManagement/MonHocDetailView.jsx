@@ -209,10 +209,10 @@ export default function MonHocDetailView({
                     </td>
                     <td style={{ textAlign: 'center' }}>
                       <span
-                        className={`status-badge ${lhp.TrangThaiPhanCong === 'Assigned' ? 'active' : ''}`}
+                        className={`status-badge ${lhp.TrangThaiPhanCong === 'Locked' ? 'primary' : (lhp.TrangThaiPhanCong === 'Assigned' || lhp.MaGiangVien) ? 'active' : ''}`}
                         style={{ fontSize: '0.74rem' }}
                       >
-                        {lhp.TrangThaiPhanCong === 'Assigned' ? 'Đã gán GV' : lhp.TrangThaiPhanCong || 'Mặc định'}
+                        {lhp.TrangThaiPhanCong === 'Locked' ? 'Đã khóa lịch' : (lhp.TrangThaiPhanCong === 'Assigned' || lhp.MaGiangVien) ? 'Đã gán GV' : 'Chưa gán'}
                       </span>
                     </td>
                   </tr>
