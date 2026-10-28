@@ -124,7 +124,7 @@ export function AssignGiangVienModal({ isOpen, lopHocPhan, onClose, onSuccess })
 }
 
 // ==========================================
-// MODAL: Gắn lớp sinh viên
+// MODAL: Thêm lớp sinh viên vào lớp học phần
 // ==========================================
 export function AttachLopSinhVienModal({ isOpen, lopHocPhan, onClose, onSuccess }) {
   const [allLSV, setAllLSV] = useState([]);
@@ -159,7 +159,7 @@ export function AttachLopSinhVienModal({ isOpen, lopHocPhan, onClose, onSuccess 
     setLoading(true); setError(''); setSuccess('');
     try {
       await apiAttachLopSinhVien(lopHocPhan.MaLopHocPhan, selected);
-      setSuccess('Gắn lớp sinh viên thành công!');
+      setSuccess('Thêm lớp sinh viên vào lớp học phần thành công!');
       setTimeout(() => { onSuccess(); onClose(); }, 800);
     } catch (err) { setError(err.message); }
     finally { setLoading(false); }
@@ -175,12 +175,12 @@ export function AttachLopSinhVienModal({ isOpen, lopHocPhan, onClose, onSuccess 
     <div className="modal-overlay">
       <div className="modal-card wide">
         <div className="modal-header">
-          <h3 className="modal-title">Gắn Lớp Sinh Viên</h3>
+          <h3 className="modal-title">Thêm Lớp Sinh Viên</h3>
           <button onClick={onClose} className="modal-close-btn"><X size={20} /></button>
         </div>
 
         <div style={{ fontSize: '0.85rem', color: 'var(--admin-text-sub)', marginBottom: 8 }}>
-          Chọn lớp SV muốn gắn vào <b style={{ color: 'var(--admin-text-main)' }}>{lopHocPhan?.MaLopHocPhan}</b>
+          Chọn lớp sinh viên muốn thêm vào lớp học phần <b style={{ color: 'var(--admin-text-main)' }}>{lopHocPhan?.MaLopHocPhan}</b>
           {selected.length > 0 && <span style={{ marginLeft: 8, fontWeight: 600, color: '#2563eb' }}>— Đã chọn: {selected.length}</span>}
         </div>
 
@@ -222,7 +222,7 @@ export function AttachLopSinhVienModal({ isOpen, lopHocPhan, onClose, onSuccess 
         <div className="modal-footer">
           <button type="button" onClick={onClose} className="btn-cancel">Hủy</button>
           <button type="button" onClick={handleSave} className="btn-save" disabled={loading || selected.length === 0}>
-            {loading ? <><Loader2 size={16} className="animate-spin" /> Đang gắn...</> : `Gắn ${selected.length} Lớp SV`}
+            {loading ? <><Loader2 size={16} className="animate-spin" /> Đang thêm...</> : `Thêm ${selected.length} lớp sinh viên`}
           </button>
         </div>
       </div>

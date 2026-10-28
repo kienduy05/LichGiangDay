@@ -224,12 +224,12 @@ export default function LopHocPhanDetailView({
                   Lớp Sinh Viên Ghép ({lopSinhVienList.length})
                 </h3>
               </div>
-              {hasPermission('LopHocPhan', 'CanUpdate') && lopHocPhan?.TrangThaiPhanCong !== 'Locked' && (
+              {hasPermission('LopHocPhan', 'CanUpdate') && lopHocPhan && (
                 <div className="lhp-student-class-actions">
                   <button type="button" className="lhp-link-class-btn" onClick={onAttachLopSinhVien}>
-                    <Plus size={15} /> Gắn lớp sinh viên
+                    <Plus size={15} /> Thêm lớp sinh viên
                   </button>
-                  {lopSinhVienList.length > 0 && (
+                  {lopSinhVienList.length > 0 && !isLocked && (
                     <button type="button" className="lhp-unlink-class-btn" onClick={onDetachLopSinhVien}>
                       <Unlink size={15} /> Gỡ lớp sinh viên
                     </button>
@@ -243,9 +243,9 @@ export default function LopHocPhanDetailView({
                 <Users size={36} style={{ margin: '0 auto 8px', color: '#cbd5e1' }} />
                 <p style={{ fontWeight: 600, color: '#475569', fontSize: '0.9rem' }}>Chưa có lớp sinh viên nào được ghép vào lớp học phần này.</p>
                 <p style={{ color: '#94a3b8', fontSize: '0.8rem', marginTop: '4px' }}>Lớp sinh viên ghép giúp quản lý danh sách sinh viên theo dõi buổi học.</p>
-                {hasPermission('LopHocPhan', 'CanUpdate') && lopHocPhan?.TrangThaiPhanCong !== 'Locked' && (
+                {hasPermission('LopHocPhan', 'CanUpdate') && lopHocPhan && (
                   <button type="button" className="lhp-link-class-btn empty" onClick={onAttachLopSinhVien}>
-                    <Plus size={15} /> Gắn lớp sinh viên
+                    <Plus size={15} /> Thêm lớp sinh viên
                   </button>
                 )}
               </div>

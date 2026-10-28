@@ -568,124 +568,6 @@
   color: var(--admin-text-main);
 }
 
-.lsv-attach-open-btn,
-.lsv-empty-attach-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border: 1px solid #bfdbfe;
-  border-radius: 8px;
-  background: #eff6ff;
-  color: #1d4ed8;
-  padding: 7px 12px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.lsv-attach-open-btn:hover,
-.lsv-empty-attach-btn:hover {
-  background: #dbeafe;
-  border-color: #93c5fd;
-}
-
-.lsv-empty-attach-btn {
-  margin: 12px auto 0;
-}
-
-.lsv-attach-modal {
-  width: min(760px, calc(100vw - 32px));
-  max-height: min(760px, calc(100vh - 40px));
-  display: flex;
-  flex-direction: column;
-}
-
-.lsv-attach-subtitle {
-  margin: 4px 0 0;
-  color: var(--admin-text-sub, #64748b);
-  font-size: 0.82rem;
-}
-
-.lsv-attach-toolbar {
-  display: grid;
-  grid-template-columns: minmax(220px, 0.8fr) minmax(260px, 1.2fr);
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.lsv-attach-toolbar label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #475569;
-  font-size: 0.82rem;
-  font-weight: 600;
-}
-
-.lsv-attach-toolbar select {
-  flex: 1;
-  min-width: 0;
-  height: 38px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  background: #fff;
-  padding: 0 10px;
-  color: #1e293b;
-}
-
-.lsv-attach-search {
-  max-width: none;
-  margin: 0;
-}
-
-.lsv-attach-list {
-  min-height: 240px;
-  max-height: 420px;
-  overflow-y: auto;
-}
-
-.lsv-attach-item {
-  width: 100%;
-  text-align: left;
-  font: inherit;
-}
-
-.lsv-attach-class-info {
-  display: flex;
-  flex: 1;
-  min-width: 0;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.lsv-attach-class-info strong {
-  color: var(--admin-text-main, #0f172a);
-  font-size: 0.86rem;
-}
-
-.lsv-attach-class-info small {
-  color: var(--admin-text-sub, #64748b);
-  font-size: 0.76rem;
-}
-
-.lsv-attached-label {
-  color: #047857;
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  border-radius: 999px;
-  padding: 2px 8px;
-  font-size: 0.72rem;
-  font-weight: 700;
-}
-
-.lsv-selection-count {
-  margin-right: auto;
-  color: #475569;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
 /* Responsive breakpoint */
 @media (max-width: 1024px) {
   .lsv-page-layout {
@@ -719,17 +601,8 @@
 }
 
 @media (max-width: 640px) {
-  .lsv-detail-section-heading,
-  .lsv-attach-toolbar {
-    align-items: stretch;
-    grid-template-columns: 1fr;
-  }
-
   .lsv-detail-section-heading {
+    align-items: stretch;
     flex-direction: column;
-  }
-
-  .lsv-attach-open-btn {
-    width: 100%;
   }
 }
