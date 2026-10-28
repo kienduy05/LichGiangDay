@@ -1,3 +1,4 @@
+
 const db = require('../../config/db');
 const ScheduleConstraintService = require('../modules/xeplich/scheduleConstraint.service');
 const { getBlockedDates } = require('../modules/xeplich/xeplich.config');
@@ -1975,69 +1976,74 @@ class ThoiKhoaBieuService {
         WHERE MaLopHocPhan = ?
       `, [lhp.MaLopHocPhan]);
 
-      // 4. Phát sinh danh sách BuoiHoc chính thức cho toàn bộ học kỳ
-      await conn.query(`DELETE FROM BuoiHoc WHERE MaLopHocPhan = ?`, [lhp.MaLopHocPhan]);
+      // 4. Phát sinh danh sách BuoiHoc chính thức cho toàn bộ học kỳ nếu chưa có
+      const [existingBh] = await conn.query(
+        `SELECT COUNT(*) as count FROM BuoiHoc WHERE MaLopHocPhan = ?`,
+        [lhp.MaLopHocPhan]
+      );
 
-      // Ngày nghỉ cụ thể không làm vô hiệu toàn bộ mẫu lịch tuần; khi sinh
-      // BuoiHoc, hệ thống bỏ qua đúng ngày đã khóa trong học kỳ.
-      const blockedDates = getBlockedDates();
+      if (existingBh[0].count === 0) {
+        // Ngày nghỉ cụ thể không làm vô hiệu toàn bộ mẫu lịch tuần; khi sinh
+        // BuoiHoc, hệ thống bỏ qua đúng ngày đã khóa trong học kỳ.
+        const blockedDates = getBlockedDates();
 
-      for (const sc of schedules) {
-        const rawStart = String(sc.NgayBatDau || lhp.NgayBatDau).slice(0, 10);
-        const rawEnd = String(sc.NgayKetThuc || lhp.NgayKetThuc).slice(0, 10);
+        for (const sc of schedules) {
+          const rawStart = String(sc.NgayBatDau || lhp.NgayBatDau).slice(0, 10);
+          const rawEnd = String(sc.NgayKetThuc || lhp.NgayKetThuc).slice(0, 10);
 
-        const [sY, sM, sD] = rawStart.split('-').map(Number);
-        const [eY, eM, eD] = rawEnd.split('-').map(Number);
+          const [sY, sM, sD] = rawStart.split('-').map(Number);
+          const [eY, eM, eD] = rawEnd.split('-').map(Number);
 
-        // Khởi tạo tại 12h trưa để tránh hoàn toàn mọi vấn đề lệch múi giờ
-        let curr = new Date(sY, sM - 1, sD, 12, 0, 0);
-        const endLimit = new Date(eY, eM - 1, eD, 23, 59, 59);
+          // Khởi tạo tại 12h trưa để tránh hoàn toàn mọi vấn đề lệch múi giờ
+          let curr = new Date(sY, sM - 1, sD, 12, 0, 0);
+          const endLimit = new Date(eY, eM - 1, eD, 23, 59, 59);
 
-        // Quy đổi Thứ trong tuần sang getDay() của JavaScript:
-        // Thứ 2 (2) -> 1 (Monday)
-        // Thứ 3 (3) -> 2 (Tuesday)
-        // Thứ 4 (4) -> 3 (Wednesday)
-        // Thứ 5 (5) -> 4 (Thursday)
-        // Thứ 6 (6) -> 5 (Friday)
-        // Thứ 7 (7) -> 6 (Saturday)
-        // Chủ nhật (8) -> 0 (Sunday)
-        const targetDay = sc.ThuTrongTuan === 8 ? 0 : sc.ThuTrongTuan - 1;
+          // Quy đổi Thứ trong tuần sang getDay() của JavaScript:
+          // Thứ 2 (2) -> 1 (Monday)
+          // Thứ 3 (3) -> 2 (Tuesday)
+          // Thứ 4 (4) -> 3 (Wednesday)
+          // Thứ 5 (5) -> 4 (Thursday)
+          // Thứ 6 (6) -> 5 (Friday)
+          // Thứ 7 (7) -> 6 (Saturday)
+          // Chủ nhật (8) -> 0 (Sunday)
+          const targetDay = sc.ThuTrongTuan === 8 ? 0 : sc.ThuTrongTuan - 1;
 
-        while (curr.getDay() !== targetDay) {
-          curr.setDate(curr.getDate() + 1);
-        }
-
-        while (curr <= endLimit) {
-          const y = curr.getFullYear();
-          const m = String(curr.getMonth() + 1).padStart(2, '0');
-          const d = String(curr.getDate()).padStart(2, '0');
-          const ngayHocStr = `${y}-${m}-${d}`;
-          const dateCompact = `${y}${m}${d}`;
-
-          if (blockedDates.has(ngayHocStr)) {
-            curr.setDate(curr.getDate() + 7);
-            continue;
+          while (curr.getDay() !== targetDay) {
+            curr.setDate(curr.getDate() + 1);
           }
 
-          const randHex = Math.random().toString(36).substring(2, 6).toUpperCase();
-          const maBuoiHoc = `BH_${dateCompact}_${randHex}`;
+          while (curr <= endLimit) {
+            const y = curr.getFullYear();
+            const m = String(curr.getMonth() + 1).padStart(2, '0');
+            const d = String(curr.getDate()).padStart(2, '0');
+            const ngayHocStr = `${y}-${m}-${d}`;
+            const dateCompact = `${y}${m}${d}`;
 
-          await conn.query(`
+            if (blockedDates.has(ngayHocStr)) {
+              curr.setDate(curr.getDate() + 7);
+              continue;
+            }
+
+            const randHex = Math.random().toString(36).substring(2, 6).toUpperCase();
+            const maBuoiHoc = `BH_${dateCompact}_${randHex}`;
+
+            await conn.query(`
             INSERT INTO BuoiHoc (
               MaBuoiHoc, MaLopHocPhan, MaGiangVien, MaThoiKhoaBieu,
               NgayHoc, MaTiet, MaPhong, LoaiBuoiHoc, TrangThai
             ) VALUES (?, ?, ?, ?, ?, ?, ?, 'Regular', 'Normal')
           `, [
-            maBuoiHoc,
-            lhp.MaLopHocPhan,
-            lhp.MaGiangVien,
-            sc.MaThoiKhoaBieu,
-            ngayHocStr,
-            sc.MaTiet,
-            sc.MaPhong
-          ]);
+              maBuoiHoc,
+              lhp.MaLopHocPhan,
+              lhp.MaGiangVien,
+              sc.MaThoiKhoaBieu,
+              ngayHocStr,
+              sc.MaTiet,
+              sc.MaPhong
+            ]);
 
-          curr.setDate(curr.getDate() + 7);
+            curr.setDate(curr.getDate() + 7);
+          }
         }
       }
 
@@ -2063,41 +2069,7 @@ class ThoiKhoaBieuService {
   // 17. [ADMIN / PHONGDAOTAO] Mở khóa lịch Lớp học phần (Unlock)
   // ================================================================
   static unlockScheduleForClass = async ({ maLopHocPhan } = {}) => {
-    if (!maLopHocPhan || !maLopHocPhan.trim()) {
-      throw new Error('Mã lớp học phần không được để trống.');
-    }
-
-    const [lhpRows] = await db.query(`
-      SELECT MaLopHocPhan, TenLopHocPhan, MaGiangVien, TrangThaiPhanCong
-      FROM LopHocPhan
-      WHERE MaLopHocPhan = ? LIMIT 1
-    `, [maLopHocPhan.trim()]);
-
-    if (lhpRows.length === 0) {
-      throw new Error(`Lớp học phần '${maLopHocPhan}' không tồn tại.`);
-    }
-
-    const lhp = lhpRows[0];
-    const newStatus = lhp.MaGiangVien ? 'Assigned' : 'Unassigned';
-
-    await db.query(`
-      UPDATE LopHocPhan
-      SET TrangThaiPhanCong = ?
-      WHERE MaLopHocPhan = ?
-    `, [newStatus, lhp.MaLopHocPhan]);
-
-    await db.query(`
-      UPDATE ThoiKhoaBieu
-      SET TrangThai = 'Scheduled'
-      WHERE MaLopHocPhan = ?
-    `, [lhp.MaLopHocPhan]);
-
-    return {
-      success: true,
-      maLopHocPhan: lhp.MaLopHocPhan,
-      trangThai: newStatus,
-      message: `Đã mở khóa lịch lớp '${lhp.TenLopHocPhan || lhp.MaLopHocPhan}'. Bạn có thể chỉnh sửa lại TKB hoặc điều chỉnh phân công.`
-    };
+    throw new Error('Tính năng mở khóa lịch đã bị vô hiệu hóa hoàn toàn. Lịch học một khi đã khóa sẽ được chốt vĩnh viễn.');
   };
 
   // ================================================================

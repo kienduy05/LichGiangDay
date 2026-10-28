@@ -2,7 +2,7 @@ import React from 'react';
 import {
   Calendar, Clock, Building2, User, Users,
   Edit3, Plus, Trash2, CheckCircle2, AlertCircle,
-  BookOpen, Layers, Sparkles, Lock, Unlock, Eye
+  BookOpen, Layers, Sparkles, Lock, Eye
 } from 'lucide-react';
 import './ThoiKhoaBieuComponents.css';
 
@@ -190,46 +190,25 @@ export default function ThoiKhoaBieuTable({
                       )}
                     </button>
 
-                    {/* Nút Khóa / Mở khóa lịch (Phía Admin/Phòng Đào Tạo) */}
-                    {hasSchedule && (
-                      isLocked ? (
-                        <button
-                          type="button"
-                          className="btn-action-schedule"
-                          style={{
-                            background: '#eff6ff',
-                            borderColor: '#bfdbfe',
-                            color: '#1d4ed8',
-                            padding: '0.35rem 0.65rem',
-                            fontWeight: 600
-                          }}
-                          onClick={() => onUnlockSchedule && onUnlockSchedule(lhp)}
-                          title="Mở khóa lịch lớp này để cho phép sửa đổi"
-                        >
-                          <Unlock size={13} color="#2563eb" />
-                          <span>Mở khóa</span>
-                        </button>
-                      ) : (
-                        lhp.MaGiangVien ? (
-                          <button
-                            type="button"
-                            className="btn-action-schedule"
-                            style={{
-                              background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
-                              border: 'none',
-                              color: '#ffffff',
-                              padding: '0.35rem 0.65rem',
-                              fontWeight: 700,
-                              boxShadow: '0 1px 4px rgba(124, 58, 237, 0.25)'
-                            }}
-                            onClick={() => onLockSchedule && onLockSchedule(lhp)}
-                            title="Bộ môn đã phân công: Chốt & Khóa lịch lớp học phần"
-                          >
-                            <Lock size={13} />
-                            <span>Khóa lịch</span>
-                          </button>
-                        ) : null
-                      )
+                    {/* Nút Khóa lịch (Phía Admin/Phòng Đào Tạo) - Khóa là khóa luôn, không có mở khóa */}
+                    {hasSchedule && !isLocked && lhp.MaGiangVien && (
+                      <button
+                        type="button"
+                        className="btn-action-schedule"
+                        style={{
+                          background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
+                          border: 'none',
+                          color: '#ffffff',
+                          padding: '0.35rem 0.65rem',
+                          fontWeight: 700,
+                          boxShadow: '0 1px 4px rgba(124, 58, 237, 0.25)'
+                        }}
+                        onClick={() => onLockSchedule && onLockSchedule(lhp)}
+                        title="Bộ môn đã phân công: Chốt & Khóa lịch lớp học phần (Khóa vĩnh viễn)"
+                      >
+                        <Lock size={13} />
+                        <span>Khóa lịch</span>
+                      </button>
                     )}
 
                     {/* Nút Xóa toàn bộ lịch */}

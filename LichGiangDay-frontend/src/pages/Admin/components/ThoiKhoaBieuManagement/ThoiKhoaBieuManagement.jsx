@@ -171,6 +171,10 @@ export default function ThoiKhoaBieuManagement() {
       return;
     }
 
+    if (!window.confirm(`Bạn có chắc chắn muốn KHÓA LỊCH cho lớp "${lhp.TenMonHoc || lhp.MaLopHocPhan}" không?\n\nLƯU Ý QUAN TRỌNG: Lịch học sau khi khóa sẽ được chốt vĩnh viễn và KHÔNG THỂ mở khóa lại!`)) {
+      return;
+    }
+
     try {
       const res = await apiLockClassSchedule(lhp.MaLopHocPhan);
       showToast(res.message || `Đã khóa lịch lớp ${lhp.MaLopHocPhan} thành công!`);
@@ -205,7 +209,7 @@ export default function ThoiKhoaBieuManagement() {
       return;
     }
 
-    if (!window.confirm(`Bạn có chắc muốn CHỐT & KHÓA LỊCH cho ${assignedUnconfirmed.length} lớp học phần đã được Bộ môn phân công trong học kỳ này không?\n\nSau khi khóa, giảng viên sẽ nhận được lịch chính thức và toàn bộ TKB sẽ được bảo vệ chống sửa/xóa nhầm.`)) {
+    if (!window.confirm(`Bạn có chắc muốn CHỐT & KHÓA LỊCH cho ${assignedUnconfirmed.length} lớp học phần đã được Bộ môn phân công trong học kỳ này không?\n\nSau khi khóa, giảng viên sẽ nhận được lịch chính thức và toàn bộ TKB sẽ được chốt vĩnh viễn (LƯU Ý: Khóa là khóa luôn, không thể mở khóa lại).`)) {
       return;
     }
 
