@@ -51,6 +51,7 @@ class ConflictService {
    */
   static checkConflict = async ({
     maBuoiHocHienTai = null,
+    maYeuCauNghiHienTai = null,
     maLopHocPhan,
     ngayHoc,
     maTiet,
@@ -153,6 +154,37 @@ class ConflictService {
           conflicts.push({
             type: 'ROOM',
             message: `Phòng '${maPhong}' đã có lớp '${clash.TenLopHocPhan || clash.MaLopHocPhan}' do GV '${clash.TenGiangVien || 'chưa gán'}' giảng dạy vào ${clash.TenTiet} (${clash.GioBatDau} - ${clash.GioKetThuc}).`
+          });
+        }
+
+        // 3.5. Kiểm tra phòng có đang bị TREO/GIỮ CHỖ bởi yêu cầu ĐỔI CA (SWAP) đang CHỜ DUYỆT (Pending)
+        let pendingSwapQuery = `
+          SELECT ycn.MaYeuCauNghi, ycn.MaGiangVien, gv.HoTen AS TenGiangVien, lhp.TenLopHocPhan,
+                 th.TenTiet, th.GioBatDau, th.GioKetThuc
+          FROM YeuCauNghi ycn
+          JOIN TietHoc th ON ycn.MaTietDeXuat = th.MaTiet
+          JOIN BuoiHoc bh ON ycn.MaBuoiHoc = bh.MaBuoiHoc
+          JOIN LopHocPhan lhp ON bh.MaLopHocPhan = lhp.MaLopHocPhan
+          LEFT JOIN GiangVien gv ON ycn.MaGiangVien = gv.MaGiangVien
+          WHERE ycn.LoaiYeuCau = 'SWAP'
+            AND ycn.TrangThai = 'Pending'
+            AND ycn.MaPhongDeXuat = ?
+            AND ycn.NgayDeXuat = ?
+            AND (th.GioBatDau < ? AND ? < th.GioKetThuc)
+        `;
+        const pendingSwapParams = [maPhong, ngayHoc, tietDuKien.GioKetThuc, tietDuKien.GioBatDau];
+
+        if (maYeuCauNghiHienTai) {
+          pendingSwapQuery += ' AND ycn.MaYeuCauNghi != ?';
+          pendingSwapParams.push(maYeuCauNghiHienTai);
+        }
+
+        const [pendingSwapClashes] = await connection.query(pendingSwapQuery, pendingSwapParams);
+        if (pendingSwapClashes.length > 0) {
+          const clash = pendingSwapClashes[0];
+          conflicts.push({
+            type: 'ROOM_PENDING',
+            message: `Phòng '${maPhong}' hiện đang được giữ chỗ bởi yêu cầu đổi ca của GV '${clash.TenGiangVien || clash.MaGiangVien}' (lớp '${clash.TenLopHocPhan}') vào ${clash.TenTiet} (${clash.GioBatDau} - ${clash.GioKetThuc}) đang chờ duyệt.`
           });
         }
       }
@@ -300,13 +332,25 @@ class ConflictService {
     const [allTiets] = await connection.query(tietQuery, tietParams);
 
     // 5. Lấy các buổi học đang chiếm phòng trong khoảng ngày
-    const [occupied] = await connection.query(`
+    const [occupiedBuoiHoc] = await connection.query(`
       SELECT bh.MaPhong, DATE_FORMAT(bh.NgayHoc, '%Y-%m-%d') AS NgayHocStr, th.GioBatDau, th.GioKetThuc
       FROM BuoiHoc bh
       JOIN TietHoc th ON bh.MaTiet = th.MaTiet
       WHERE bh.NgayHoc >= ? AND bh.NgayHoc <= ?
         AND bh.TrangThai NOT IN ('Absent', 'Swapped', 'Cancelled')
     `, [dates[0], dates[dates.length - 1]]);
+
+    // 5.1. Lấy các yêu cầu ĐỔI CA (SWAP) đang ở trạng thái CHỜ DUYỆT (Pending) để TREO PHÒNG
+    const [occupiedPendingSwap] = await connection.query(`
+      SELECT ycn.MaPhongDeXuat AS MaPhong, DATE_FORMAT(ycn.NgayDeXuat, '%Y-%m-%d') AS NgayHocStr, th.GioBatDau, th.GioKetThuc
+      FROM YeuCauNghi ycn
+      JOIN TietHoc th ON ycn.MaTietDeXuat = th.MaTiet
+      WHERE ycn.LoaiYeuCau = 'SWAP'
+        AND ycn.TrangThai = 'Pending'
+        AND ycn.NgayDeXuat >= ? AND ycn.NgayDeXuat <= ?
+    `, [dates[0], dates[dates.length - 1]]);
+
+    const occupied = [...occupiedBuoiHoc, ...occupiedPendingSwap];
 
     const availableSlots = [];
 

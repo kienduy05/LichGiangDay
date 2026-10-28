@@ -135,6 +135,7 @@ export default function LichGiangDayManagement() {
 
   // Tính toán 7 ngày của tuần đang chọn
   const weekDays = useMemo(() => {
+    const todayIso = toInputDateFormat(new Date());
     return DAYS_DEF.map((def, idx) => {
       const dayDate = addDays(currentWeekStart, idx);
       const isoDate = toInputDateFormat(dayDate);
@@ -143,7 +144,8 @@ export default function LichGiangDayManagement() {
       return {
         ...def,
         isoDate,
-        displayDate
+        displayDate,
+        isToday: isoDate === todayIso
       };
     });
   }, [currentWeekStart]);

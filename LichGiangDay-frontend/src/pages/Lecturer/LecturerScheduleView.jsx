@@ -73,20 +73,26 @@ export default function LecturerScheduleView({ onBackHome }) {
   const [baoNghiModalOpen, setBaoNghiModalOpen] = useState(false);
   const [taoLichDayBuModalOpen, setTaoLichDayBuModalOpen] = useState(false);
 
-  // Today day of week (2: Thứ 2 -> 8: CN)
-  const todayDayOfWeek = useMemo(() => {
-    const day = new Date().getDay();
-    return day === 0 ? 8 : day + 1;
-  }, []);
 
   // Compute 7 days of the active week
   const weekDays = useMemo(() => {
+    const now = new Date();
+    const todayYear = now.getFullYear();
+    const todayMonth = now.getMonth();
+    const todayDate = now.getDate();
+
     return DAYS_DEF.map((def, idx) => {
       const d = addDays(currentWeekStart, idx);
+      const isToday =
+        d.getFullYear() === todayYear &&
+        d.getMonth() === todayMonth &&
+        d.getDate() === todayDate;
+
       return {
         ...def,
         dateObj: d,
-        displayDate: `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
+        displayDate: `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`,
+        isToday
       };
     });
   }, [currentWeekStart]);
@@ -577,7 +583,7 @@ export default function LecturerScheduleView({ onBackHome }) {
 
                   {/* Day Headers (Sticky Top) */}
                   {weekDays.map(d => {
-                    const isToday = d.value === todayDayOfWeek;
+                    const isToday = d.isToday;
                     return (
                       <div
                         key={d.value}
@@ -605,7 +611,7 @@ export default function LecturerScheduleView({ onBackHome }) {
                       {/* 7 Day Schedule Cells */}
                       {weekDays.map(d => {
                         const items = scheduleData.matrix?.[d.value]?.[period.maTiet] || [];
-                        const isTodayCol = d.value === todayDayOfWeek;
+                        const isTodayCol = d.isToday;
 
                         return (
                           <div
@@ -630,7 +636,7 @@ export default function LecturerScheduleView({ onBackHome }) {
               {/* 2. Mobile Schedule List View (<640px) */}
               <div className="lec-mobile-schedule-list">
                 {weekDays.map(d => {
-                  const isToday = d.value === todayDayOfWeek;
+                  const isToday = d.isToday;
                   const dayClasses = [];
                   PERIOD_ROWS.forEach(period => {
                     const classes = scheduleData.matrix?.[d.value]?.[period.maTiet] || [];
