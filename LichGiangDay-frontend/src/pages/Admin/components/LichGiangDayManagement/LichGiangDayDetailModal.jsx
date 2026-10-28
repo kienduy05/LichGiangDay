@@ -134,6 +134,55 @@ export default function LichGiangDayDetailModal({ isOpen, onClose, item }) {
             </div>
           </div>
 
+          {/* Biến động Buổi học Banner (Báo nghỉ, Đổi ca, Dạy thay, Dạy bù, Chờ duyệt) */}
+          {(item.TrangThai && item.TrangThai !== 'Normal') || item.LoaiBuoiHoc === 'Makeup' ? (
+            <div style={{
+              marginTop: '1rem',
+              padding: '0.85rem 1.15rem',
+              borderRadius: '12px',
+              border: item.TrangThai === 'Absent' ? '1px solid #fecaca' : item.LoaiBuoiHoc === 'Makeup' ? '1px solid #ddd6fe' : item.TrangThai === 'Substituted' ? '1px solid #a5f3fc' : item.TrangThai === 'Swapped' ? '1px solid #bfdbfe' : '1px solid #fde68a',
+              background: item.TrangThai === 'Absent' ? '#fef2f2' : item.LoaiBuoiHoc === 'Makeup' ? '#f5f3ff' : item.TrangThai === 'Substituted' ? '#ecfeff' : item.TrangThai === 'Swapped' ? '#eff6ff' : '#fffbeb',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.35rem'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                fontWeight: 700,
+                fontSize: '0.9375rem',
+                color: item.TrangThai === 'Absent' ? '#b91c1c' : item.LoaiBuoiHoc === 'Makeup' ? '#6d28d9' : item.TrangThai === 'Substituted' ? '#0e7490' : item.TrangThai === 'Swapped' ? '#1d4ed8' : '#b45309'
+              }}>
+                {item.TrangThai === 'Absent' && <span>⛔ BUỔI HỌC ĐÃ BÁO NGHỈ (ĐÃ DUYỆT)</span>}
+                {item.LoaiBuoiHoc === 'Makeup' && <span>➕ BUỔI HỌC DẠY BÙ</span>}
+                {item.TrangThai === 'Swapped' && <span>🔀 BUỔI HỌC ĐÃ ĐỔI CA</span>}
+                {item.TrangThai === 'Substituted' && <span>🔄 BUỔI HỌC DẠY THAY</span>}
+                {item.TrangThai?.includes('_Pending') && <span>⏳ BUỔI HỌC ĐANG CHỜ DUYỆT YÊU CẦU</span>}
+              </div>
+
+              <div style={{ fontSize: '0.8125rem', color: '#334155', lineHeight: 1.5 }}>
+                {item.NgayHoc && (
+                  <div>• Ngày học diễn ra: <strong>{formatDateVN(item.NgayHoc)}</strong></div>
+                )}
+                {item.TrangThai === 'Absent' && (
+                  <div>
+                    • Trạng thái bù: <strong style={{ color: item.DaDayBu ? '#059669' : '#dc2626' }}>{item.DaDayBu ? 'Đã có lịch dạy bù' : 'Chưa đăng ký dạy bù'}</strong>
+                  </div>
+                )}
+                {item.TrangThai === 'Substituted' && item.TenGiangVienGoc && (
+                  <div>• Giảng viên gốc: <strong>{item.TenGiangVienGoc}</strong> (được thay bởi <strong>{item.TenGiangVien}</strong>)</div>
+                )}
+                {item.TrangThai === 'Swapped' && item.NgayGocDoiCa && (
+                  <div>• Lịch gốc trước đổi: Ngày <strong>{formatDateVN(item.NgayGocDoiCa)}</strong> (Tiết {item.MaTietGocDoiCa || 'N/A'}, Phòng {item.MaPhongGocDoiCa || 'N/A'})</div>
+                )}
+                {item.GhiChu && (
+                  <div>• Ghi chú / Lý do: <em>{item.GhiChu}</em></div>
+                )}
+              </div>
+            </div>
+          ) : null}
+
           {/* Detailed Highlighted Info Grid */}
           <div className="lgd-modal-info-grid">
             {/* 1. Giảng viên */}

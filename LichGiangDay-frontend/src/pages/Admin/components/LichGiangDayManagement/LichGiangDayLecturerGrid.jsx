@@ -3,6 +3,7 @@ import {
   User, Clock, Building2, Users, BookOpen, Layers,
   Calendar, CheckCircle, AlertCircle, Info, Loader2
 } from 'lucide-react';
+import { getStatusCardProps } from './lichGiangDayStatusHelper';
 import './LichGiangDayComponents.css';
 
 const PERIOD_ROWS = [
@@ -48,6 +49,54 @@ export default function LichGiangDayLecturerGrid({
     TH: 'TH',
     BT: 'BT',
     BTL: 'BTL'
+  };
+
+  // Render thẻ lớp học cho từng giảng viên
+  const renderLecturerCard = (item, gv, d, period) => {
+    if (!item) {
+      return <div className="lgd-empty-cell" style={{ minHeight: '50px' }}>Trống</div>;
+    }
+
+    const loaiClass = `loai-${(item.LoaiHoc || 'LT').toLowerCase()}`;
+    const { statusClass, statusBadge } = getStatusCardProps(item);
+
+    return (
+      <div
+        key={item.MaBuoiHoc || item.MaThoiKhoaBieu || `${gv.MaGiangVien}-${d.value}-${period.maTiet}`}
+        className={`lgd-class-card ${loaiClass} ${statusClass}`}
+        onClick={() => onCardClick && onCardClick(item)}
+        style={{ padding: '0.45rem 0.55rem', boxSizing: 'border-box' }}
+        title="Nhấp để xem chi tiết lớp học"
+      >
+        <div className="lgd-card-header">
+          <span className="lgd-card-subject" style={{ fontSize: '0.78125rem' }} title={item.TenLopHocPhan || item.TenMonHoc}>
+            {item.TenLopHocPhan || item.TenMonHoc}
+          </span>
+          <span className="lgd-card-tag">
+            {loaiHocLabels[item.LoaiHoc] || item.LoaiHoc || 'LT'}
+          </span>
+        </div>
+
+        {statusBadge && (
+          <div style={{ width: '100%' }}>
+            {statusBadge}
+          </div>
+        )}
+
+        <div className="lgd-card-meta" style={{ marginTop: '0.25rem', gap: '0.15rem' }}>
+          <div className="lgd-card-meta-row">
+            <Building2 size={11} color="#0284c7" />
+            <span className="lgd-card-room" style={{ fontSize: '0.7rem' }}>
+              Phòng {item.TenPhong || 'Chưa xếp'}
+            </span>
+          </div>
+          <div className="lgd-card-meta-row" style={{ justifyContent: 'space-between', fontSize: '0.6875rem', color: '#64748b' }}>
+            <span>{item.SiSoDangKy || item.SiSoDuKien || 0} SV</span>
+            <span>{item.TenBoMon || ''}</span>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -139,39 +188,8 @@ export default function LichGiangDayLecturerGrid({
                       const isTodayCol = d.isToday;
 
                       return (
-                        <td key={d.value} className={`lgd-td-cell ${isTodayCol ? 'is-today-col' : ''}`} style={{ minHeight: '80px', height: '80px' }}>
-                          {!item ? (
-                            <div className="lgd-empty-cell" style={{ minHeight: '50px' }}>Trống</div>
-                          ) : (
-                            <div
-                              className={`lgd-class-card loai-${(item.LoaiHoc || 'LT').toLowerCase()}`}
-                              onClick={() => onCardClick && onCardClick(item)}
-                              style={{ padding: '0.45rem 0.55rem', height: '100%', boxSizing: 'border-box' }}
-                              title="Nhấp để xem chi tiết lớp học"
-                            >
-                              <div className="lgd-card-header">
-                                <span className="lgd-card-subject" style={{ fontSize: '0.78125rem' }} title={item.TenLopHocPhan || item.TenMonHoc}>
-                                  {item.TenLopHocPhan || item.TenMonHoc}
-                                </span>
-                                <span className="lgd-card-tag">
-                                  {loaiHocLabels[item.LoaiHoc] || item.LoaiHoc || 'LT'}
-                                </span>
-                              </div>
-
-                              <div className="lgd-card-meta" style={{ marginTop: '0.25rem', gap: '0.15rem' }}>
-                                <div className="lgd-card-meta-row">
-                                  <Building2 size={11} color="#0284c7" />
-                                  <span className="lgd-card-room" style={{ fontSize: '0.7rem' }}>
-                                    Phòng {item.TenPhong || 'Chưa xếp'}
-                                  </span>
-                                </div>
-                                <div className="lgd-card-meta-row" style={{ justifyContent: 'space-between', fontSize: '0.6875rem', color: '#64748b' }}>
-                                  <span>{item.SiSoDangKy || item.SiSoDuKien || 0} SV</span>
-                                  <span>{item.TenBoMon || ''}</span>
-                                </div>
-                              </div>
-                            </div>
-                          )}
+                        <td key={d.value} className={`lgd-td-cell ${isTodayCol ? 'is-today-col' : ''}`} style={{ minHeight: '85px', verticalAlign: 'top' }}>
+                          {renderLecturerCard(item, gv, d, period)}
                         </td>
                       );
                     })}

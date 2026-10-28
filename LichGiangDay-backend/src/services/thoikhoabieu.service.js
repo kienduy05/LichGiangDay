@@ -886,104 +886,315 @@ class ThoiKhoaBieuService {
     tuNgay = '',
     denNgay = ''
   } = {}) => {
-    let sql = `
-      SELECT
-        tkb.MaThoiKhoaBieu,
-        tkb.MaLopHocPhan,
-        lhp.TenLopHocPhan,
-        lhp.LoaiHoc,
-        lhp.SiSoDuKien,
-        lhp.SiSoDangKy,
-        mh.MaMonHoc,
-        mh.TenMonHoc,
-        mh.SoTinChi,
-        lhp.MaBoMon,
-        bm.TenBoMon,
-        bm.MaKhoa,
-        k.TenKhoa,
-        lhp.MaGiangVien,
-        gv.HoTen AS TenGiangVien,
-        tkb.ThuTrongTuan,
-        tkb.MaTiet,
-        th.TenTiet,
-        TIME_FORMAT(th.GioBatDau, '%H:%i') AS GioBatDau,
-        TIME_FORMAT(th.GioKetThuc, '%H:%i') AS GioKetThuc,
-        tkb.MaPhong,
-        ph.TenPhong,
-        ph.MaToaNha,
-        tn.TenToaNha,
-        ph.SucChua,
-        ph.LoaiPhong,
-        DATE_FORMAT(tkb.NgayBatDau, '%Y-%m-%d') AS NgayBatDau,
-        DATE_FORMAT(tkb.NgayKetThuc, '%Y-%m-%d') AS NgayKetThuc
-      FROM ThoiKhoaBieu tkb
-      JOIN LopHocPhan lhp ON tkb.MaLopHocPhan = lhp.MaLopHocPhan
-      LEFT JOIN MonHoc mh ON lhp.MaMonHoc = mh.MaMonHoc
-      LEFT JOIN BoMon bm ON lhp.MaBoMon = bm.MaBoMon
-      LEFT JOIN Khoa k ON bm.MaKhoa = k.MaKhoa
-      LEFT JOIN GiangVien gv ON lhp.MaGiangVien = gv.MaGiangVien
-      LEFT JOIN TietHoc th ON tkb.MaTiet = th.MaTiet
-      LEFT JOIN PhongHoc ph ON tkb.MaPhong = ph.MaPhong
-      LEFT JOIN ToaNha tn ON ph.MaToaNha = tn.MaToaNha
-      WHERE 1=1
-    `;
+    let rows = [];
 
-    const params = [];
+    // Nếu người dùng chọn tuần / khoảng ngày cụ thể (màn hình Lịch Giảng Dạy & Học Tập):
+    // Ưu tiên truy vấn từ BuoiHoc để phản ánh các biến động thực tế (Báo nghỉ, Đổi ca, Dạy thay, Dạy bù)
+    if (tuNgay && tuNgay.trim() !== '' && denNgay && denNgay.trim() !== '') {
+      const tu = tuNgay.trim();
+      const den = denNgay.trim();
 
-    if (maHocKy && maHocKy.trim() !== '') {
-      sql += ` AND lhp.MaHocKy = ?`;
-      params.push(maHocKy.trim());
+      // 1. Lấy tất cả các buổi học thực tế trong tuần từ bảng BuoiHoc
+      let bhSql = `
+        SELECT
+          bh.MaBuoiHoc,
+          bh.MaThoiKhoaBieu,
+          bh.MaLopHocPhan,
+          lhp.TenLopHocPhan,
+          lhp.LoaiHoc,
+          lhp.SiSoDuKien,
+          lhp.SiSoDangKy,
+          mh.MaMonHoc,
+          mh.TenMonHoc,
+          mh.SoTinChi,
+          lhp.MaBoMon,
+          bm.TenBoMon,
+          bm.MaKhoa,
+          k.TenKhoa,
+          bh.MaGiangVien,
+          gv.HoTen AS TenGiangVien,
+          bh.MaGiangVienGoc,
+          gvGoc.HoTen AS TenGiangVienGoc,
+          IF(DAYOFWEEK(bh.NgayHoc) = 1, 8, DAYOFWEEK(bh.NgayHoc)) AS ThuTrongTuan,
+          DATE_FORMAT(bh.NgayHoc, '%Y-%m-%d') AS NgayHoc,
+          bh.MaTiet,
+          th.TenTiet,
+          TIME_FORMAT(th.GioBatDau, '%H:%i') AS GioBatDau,
+          TIME_FORMAT(th.GioKetThuc, '%H:%i') AS GioKetThuc,
+          bh.MaPhong,
+          ph.TenPhong,
+          ph.MaToaNha,
+          tn.TenToaNha,
+          ph.SucChua,
+          ph.LoaiPhong,
+          DATE_FORMAT(lhp.NgayBatDau, '%Y-%m-%d') AS NgayBatDau,
+          DATE_FORMAT(lhp.NgayKetThuc, '%Y-%m-%d') AS NgayKetThuc,
+          bh.LoaiBuoiHoc,
+          bh.TrangThai,
+          bh.DaDayBu,
+          bh.GhiChu,
+          bh.NgayGocDoiCa,
+          bh.MaTietGocDoiCa,
+          bh.MaPhongGocDoiCa
+        FROM BuoiHoc bh
+        JOIN LopHocPhan lhp ON bh.MaLopHocPhan = lhp.MaLopHocPhan
+        LEFT JOIN MonHoc mh ON lhp.MaMonHoc = mh.MaMonHoc
+        LEFT JOIN BoMon bm ON lhp.MaBoMon = bm.MaBoMon
+        LEFT JOIN Khoa k ON bm.MaKhoa = k.MaKhoa
+        LEFT JOIN GiangVien gv ON bh.MaGiangVien = gv.MaGiangVien
+        LEFT JOIN GiangVien gvGoc ON bh.MaGiangVienGoc = gvGoc.MaGiangVien
+        LEFT JOIN TietHoc th ON bh.MaTiet = th.MaTiet
+        LEFT JOIN PhongHoc ph ON bh.MaPhong = ph.MaPhong
+        LEFT JOIN ToaNha tn ON ph.MaToaNha = tn.MaToaNha
+        WHERE bh.NgayHoc >= ? AND bh.NgayHoc <= ?
+      `;
+
+      const bhParams = [tu, den];
+
+      if (maHocKy && maHocKy.trim() !== '') {
+        bhSql += ` AND lhp.MaHocKy = ?`;
+        bhParams.push(maHocKy.trim());
+      }
+      if (maToaNha && maToaNha.trim() !== '') {
+        bhSql += ` AND ph.MaToaNha = ?`;
+        bhParams.push(maToaNha.trim());
+      }
+      if (maPhong && maPhong.trim() !== '') {
+        bhSql += ` AND bh.MaPhong = ?`;
+        bhParams.push(maPhong.trim());
+      }
+      if (maKhoa && maKhoa.trim() !== '') {
+        bhSql += ` AND bm.MaKhoa = ?`;
+        bhParams.push(maKhoa.trim());
+      }
+      if (maBoMon && maBoMon.trim() !== '') {
+        bhSql += ` AND lhp.MaBoMon = ?`;
+        bhParams.push(maBoMon.trim());
+      }
+      if (maGiangVien && maGiangVien.trim() !== '') {
+        bhSql += ` AND (bh.MaGiangVien = ? OR bh.MaGiangVienGoc = ?)`;
+        bhParams.push(maGiangVien.trim(), maGiangVien.trim());
+      }
+      if (loaiHoc && loaiHoc.trim() !== '') {
+        bhSql += ` AND lhp.LoaiHoc = ?`;
+        bhParams.push(loaiHoc.trim().toUpperCase());
+      }
+      if (search && search.trim() !== '') {
+        bhSql += ` AND (lhp.MaLopHocPhan LIKE ? OR lhp.TenLopHocPhan LIKE ? OR mh.TenMonHoc LIKE ? OR gv.HoTen LIKE ? OR ph.TenPhong LIKE ?)`;
+        const kw = `%${search.trim()}%`;
+        bhParams.push(kw, kw, kw, kw, kw);
+      }
+
+      const [bhRows] = await db.query(bhSql, bhParams);
+
+      // 2. Lấy các lớp học phần chưa khóa lịch (chưa sinh BuoiHoc) từ ThoiKhoaBieu
+      let tkbSql = `
+        SELECT
+          NULL AS MaBuoiHoc,
+          tkb.MaThoiKhoaBieu,
+          tkb.MaLopHocPhan,
+          lhp.TenLopHocPhan,
+          lhp.LoaiHoc,
+          lhp.SiSoDuKien,
+          lhp.SiSoDangKy,
+          mh.MaMonHoc,
+          mh.TenMonHoc,
+          mh.SoTinChi,
+          lhp.MaBoMon,
+          bm.TenBoMon,
+          bm.MaKhoa,
+          k.TenKhoa,
+          lhp.MaGiangVien,
+          gv.HoTen AS TenGiangVien,
+          NULL AS MaGiangVienGoc,
+          NULL AS TenGiangVienGoc,
+          tkb.ThuTrongTuan,
+          NULL AS NgayHoc,
+          tkb.MaTiet,
+          th.TenTiet,
+          TIME_FORMAT(th.GioBatDau, '%H:%i') AS GioBatDau,
+          TIME_FORMAT(th.GioKetThuc, '%H:%i') AS GioKetThuc,
+          tkb.MaPhong,
+          ph.TenPhong,
+          ph.MaToaNha,
+          tn.TenToaNha,
+          ph.SucChua,
+          ph.LoaiPhong,
+          DATE_FORMAT(tkb.NgayBatDau, '%Y-%m-%d') AS NgayBatDau,
+          DATE_FORMAT(tkb.NgayKetThuc, '%Y-%m-%d') AS NgayKetThuc,
+          'Regular' AS LoaiBuoiHoc,
+          'Normal' AS TrangThai,
+          0 AS DaDayBu,
+          NULL AS GhiChu,
+          NULL AS NgayGocDoiCa,
+          NULL AS MaTietGocDoiCa,
+          NULL AS MaPhongGocDoiCa
+        FROM ThoiKhoaBieu tkb
+        JOIN LopHocPhan lhp ON tkb.MaLopHocPhan = lhp.MaLopHocPhan
+        LEFT JOIN MonHoc mh ON lhp.MaMonHoc = mh.MaMonHoc
+        LEFT JOIN BoMon bm ON lhp.MaBoMon = bm.MaBoMon
+        LEFT JOIN Khoa k ON bm.MaKhoa = k.MaKhoa
+        LEFT JOIN GiangVien gv ON lhp.MaGiangVien = gv.MaGiangVien
+        LEFT JOIN TietHoc th ON tkb.MaTiet = th.MaTiet
+        LEFT JOIN PhongHoc ph ON tkb.MaPhong = ph.MaPhong
+        LEFT JOIN ToaNha tn ON ph.MaToaNha = tn.MaToaNha
+        WHERE (lhp.TrangThaiPhanCong != 'Locked' OR lhp.TrangThaiPhanCong IS NULL)
+          AND tkb.NgayKetThuc >= ?
+          AND tkb.NgayBatDau <= ?
+      `;
+
+      const tkbParams = [tu, den];
+
+      if (maHocKy && maHocKy.trim() !== '') {
+        tkbSql += ` AND lhp.MaHocKy = ?`;
+        tkbParams.push(maHocKy.trim());
+      }
+      if (maToaNha && maToaNha.trim() !== '') {
+        tkbSql += ` AND ph.MaToaNha = ?`;
+        tkbParams.push(maToaNha.trim());
+      }
+      if (maPhong && maPhong.trim() !== '') {
+        tkbSql += ` AND tkb.MaPhong = ?`;
+        tkbParams.push(maPhong.trim());
+      }
+      if (maKhoa && maKhoa.trim() !== '') {
+        tkbSql += ` AND bm.MaKhoa = ?`;
+        tkbParams.push(maKhoa.trim());
+      }
+      if (maBoMon && maBoMon.trim() !== '') {
+        tkbSql += ` AND lhp.MaBoMon = ?`;
+        tkbParams.push(maBoMon.trim());
+      }
+      if (maGiangVien && maGiangVien.trim() !== '') {
+        tkbSql += ` AND lhp.MaGiangVien = ?`;
+        tkbParams.push(maGiangVien.trim());
+      }
+      if (loaiHoc && loaiHoc.trim() !== '') {
+        tkbSql += ` AND lhp.LoaiHoc = ?`;
+        tkbParams.push(loaiHoc.trim().toUpperCase());
+      }
+      if (search && search.trim() !== '') {
+        tkbSql += ` AND (lhp.MaLopHocPhan LIKE ? OR lhp.TenLopHocPhan LIKE ? OR mh.TenMonHoc LIKE ? OR gv.HoTen LIKE ? OR ph.TenPhong LIKE ?)`;
+        const kw = `%${search.trim()}%`;
+        tkbParams.push(kw, kw, kw, kw, kw);
+      }
+
+      const [tkbRows] = await db.query(tkbSql, tkbParams);
+
+      // Điền ngày học cụ thể cho các lớp chưa khóa
+      const baseMonday = new Date(tu);
+      tkbRows.forEach(item => {
+        const offset = Math.max(0, Math.min(6, (item.ThuTrongTuan || 2) - 2));
+        const dayDate = new Date(baseMonday);
+        dayDate.setDate(dayDate.getDate() + offset);
+        const y = dayDate.getFullYear();
+        const m = String(dayDate.getMonth() + 1).padStart(2, '0');
+        const d = String(dayDate.getDate()).padStart(2, '0');
+        item.NgayHoc = `${y}-${m}-${d}`;
+      });
+
+      rows = [...bhRows, ...tkbRows];
+    } else {
+      // Trường hợp không truyền khoảng ngày cụ thể: fallback về ThoiKhoaBieu
+      let sql = `
+        SELECT
+          NULL AS MaBuoiHoc,
+          tkb.MaThoiKhoaBieu,
+          tkb.MaLopHocPhan,
+          lhp.TenLopHocPhan,
+          lhp.LoaiHoc,
+          lhp.SiSoDuKien,
+          lhp.SiSoDangKy,
+          mh.MaMonHoc,
+          mh.TenMonHoc,
+          mh.SoTinChi,
+          lhp.MaBoMon,
+          bm.TenBoMon,
+          bm.MaKhoa,
+          k.TenKhoa,
+          lhp.MaGiangVien,
+          gv.HoTen AS TenGiangVien,
+          NULL AS MaGiangVienGoc,
+          NULL AS TenGiangVienGoc,
+          tkb.ThuTrongTuan,
+          NULL AS NgayHoc,
+          tkb.MaTiet,
+          th.TenTiet,
+          TIME_FORMAT(th.GioBatDau, '%H:%i') AS GioBatDau,
+          TIME_FORMAT(th.GioKetThuc, '%H:%i') AS GioKetThuc,
+          tkb.MaPhong,
+          ph.TenPhong,
+          ph.MaToaNha,
+          tn.TenToaNha,
+          ph.SucChua,
+          ph.LoaiPhong,
+          DATE_FORMAT(tkb.NgayBatDau, '%Y-%m-%d') AS NgayBatDau,
+          DATE_FORMAT(tkb.NgayKetThuc, '%Y-%m-%d') AS NgayKetThuc,
+          'Regular' AS LoaiBuoiHoc,
+          'Normal' AS TrangThai,
+          0 AS DaDayBu,
+          NULL AS GhiChu,
+          NULL AS NgayGocDoiCa,
+          NULL AS MaTietGocDoiCa,
+          NULL AS MaPhongGocDoiCa
+        FROM ThoiKhoaBieu tkb
+        JOIN LopHocPhan lhp ON tkb.MaLopHocPhan = lhp.MaLopHocPhan
+        LEFT JOIN MonHoc mh ON lhp.MaMonHoc = mh.MaMonHoc
+        LEFT JOIN BoMon bm ON lhp.MaBoMon = bm.MaBoMon
+        LEFT JOIN Khoa k ON bm.MaKhoa = k.MaKhoa
+        LEFT JOIN GiangVien gv ON lhp.MaGiangVien = gv.MaGiangVien
+        LEFT JOIN TietHoc th ON tkb.MaTiet = th.MaTiet
+        LEFT JOIN PhongHoc ph ON tkb.MaPhong = ph.MaPhong
+        LEFT JOIN ToaNha tn ON ph.MaToaNha = tn.MaToaNha
+        WHERE 1=1
+      `;
+
+      const params = [];
+
+      if (maHocKy && maHocKy.trim() !== '') {
+        sql += ` AND lhp.MaHocKy = ?`;
+        params.push(maHocKy.trim());
+      }
+      if (maToaNha && maToaNha.trim() !== '') {
+        sql += ` AND ph.MaToaNha = ?`;
+        params.push(maToaNha.trim());
+      }
+      if (maPhong && maPhong.trim() !== '') {
+        sql += ` AND tkb.MaPhong = ?`;
+        params.push(maPhong.trim());
+      }
+      if (maKhoa && maKhoa.trim() !== '') {
+        sql += ` AND bm.MaKhoa = ?`;
+        params.push(maKhoa.trim());
+      }
+      if (maBoMon && maBoMon.trim() !== '') {
+        sql += ` AND lhp.MaBoMon = ?`;
+        params.push(maBoMon.trim());
+      }
+      if (maGiangVien && maGiangVien.trim() !== '') {
+        sql += ` AND lhp.MaGiangVien = ?`;
+        params.push(maGiangVien.trim());
+      }
+      if (loaiHoc && loaiHoc.trim() !== '') {
+        sql += ` AND lhp.LoaiHoc = ?`;
+        params.push(loaiHoc.trim().toUpperCase());
+      }
+      if (search && search.trim() !== '') {
+        sql += ` AND (lhp.MaLopHocPhan LIKE ? OR lhp.TenLopHocPhan LIKE ? OR mh.TenMonHoc LIKE ? OR gv.HoTen LIKE ? OR ph.TenPhong LIKE ?)`;
+        const kw = `%${search.trim()}%`;
+        params.push(kw, kw, kw, kw, kw);
+      }
+
+      const [dbRows] = await db.query(sql, params);
+      rows = dbRows;
     }
 
-    if (maToaNha && maToaNha.trim() !== '') {
-      sql += ` AND ph.MaToaNha = ?`;
-      params.push(maToaNha.trim());
-    }
-
-    if (maPhong && maPhong.trim() !== '') {
-      sql += ` AND tkb.MaPhong = ?`;
-      params.push(maPhong.trim());
-    }
-
-    if (maKhoa && maKhoa.trim() !== '') {
-      sql += ` AND bm.MaKhoa = ?`;
-      params.push(maKhoa.trim());
-    }
-
-    if (maBoMon && maBoMon.trim() !== '') {
-      sql += ` AND lhp.MaBoMon = ?`;
-      params.push(maBoMon.trim());
-    }
-
-    if (maGiangVien && maGiangVien.trim() !== '') {
-      sql += ` AND lhp.MaGiangVien = ?`;
-      params.push(maGiangVien.trim());
-    }
-
-    if (loaiHoc && loaiHoc.trim() !== '') {
-      sql += ` AND lhp.LoaiHoc = ?`;
-      params.push(loaiHoc.trim().toUpperCase());
-    }
-
-    if (search && search.trim() !== '') {
-      sql += ` AND (lhp.MaLopHocPhan LIKE ? OR lhp.TenLopHocPhan LIKE ? OR mh.TenMonHoc LIKE ? OR gv.HoTen LIKE ? OR ph.TenPhong LIKE ?)`;
-      const kw = `%${search.trim()}%`;
-      params.push(kw, kw, kw, kw, kw);
-    }
-
-    if (tuNgay && tuNgay.trim() !== '') {
-      sql += ` AND tkb.NgayKetThuc >= ?`;
-      params.push(tuNgay.trim());
-    }
-
-    if (denNgay && denNgay.trim() !== '') {
-      sql += ` AND tkb.NgayBatDau <= ?`;
-      params.push(denNgay.trim());
-    }
-
-    sql += ` ORDER BY tkb.ThuTrongTuan ASC, tkb.MaTiet ASC, ph.MaPhong ASC`;
-
-    const [rows] = await db.query(sql, params);
+    // Sắp xếp dữ liệu theo thứ tự hiển thị chuẩn
+    rows.sort((a, b) => {
+      if (a.ThuTrongTuan !== b.ThuTrongTuan) return a.ThuTrongTuan - b.ThuTrongTuan;
+      if (a.MaTiet !== b.MaTiet) return a.MaTiet - b.MaTiet;
+      return (a.MaPhong || '').localeCompare(b.MaPhong || '');
+    });
 
     // Tổ chức dữ liệu theo ma trận cell [thu][tiet]
     const matrix = {};

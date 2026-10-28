@@ -773,28 +773,33 @@ export default function DuyetYeuCauManagement() {
               className="lgd-modal-content"
               style={{
                 maxWidth: '600px',
+                width: '94%',
+                maxHeight: '92vh',
+                display: 'flex',
+                flexDirection: 'column',
                 borderRadius: '16px',
                 overflow: 'hidden',
                 boxShadow: '0 25px 50px -12px rgba(220, 38, 38, 0.25), 0 10px 25px -5px rgba(0, 0, 0, 0.1)'
               }}
               onClick={e => e.stopPropagation()}
             >
-              {/* Header */}
+              {/* Header (Sticky Top) */}
               <div
                 className="lgd-modal-header"
                 style={{
                   background: 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)',
-                  padding: '1.25rem 1.5rem',
+                  padding: '1.15rem 1.5rem',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  borderBottom: 'none'
+                  borderBottom: 'none',
+                  flexShrink: 0
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                   <div style={{
-                    width: '42px',
-                    height: '42px',
+                    width: '40px',
+                    height: '40px',
                     borderRadius: '12px',
                     background: 'rgba(255, 255, 255, 0.2)',
                     backdropFilter: 'blur(8px)',
@@ -804,15 +809,15 @@ export default function DuyetYeuCauManagement() {
                     color: '#ffffff',
                     flexShrink: 0
                   }}>
-                    <XCircle size={24} />
+                    <XCircle size={22} />
                   </div>
                   <div>
-                    <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.01em' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.01em' }}>
                       Từ Chối Phê Duyệt Yêu Cầu
                     </h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginTop: '0.2rem' }}>
                       <span style={{
-                        fontSize: '0.75rem',
+                        fontSize: '0.72rem',
                         fontWeight: 700,
                         padding: '2px 8px',
                         borderRadius: '6px',
@@ -851,9 +856,28 @@ export default function DuyetYeuCauManagement() {
                 </button>
               </div>
 
-              {/* Form & Body */}
-              <form onSubmit={handleConfirmReject}>
-                <div className="lgd-modal-body" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
+              {/* Form container */}
+              <form
+                onSubmit={handleConfirmReject}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  flex: 1,
+                  overflow: 'hidden',
+                  margin: 0
+                }}
+              >
+                <div
+                  className="lgd-modal-body"
+                  style={{
+                    padding: '1.15rem 1.5rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '1rem',
+                    overflowY: 'auto',
+                    flex: 1
+                  }}
+                >
                   
                   {/* Request Summary Card */}
                   <div style={{
@@ -988,7 +1012,7 @@ export default function DuyetYeuCauManagement() {
                     </div>
 
                     <textarea
-                      rows={4}
+                      rows={3}
                       required
                       maxLength={500}
                       value={rejectReason}
@@ -996,9 +1020,9 @@ export default function DuyetYeuCauManagement() {
                       placeholder="Nhập lý do từ chối cụ thể và hướng dẫn (nếu có) để hệ thống gửi thông báo phản hồi lại cho giảng viên..."
                       style={{
                         width: '100%',
-                        padding: '0.75rem 0.85rem',
+                        padding: '0.65rem 0.85rem',
                         fontSize: '0.875rem',
-                        lineHeight: 1.5,
+                        lineHeight: 1.45,
                         borderRadius: '10px',
                         border: '1.5px solid #cbd5e1',
                         outline: 'none',
@@ -1022,16 +1046,18 @@ export default function DuyetYeuCauManagement() {
                   </div>
                 </div>
 
-                {/* Footer Actions */}
+                {/* Footer Actions (Sticky Bottom) */}
                 <div
                   className="lgd-modal-footer"
                   style={{
-                    padding: '1rem 1.5rem',
+                    padding: '0.85rem 1.5rem',
                     background: '#f8fafc',
                     borderTop: '1px solid #f1f5f9',
                     display: 'flex',
                     justifyContent: 'flex-end',
-                    gap: '0.75rem'
+                    gap: '0.75rem',
+                    flexShrink: 0,
+                    boxShadow: '0 -4px 12px rgba(0, 0, 0, 0.03)'
                   }}
                 >
                   <button

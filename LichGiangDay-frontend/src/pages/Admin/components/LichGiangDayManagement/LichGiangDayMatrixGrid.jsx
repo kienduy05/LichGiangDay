@@ -3,6 +3,7 @@ import {
   User, Building, Users, Clock, BookOpen, Layers,
   Calendar, CheckCircle, AlertCircle, Info, Sparkles, Loader2
 } from 'lucide-react';
+import { getStatusCardProps } from './lichGiangDayStatusHelper';
 import './LichGiangDayComponents.css';
 
 const PERIOD_ROWS = [
@@ -109,10 +110,11 @@ export default function LichGiangDayMatrixGrid({
 
                           {items.slice(0, 2).map((item, idx) => {
                             const loaiClass = `loai-${(item.LoaiHoc || 'LT').toLowerCase()}`;
+                            const { statusClass, statusBadge } = getStatusCardProps(item);
                             return (
                               <div
-                                key={item.MaThoiKhoaBieu || idx}
-                                className={`lgd-class-card ${loaiClass}`}
+                                key={item.MaBuoiHoc || item.MaThoiKhoaBieu || idx}
+                                className={`lgd-class-card ${loaiClass} ${statusClass}`}
                                 onClick={() => onCardClick && onCardClick(item)}
                                 title="Nhấp để xem chi tiết lớp học"
                               >
@@ -124,6 +126,12 @@ export default function LichGiangDayMatrixGrid({
                                     {loaiHocLabels[item.LoaiHoc] || item.LoaiHoc || 'LT'}
                                   </span>
                                 </div>
+
+                                {statusBadge && (
+                                  <div style={{ width: '100%' }}>
+                                    {statusBadge}
+                                  </div>
+                                )}
 
                                 <div className="lgd-card-meta">
                                   <div className="lgd-card-meta-row">
