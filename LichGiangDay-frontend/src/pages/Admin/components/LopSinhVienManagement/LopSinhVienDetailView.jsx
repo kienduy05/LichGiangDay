@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   ArrowLeft, Edit2, School, Users, BookMarked,
-  User, Loader2, Plus, AlertCircle
+  User, Loader2, AlertCircle
 } from 'lucide-react';
 import './LopSinhVienComponents.css';
 
@@ -11,7 +11,6 @@ export default function LopSinhVienDetailView({
   error = '',
   onBack,
   onEdit,
-  onAttachClasses,
   hasPermission = () => true
 }) {
   const { lopSinhVien, lopHocPhanList = [] } = detailData || {};
@@ -128,11 +127,6 @@ export default function LopSinhVienDetailView({
       {/* 2. Danh sách Lớp Học Phần mà lớp sinh viên này đang tham gia */}
       <div className="lsv-detail-section-heading">
         <span>Danh Sách Lớp Học Phần Tham Gia ({lopHocPhanList.length})</span>
-        {hasPermission('LopHocPhan', 'CanUpdate') && lopSinhVien && (
-          <button type="button" className="lsv-attach-open-btn" onClick={onAttachClasses}>
-            <Plus size={16} /> Gắn lớp học phần
-          </button>
-        )}
       </div>
 
       {loading ? (
@@ -159,11 +153,6 @@ export default function LopSinhVienDetailView({
                   <td colSpan="6" className="table-empty-cell" style={{ padding: '40px 20px', textAlign: 'center' }}>
                     <BookMarked size={36} style={{ margin: '0 auto 8px', color: '#cbd5e1' }} />
                     <p>Lớp sinh viên này hiện chưa được gắn vào lớp học phần nào.</p>
-                    {hasPermission('LopHocPhan', 'CanUpdate') && (
-                      <button type="button" className="lsv-empty-attach-btn" onClick={onAttachClasses}>
-                        <Plus size={15} /> Chọn lớp học phần
-                      </button>
-                    )}
                   </td>
                 </tr>
               ) : (

@@ -618,9 +618,7 @@ if (siSoDuKien !== null && siSoDangKy !== null && siSoDangKy > siSoDuKien) {
     if (!existing) {
       throw new Error(`Không tìm thấy lớp học phần có mã '${maLopHocPhan}'.`);
     }
-    if (existing.TrangThaiPhanCong === 'Locked') {
-      throw new Error('Không thể gắn lớp sinh viên vì thời khóa biểu của lớp học phần đã được khóa.');
-    }
+    // Quản lý lớp sinh viên tham gia độc lập với trạng thái khóa lịch.
     if (!Array.isArray(dsLopSinhVien) || dsLopSinhVien.length === 0) {
       throw new Error('Danh sách lớp sinh viên cần gắn không được để trống.');
     }
