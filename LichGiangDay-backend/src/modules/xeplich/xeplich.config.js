@@ -1,12 +1,4 @@
 const DEFAULT_CONFIG = {
-  soBuoiMoiTuan: {
-    LT: 1,
-    TH: 1,
-    BT: 1,
-    TL: 1,
-    DA: 1,
-    DEFAULT: 1
-  },
   ngayKhongXep: [],
   thuKhongXep: [8] // Chủ nhật nghỉ, không xếp tiết học.
 };
@@ -45,17 +37,11 @@ const isRoomCompatible = (loaiHoc, loaiPhong) => {
   return true;
 };
 
-const getSoBuoiMoiTuan = (loaiHoc) => {
-  const key = String(loaiHoc || '').trim().toUpperCase();
-  return Number(DEFAULT_CONFIG.soBuoiMoiTuan[key] || DEFAULT_CONFIG.soBuoiMoiTuan.DEFAULT);
-};
-
 const getBlockedDates = () => new Set(DEFAULT_CONFIG.ngayKhongXep);
 const getBlockedWeekdays = () => new Set(DEFAULT_CONFIG.thuKhongXep.map(Number));
 
 module.exports = {
   getBlockedDates,
   getBlockedWeekdays,
-  getSoBuoiMoiTuan,
   isRoomCompatible
 };
