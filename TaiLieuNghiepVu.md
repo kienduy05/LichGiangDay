@@ -1584,38 +1584,40 @@ Phân hệ **Thời khóa biểu** (Course Scheduling) cho phép người quản
   - Làm mới dữ liệu bảng và TreeView, trạng thái lớp chuyển về chấm cam 🟠 (**Chưa xếp lịch**).
 
 
-### 2.2. Chức năng 2: Xếp lịch tự động theo định mức (quy tắc v3)
+### 2.2. Chức năng 2: Xếp lịch tự động lặp theo tuần (quy tắc v4)
 
-Cập nhật 29/10/2026. Dùng thuật toán tối ưu có giới hạn trong backend, không gọi API AI bên ngoài.
+Cập nhật 29/10/2026. Thuật toán chạy trong backend, không gọi API AI bên ngoài.
 
-#### 2.2.1. Nhóm lớp và định mức
+#### 2.2.1. Tần suất và mẫu tuần cố định
 
-Ghép theo **môn học + học kỳ + nhóm (QT01…) + khóa**. Chọn một lớp tự chọn tất cả thành phần của nhóm. Mỗi buổi gồm 3 tiết liên tiếp.
-
-| Học phần | Phân bổ tiết | Số buổi |
+| Tín chỉ | Loại lớp học phần | Số buổi mỗi tuần |
 |---|---|---|
-| 3 tín chỉ LT/BT | 30 LT + 30 BT | 10 LT + 10 BT |
-| 3 tín chỉ LT/BT/TH | 30 LT + 15 BT + 15 TH | 10 LT + 5 BT + 5 TH |
-| 2 tín chỉ LT/BT | 15 LT + 15 BT | 5 LT + 5 BT |
-| 3 tín chỉ loại khác | Tổng 60 tiết | Tổng 20 buổi, chia đều theo loại, chênh tối đa 1 buổi |
+| 3 | Lý thuyết (LT) | 2 |
+| 3 | Thực hành (TH) | 1 |
+| 3 | Bài tập (BT) hoặc loại khác | 1 |
+| 2 | Mỗi loại lớp | 1 |
 
-Các tuần giữ mẫu thứ cố định của nhóm; tuần ít buổi dùng các thứ đầu mẫu, ngoại trừ tuần đầu bắt đầu giữa tuần. Hai buổi liên tiếp cách nhau tối thiểu 2 ngày (Thứ 2 → Thứ 4), xen kẽ loại học, tối đa 3 buổi/tuần/nhóm. Thuật toán ưu tiên trải đều đến cuối khoảng học. Có thể có tuần không học nếu số buổi ít hơn số tuần; không tăng buổi vượt định mức.
+Một buổi gồm 3 tiết. Quy tắc mới thay tổng tiết cố định trước đó: LT 3 tín chỉ kéo dài 10 tuần đầy đủ có 20 buổi (60 tiết). Tín chỉ khác 2/3 báo chưa có quy tắc.
 
-**Chủ nhật là ngày nghỉ, không xếp tiết học.** Mẫu thứ cố định chỉ gồm **Thứ 2 đến Thứ 7**. Backend loại Chủ nhật khi sinh lịch và từ chối buổi Chủ nhật khi kiểm tra, sửa hoặc áp dụng lịch nháp; giao diện chỉnh sửa cũng chặn lưu nếu chọn Chủ nhật. Lịch chính thức đã áp dụng trước đó không tự bị thay đổi; cần rà soát riêng nếu có buổi Chủ nhật.
+Lặp đều đến ngày kết thúc của từng lớp: tuần trước học Thứ 2 thì tuần sau tiếp tục Thứ 2, cùng ca và cùng phòng. Lớp có hai buổi dùng hai thứ cố định cách nhau ít nhất 2 ngày, kể cả qua ranh giới tuần. Mỗi lớp dùng một phòng suốt thời gian học; LT và TH có thể dùng phòng khác nhau theo loại học. **Chủ nhật nghỉ, chỉ xếp Thứ 2–Thứ 7.**
 
-Ví dụ mẫu Thứ 2/Thứ 4/Thứ 6: tuần ba buổi học cả ba thứ, tuần hai buổi học Thứ 2/Thứ 4, tuần một buổi học Thứ 2. Tuần đầu bắt đầu giữa tuần chỉ dùng phần mẫu còn trong thời gian lớp. Mẫu cố định áp dụng cho thứ học, chưa bắt buộc cố định ca hoặc phòng. Nếu không tìm được phương án đủ định mức trên các thứ hợp lệ, hệ thống báo chưa xếp được, không tự chuyển sang Chủ nhật.
+Tuần đầu/cuối chỉ sinh ngày nằm trong NgayBatDau–NgayKetThuc. Tổng buổi tính từ ngày lặp thực tế, không chỉ lấy SoTuan nhân tần suất. Không tự bỏ tuần, đổi thứ hay đổi phòng để vượt qua xung đột. Nếu không tìm được mẫu hợp lệ thì báo chưa xếp được.
+
+Ghép nhóm theo môn + học kỳ + nhóm (QT01…) + khóa và chọn đủ thành phần. Không còn giới hạn cũ 3 buổi/tuần/nhóm hoặc bắt buộc xen kẽ loại học: LT+BT+TH có thể có 4 buổi/tuần. Khoảng cách 2 ngày áp dụng cho hai buổi của cùng lớp LT; giữa các lớp thành phần vẫn kiểm tra không trùng giờ.
 
 #### 2.2.2. Tạo và xử lý phiên
 
-Danh sách lớp hiển thị tín chỉ, nhóm, định mức tiết/buổi và lỗi dữ liệu. Nhóm thiếu/mâu thuẫn mã, trùng loại, có thành phần đã có lịch hoặc không có định mức sẽ không được xếp mới. Sinh ngày cụ thể bằng beam search, có giới hạn thời gian/trạng thái và kiểm tra hủy định kỳ. Nhóm không đủ phương án hoàn chỉnh báo chưa xếp được, không lưu lịch thiếu buổi dưới dạng thành công.
+Danh sách hiển thị tên/mã lớp, tín chỉ, tần suất và khoảng tổng buổi dự kiến. Sinh các mẫu thứ/ca/phòng rồi kiểm tra tất cả lần lặp. Chọn tổ hợp bằng backtracking có giới hạn tìm kiếm và kiểm tra hủy; không trả về nhóm thiếu thành phần như một nhóm thành công.
 
-Kiểm tra trùng phòng, giảng viên đã phân công, lớp học phần, lớp sinh viên; đủ sức chứa, loại phòng, ca 3 tiết, thời gian lớp/học kỳ và ngày cấm. Đọc cả lịch chính thức và buổi học thực tế có thời gian giao nhau.
+Kiểm tra lịch chính thức, buổi thực tế, phòng, giảng viên đã phân công, lớp sinh viên, lớp học phần và nhóm thành phần; đảm bảo sức chứa, loại phòng, ca 3 tiết, ngày cấm và thời gian lớp/học kỳ.
 
 #### 2.2.3. Xem, sửa và áp dụng
 
-Mỗi dòng nháp là một buổi vào một ngày, không phải mẫu lặp hằng tuần. Sửa ngày tự cập nhật thứ; kiểm tra lại toàn nhóm và tài nguyên. Áp dụng kiểm tra lại dữ liệu hiện tại trong transaction và ghi một dòng ThoiKhoaBieu cho mỗi buổi với ngày bắt đầu bằng ngày kết thúc. Một lỗi sẽ rollback thao tác. Luồng khóa lịch sinh BuoiHoc từ các ngày này.
+Cột Lớp học phần trong chi tiết kết quả hiển thị cả mã và tên lớp. Mỗi dòng là một ngày học. Sửa riêng một buổi làm thay đổi phòng/ca/thứ so với mẫu tuần hoặc thiếu lần lặp sẽ bị từ chối. Chức năng đổi đồng loạt mẫu tuần chưa có; có thể tạo lại phương án.
 
-Phiên cũ chỉ xem; cần tạo mới để sửa/áp dụng quy tắc v3. Lịch chính thức đã có được giữ nguyên. Mở Xếp lịch tự động về màn chọn lớp; Quản lý phiên dùng xem lại/xóa lịch sử. Đóng cửa sổ vẫn chạy nền; Hủy phiên mới dừng. Xóa lịch sử phiên đã áp dụng không xóa thời khóa biểu.
+Trước áp dụng đọc lại dữ liệu, kiểm tra toàn phương án và ghi mỗi buổi thành một dòng ThoiKhoaBieu trong transaction; có lỗi thì rollback. Khóa lịch sinh BuoiHoc theo các ngày đã xếp. Phiên mới dùng quy tắc 4; phiên cũ chỉ xem, cần tạo lại để sửa/áp dụng. Lịch chính thức đã áp dụng không tự bị thay đổi.
+
+Mở Xếp lịch tự động về chọn lớp, Quản lý phiên dùng xem/xóa lịch sử. Đóng cửa sổ vẫn chạy nền; Hủy phiên mới dừng. Xóa lịch sử không xóa thời khóa biểu đã áp dụng.
 
 #### 2.2.4. API
 
