@@ -135,8 +135,7 @@ export default function LopHocPhanTable({
                       <button
                         type="button"
                         className="action-btn delete"
-                        title={hasGhep ? 'Không thể xóa lớp học phần đang có lớp sinh viên tham gia' : 'Xóa lớp học phần'}
-                        disabled={hasGhep}
+                        title="Xóa lớp học phần"
                         onClick={() => onDelete(item)}
                       >
                         <Trash2 size={15} />

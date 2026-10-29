@@ -226,23 +226,17 @@ export default function LopHocPhanDetailView({
               </div>
               {hasPermission('LopHocPhan', 'CanUpdate') && lopHocPhan && (
                 <div className="lhp-student-class-actions">
-                  <button type="button" className="lhp-link-class-btn" onClick={onAttachLopSinhVien} disabled={isLocked} title={isLocked ? 'Thời khóa biểu đã khóa, không thể thêm lớp sinh viên' : undefined}>
+                  <button type="button" className="lhp-link-class-btn" onClick={onAttachLopSinhVien}>
                     <Plus size={15} /> Thêm lớp sinh viên
                   </button>
-                  {lopSinhVienList.length > 0 && (
-                    <button type="button" className="lhp-unlink-class-btn" onClick={onDetachLopSinhVien} disabled={isLocked} title={isLocked ? 'Thời khóa biểu đã khóa, không thể xóa lớp sinh viên' : undefined}>
-                      <Unlink size={15} /> Xóa lớp sinh viên
+                  {lopSinhVienList.length > 0 && !isLocked && (
+                    <button type="button" className="lhp-unlink-class-btn" onClick={onDetachLopSinhVien}>
+                      <Unlink size={15} /> Gỡ lớp sinh viên
                     </button>
                   )}
                 </div>
               )}
             </div>
-
-            {isLocked && (
-              <p style={{ color: '#64748b', fontSize: '0.84rem' }}>
-                Thời khóa biểu đã khóa. Không thể thêm hoặc xóa lớp sinh viên khỏi lớp học phần.
-              </p>
-            )}
 
             {lopSinhVienList.length === 0 ? (
               <div className="table-empty-cell" style={{ padding: '36px 20px', textAlign: 'center', background: '#f8fafc', borderRadius: '10px', border: '1px dashed #cbd5e1' }}>
@@ -250,7 +244,7 @@ export default function LopHocPhanDetailView({
                 <p style={{ fontWeight: 600, color: '#475569', fontSize: '0.9rem' }}>Chưa có lớp sinh viên nào được ghép vào lớp học phần này.</p>
                 <p style={{ color: '#94a3b8', fontSize: '0.8rem', marginTop: '4px' }}>Lớp sinh viên ghép giúp quản lý danh sách sinh viên theo dõi buổi học.</p>
                 {hasPermission('LopHocPhan', 'CanUpdate') && lopHocPhan && (
-                  <button type="button" className="lhp-link-class-btn empty" onClick={onAttachLopSinhVien} disabled={isLocked} title={isLocked ? 'Thời khóa biểu đã khóa, không thể thêm lớp sinh viên' : undefined}>
+                  <button type="button" className="lhp-link-class-btn empty" onClick={onAttachLopSinhVien}>
                     <Plus size={15} /> Thêm lớp sinh viên
                   </button>
                 )}

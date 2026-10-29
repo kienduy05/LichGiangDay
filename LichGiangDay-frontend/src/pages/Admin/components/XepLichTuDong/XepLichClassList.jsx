@@ -13,13 +13,12 @@ export default function XepLichClassList({
   const allReadySelected = readyRows.length > 0 && readyRows.every(row => selectedIds.includes(row.MaLopHocPhan));
 
   const toggleAll = () => {
-    onSelectedIdsChange(allReadySelected ? [] : [...new Set(readyRows.flatMap(row => row.MaLopCungNhom || [row.MaLopHocPhan]))]);
+    onSelectedIdsChange(allReadySelected ? [] : readyRows.map(row => row.MaLopHocPhan));
   };
 
   const toggleOne = (id) => {
-    const ids = classes.find(row => row.MaLopHocPhan === id)?.MaLopCungNhom || [id];
     onSelectedIdsChange(
-      selectedIds.includes(id) ? selectedIds.filter(value => !ids.includes(value)) : [...new Set([...selectedIds, ...ids])]
+      selectedIds.includes(id) ? selectedIds.filter(value => value !== id) : [...selectedIds, id]
     );
   };
 
@@ -28,7 +27,7 @@ export default function XepLichClassList({
       <div className="xlt-section-toolbar">
         <div>
           <h3>Lớp học phần chưa xếp lịch</h3>
-          <p>Đã chọn {selectedIds.length} lớp · LT/BT/TH cùng nhóm được chọn cùng nhau</p>
+          <p>Đã chọn {selectedIds.length}/{readyRows.length} lớp đủ dữ liệu</p>
         </div>
         <div className="xlt-search">
           <Search size={16} />
@@ -75,11 +74,10 @@ export default function XepLichClassList({
                   <td>
                     <strong>{row.MaLopHocPhan}</strong>
                     <span>{row.TenMonHoc || row.TenLopHocPhan}</span>
-                    <span>{row.SoTinChi} tín chỉ · Nhóm {row.NhomLop || 'chưa xác định'} · {row.KhoaHoc}</span>
                   </td>
                   <td><span className="xlt-type-badge">{row.LoaiHoc}</span></td>
                   <td>{size}</td>
-                  <td>{row.SoBuoiYeuCau ? `${row.SoTietYeuCau} tiết = ${row.SoBuoiYeuCau} buổi × 3 tiết` : 'Chưa có định mức'}</td>
+                  <td>{ready ? `${row.SoBuoiMoiTuan} buổi/tuần · ${row.SoTuanDinhMuc} tuần` : '—'}</td>
                   <td>
                     {ready ? (
                       <span className="xlt-status ready"><CheckCircle2 size={14} /> Đủ dữ liệu</span>

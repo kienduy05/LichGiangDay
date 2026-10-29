@@ -411,10 +411,6 @@ export default function LopHocPhanManagement() {
 
   const handleConfirmDelete = async () => {
     if (!deletingItem) return;
-    if ((deletingItem.SoLopSinhVienGhep || 0) > 0) {
-      setDeleteError('Không thể xóa lớp học phần đang có lớp sinh viên tham gia.');
-      return;
-    }
     setDeleteLoading(true);
     setDeleteError('');
     try {
@@ -754,7 +750,7 @@ export default function LopHocPhanManagement() {
                 type="button"
                 onClick={handleConfirmDelete}
                 className="btn-delete"
-                disabled={deleteLoading || (deletingItem.SoLopSinhVienGhep || 0) > 0}
+                disabled={deleteLoading}
               >
                 {deleteLoading ? (
                   <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

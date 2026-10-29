@@ -32,16 +32,6 @@ export const createPhienXepLich = (payload) => request('/phien', {
 
 export const getPhienXepLich = (maPhien) => request(`/phien/${encodeURIComponent(maPhien)}`);
 
-export const listPhienXepLich = (maHocKy) => request(`/phien?${new URLSearchParams({ maHocKy })}`);
-
-export const deletePhienXepLich = (maPhien) => request(
-  `/phien/${encodeURIComponent(maPhien)}/ban-ghi`, { method: 'DELETE' }
-);
-
-export const deleteNhieuPhienXepLich = (maPhien) => request('/phien/xoa', {
-  method: 'POST', body: JSON.stringify({ maPhien })
-});
-
 export const checkDongXepLich = (payload) => request('/kiem-tra', {
   method: 'POST',
   body: JSON.stringify(payload)

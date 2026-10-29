@@ -51,19 +51,6 @@ class XepLichStore {
     writeState(state);
     return existed;
   };
-
-  static removeMany = (ids) => {
-    const state = readState();
-    const removed = [];
-    for (const id of ids) {
-      if (Object.hasOwn(state.sessions, id)) {
-        delete state.sessions[id];
-        removed.push(id);
-      }
-    }
-    if (removed.length) writeState(state);
-    return removed;
-  };
 }
 
 module.exports = XepLichStore;

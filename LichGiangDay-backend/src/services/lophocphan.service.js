@@ -339,16 +339,9 @@ if (siSoDuKien !== null && siSoDangKy !== null && siSoDangKy > siSoDuKien) {
       await conn.beginTransaction();
 
       await conn.query(
-        `SELECT MaLopHocPhan FROM LopHocPhan WHERE MaLopHocPhan = ? FOR UPDATE`,
+        `DELETE FROM LopHocPhan_LopSinhVien WHERE MaLopHocPhan = ?`,
         [maLopHocPhan]
       );
-      const [linkedClasses] = await conn.query(
-        `SELECT MaLopSinhVien FROM LopHocPhan_LopSinhVien WHERE MaLopHocPhan = ? LIMIT 1 FOR UPDATE`,
-        [maLopHocPhan]
-      );
-      if (linkedClasses.length > 0) {
-        throw new Error('Không thể xóa lớp học phần vì đang có lớp sinh viên tham gia. Vui lòng gỡ các lớp sinh viên trước.');
-      }
 
       // Gỡ liên kết ChiTietNhap (SET NULL, không xóa lịch sử import)
       await conn.query(
@@ -625,9 +618,7 @@ if (siSoDuKien !== null && siSoDangKy !== null && siSoDangKy > siSoDuKien) {
     if (!existing) {
       throw new Error(`Không tìm thấy lớp học phần có mã '${maLopHocPhan}'.`);
     }
-    if (existing.TrangThaiPhanCong === 'Locked') {
-      throw new Error('Không thể thêm lớp sinh viên vì thời khóa biểu của lớp học phần đã được khóa.');
-    }
+    // Quản lý lớp sinh viên tham gia độc lập với trạng thái khóa lịch.
     if (!Array.isArray(dsLopSinhVien) || dsLopSinhVien.length === 0) {
       throw new Error('Danh sách lớp sinh viên cần gắn không được để trống.');
     }
@@ -650,7 +641,7 @@ if (siSoDuKien !== null && siSoDangKy !== null && siSoDangKy > siSoDuKien) {
       throw new Error(`Không tìm thấy lớp học phần có mã '${maLopHocPhan}'.`);
     }
     if (existing.TrangThaiPhanCong === 'Locked') {
-      throw new Error('Không thể xóa lớp sinh viên khỏi lớp học phần vì thời khóa biểu đã được khóa.');
+      throw new Error('Không thể gỡ lớp sinh viên vì thời khóa biểu của lớp học phần đã được khóa.');
     }
     if (!Array.isArray(dsLopSinhVien) || dsLopSinhVien.length === 0) {
       throw new Error('Danh sách lớp sinh viên cần gỡ không được để trống.');
