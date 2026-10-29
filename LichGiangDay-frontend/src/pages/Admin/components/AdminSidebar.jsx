@@ -212,7 +212,7 @@ export default function AdminSidebar({ activeTab, setActiveTab, isOpenMobile, on
           <>
             <div className="admin-nav-section">Lịch & Thời Khóa Biểu</div>
 
-            {hasPermission('ThoiKhoaBieu', 'CanRead') && (
+            {hasPermission('ThoiKhoaBieu', 'CanRead') && user?.role !== 'BOMON' && (
               <div
                 className={`admin-nav-item ${activeTab === 'thoikhoabieu' ? 'active' : ''}`}
                 onClick={() => handleNavClick('thoikhoabieu')}

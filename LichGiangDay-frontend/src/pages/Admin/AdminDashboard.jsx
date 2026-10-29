@@ -37,6 +37,13 @@ export default function AdminDashboard() {
   // Navigation active tab: 'dashboard' | 'toanha' | 'phonghoc' | 'roles' | 'users' | 'permissions'
   const [activeTab, setActiveTab] = useState('dashboard');
 
+  // Khóa & chuyển hướng nếu vai trò BOMON đang ở tab thoikhoabieu
+  useEffect(() => {
+    if (user?.role === 'BOMON' && activeTab === 'thoikhoabieu') {
+      setActiveTab('dashboard');
+    }
+  }, [user?.role, activeTab]);
+
   // Header profile dropdown
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -205,7 +212,7 @@ export default function AdminDashboard() {
           {activeTab === 'tiethoc' && <TietHocManagement />}
           {activeTab === 'lophocphan' && <LopHocPhanManagement />}
           {activeTab === 'lichgiangday' && <LichGiangDayManagement />}
-          {activeTab === 'thoikhoabieu' && <ThoiKhoaBieuManagement />}
+          {activeTab === 'thoikhoabieu' && user?.role !== 'BOMON' && <ThoiKhoaBieuManagement />}
           {activeTab === 'phanconggiangvien' && <PhanCongGiangVienManagement />}
           {activeTab === 'duyetyeucau' && <DuyetYeuCauManagement />}
           {activeTab === 'biendonglich' && <LichBienDongMonitor />}
