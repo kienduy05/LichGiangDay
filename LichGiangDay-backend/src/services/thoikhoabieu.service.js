@@ -947,7 +947,7 @@ class ThoiKhoaBieuService {
         LEFT JOIN TietHoc th ON bh.MaTiet = th.MaTiet
         LEFT JOIN PhongHoc ph ON bh.MaPhong = ph.MaPhong
         LEFT JOIN ToaNha tn ON ph.MaToaNha = tn.MaToaNha
-        WHERE bh.NgayHoc >= ? AND bh.NgayHoc <= ?
+        WHERE bh.NgayHoc >= ? AND bh.NgayHoc <= ? AND (bh.TrangThai IS NULL OR bh.TrangThai != 'Cancelled')
       `;
 
       const bhParams = [tu, den];

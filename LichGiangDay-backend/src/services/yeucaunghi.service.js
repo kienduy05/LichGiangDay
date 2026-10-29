@@ -55,7 +55,7 @@ class YeuCauNghiService {
       JOIN TietHoc th ON bh.MaTiet = th.MaTiet
       LEFT JOIN GiangVien gv ON bh.MaGiangVien = gv.MaGiangVien
       LEFT JOIN GiangVien gvGoc ON bh.MaGiangVienGoc = gvGoc.MaGiangVien
-      WHERE (bh.MaGiangVien = ? OR bh.MaGiangVienGoc = ?)
+      WHERE (bh.MaGiangVien = ? OR bh.MaGiangVienGoc = ?) AND (bh.TrangThai IS NULL OR bh.TrangThai != 'Cancelled')
     `;
     const params = [scope.maGiangVien, scope.maGiangVien];
 
@@ -153,12 +153,17 @@ class YeuCauNghiService {
         throw err;
       }
 
-      // 3. Validate ngày học >= hôm nay (Chỉ bắt buộc ở môi trường Production)
-      const isProd = process.env.NODE_ENV === 'production';
-      const todayStr = new Date().toISOString().slice(0, 10);
-      const ngayHocStr = String(buoiHoc.NgayHoc).slice(0, 10);
-      if (isProd && ngayHocStr < todayStr) {
-        const err = new Error('Không thể gửi yêu cầu cho buổi học trong quá khứ.');
+      // 3. Validate quy định thời gian: Thao tác nghiệp vụ phải trước ít nhất 3 ngày
+      // Ví dụ: Hôm nay là mùng 1 thì chỉ được thao tác với các buổi học từ mùng 4 trở đi
+      const now = new Date();
+      const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const [hYear, hMonth, hDate] = String(buoiHoc.NgayHoc).slice(0, 10).split('-').map(Number);
+      const sessionMidnight = new Date(hYear, hMonth - 1, hDate).getTime();
+      const diffDays = Math.round((sessionMidnight - todayMidnight) / (24 * 60 * 60 * 1000));
+
+      if (diffDays < 3) {
+        const loaiStr = loaiYeuCau === 'ABSENCE' ? 'Báo nghỉ' : loaiYeuCau === 'SWAP' ? 'Đổi ca' : 'Dạy thay';
+        const err = new Error(`Quy định: Thao tác nghiệp vụ (${loaiStr}) chỉ được thực hiện trước ngày học ít nhất 3 ngày. Buổi học ngày ${String(buoiHoc.NgayHoc).slice(0, 10)} không thỏa mãn điều kiện này.`);
         err.status = 400;
         throw err;
       }
@@ -188,8 +193,11 @@ class YeuCauNghiService {
           throw err;
         }
 
-        if (isProd && ngayDeXuat < todayStr) {
-          const err = new Error('Ngày đổi ca đề xuất phải từ ngày hôm nay trở đi.');
+        const [dxYear, dxMonth, dxDate] = String(ngayDeXuat).slice(0, 10).split('-').map(Number);
+        const deXuatMidnight = new Date(dxYear, dxMonth - 1, dxDate).getTime();
+        const diffDeXuat = Math.round((deXuatMidnight - todayMidnight) / (24 * 60 * 60 * 1000));
+        if (diffDeXuat < 3) {
+          const err = new Error('Ngày đổi ca đề xuất phải cách ngày hiện tại ít nhất 3 ngày để bảo đảm xếp phòng và thông báo sinh viên.');
           err.status = 400;
           throw err;
         }

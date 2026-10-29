@@ -6,6 +6,9 @@ export default function RequestDoiCaModal({ isOpen, onClose, classItem, onSucces
   if (!isOpen || !classItem) return null;
 
   const todayStr = new Date().toISOString().slice(0, 10);
+  const minDate = new Date();
+  minDate.setDate(minDate.getDate() + 3);
+  const minDateStr = minDate.toISOString().slice(0, 10);
   const siSo = classItem?.SiSoDangKy || classItem?.SiSoDuKien || 0;
 
   // Form states
@@ -115,8 +118,20 @@ export default function RequestDoiCaModal({ isOpen, onClose, classItem, onSucces
       return;
     }
 
-    if (ngayDeXuat < todayStr) {
-      setError('Ngày đề xuất đổi ca phải từ hôm nay trở đi.');
+    if (classItem?.NgayHoc) {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const parts = String(classItem.NgayHoc).slice(0, 10).split('-').map(Number);
+      const sessionDate = new Date(parts[0], parts[1] - 1, parts[2]);
+      const diffDays = Math.round((sessionDate.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+      if (diffDays < 3) {
+        setError('Theo quy định, buổi học phải trước ít nhất 3 ngày tính từ hôm nay mới được phép xin đổi ca.');
+        return;
+      }
+    }
+
+    if (ngayDeXuat < minDateStr) {
+      setError('Theo quy định, ngày đổi ca đề xuất phải cách ngày hiện tại ít nhất 3 ngày để bảo đảm xếp phòng và thông báo sinh viên.');
       return;
     }
 
@@ -235,7 +250,7 @@ export default function RequestDoiCaModal({ isOpen, onClose, classItem, onSucces
                   <input
                     type="date"
                     required
-                    min={todayStr}
+                    min={minDateStr}
                     value={ngayDeXuat}
                     onChange={e => setNgayDeXuat(e.target.value)}
                     style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.875rem' }}

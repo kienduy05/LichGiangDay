@@ -273,14 +273,18 @@ export default function LecturerScheduleView({ onBackHome }) {
     const isAbsentNotMadeUp = status === 'Absent' && !item.DaDayBu;
     const isPending = status.includes('_Pending');
 
-    // Check if session date is future or today
+    // Kiểm tra buổi học có trước ít nhất 3 ngày tính từ hôm nay không
     const itemDate = item.NgayHoc ? new Date(item.NgayHoc) : (day?.dateObj || new Date());
     const todayZero = new Date();
     todayZero.setHours(0, 0, 0, 0);
-    const isFutureOrToday = new Date(itemDate).setHours(0, 0, 0, 0) >= todayZero.getTime();
 
-    // Only normal sessions in future/today that are not makeup classes can request swap/absence/substitute
-    const canActionNormal = isNormal && isFutureOrToday && item.LoaiBuoiHoc !== 'Makeup';
+    const sessionZero = new Date(itemDate);
+    sessionZero.setHours(0, 0, 0, 0);
+    const diffDays = Math.round((sessionZero.getTime() - todayZero.getTime()) / (24 * 60 * 60 * 1000));
+    const isAtLeast3DaysAhead = diffDays >= 3;
+
+    // Chỉ các buổi học Normal từ 3 ngày tới trở đi mới hiển thị nút nhanh đổi ca/báo nghỉ/dạy thay
+    const canActionNormal = isNormal && isAtLeast3DaysAhead && item.LoaiBuoiHoc !== 'Makeup';
 
     return (
       <div

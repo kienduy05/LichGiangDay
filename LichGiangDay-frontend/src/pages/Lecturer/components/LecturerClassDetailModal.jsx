@@ -1,6 +1,6 @@
 import {
   X, Calendar, Clock, Building, Users, BookOpen,
-  User, RefreshCw, PlusCircle, AlertTriangle, Hash, School
+  User, RefreshCw, PlusCircle, AlertTriangle, Hash, School, AlertCircle
 } from 'lucide-react';
 import '../../Admin/components/LichGiangDayManagement/LichGiangDayComponents.css';
 
@@ -40,6 +40,30 @@ export default function LecturerClassDetailModal({
       return `${parts[2]}/${parts[1]}/${parts[0]}`;
     }
     return dateStr;
+  };
+
+  // Quy định: Thao tác nghiệp vụ buổi dạy chỉ được thực hiện trước ít nhất 3 ngày
+  // Ví dụ hôm nay là mùng 1 thì chỉ thao tác với buổi học từ mùng 4 trở đi
+  const calculateDaysDiff = () => {
+    if (!item?.NgayHoc) return -1;
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const parts = String(item.NgayHoc).slice(0, 10).split('-').map(Number);
+    if (parts.length !== 3) return -1;
+    const sessionDate = new Date(parts[0], parts[1] - 1, parts[2]);
+    return Math.round((sessionDate.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+  };
+
+  const diffDays = calculateDaysDiff();
+  const canPerformAction = diffDays >= 3;
+
+  const getMinValidDateFormatted = () => {
+    const minD = new Date();
+    minD.setDate(minD.getDate() + 3);
+    const d = String(minD.getDate()).padStart(2, '0');
+    const m = String(minD.getMonth() + 1).padStart(2, '0');
+    const y = minD.getFullYear();
+    return `${d}/${m}/${y}`;
   };
 
   const getDayLabel = () => {
@@ -167,79 +191,174 @@ export default function LecturerClassDetailModal({
                 <span>Hủy Yêu Cầu Đang Chờ Duyệt</span>
               </button>
             ) : item.TrangThai === 'Normal' ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.65rem' }}>
-                {/* 1. Đổi ca */}
-                <button
-                  type="button"
-                  onClick={() => onRequestDoiCa && onRequestDoiCa(item)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.45rem',
-                    padding: '0.65rem 0.75rem',
-                    borderRadius: '8px',
-                    border: '1px solid #bfdbfe',
-                    background: '#eff6ff',
-                    color: '#1d4ed8',
-                    fontSize: '0.8125rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    transition: 'all 0.15s'
-                  }}
-                >
-                  <RefreshCw size={15} />
-                  <span>Xin Đổi Ca</span>
-                </button>
+              canPerformAction ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.65rem' }}>
+                  {/* 1. Đổi ca */}
+                  <button
+                    type="button"
+                    onClick={() => onRequestDoiCa && onRequestDoiCa(item)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.45rem',
+                      padding: '0.65rem 0.75rem',
+                      borderRadius: '8px',
+                      border: '1px solid #bfdbfe',
+                      background: '#eff6ff',
+                      color: '#1d4ed8',
+                      fontSize: '0.8125rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s'
+                    }}
+                  >
+                    <RefreshCw size={15} />
+                    <span>Xin Đổi Ca</span>
+                  </button>
 
-                {/* 2. Báo nghỉ */}
-                <button
-                  type="button"
-                  onClick={() => onRequestBaoNghi && onRequestBaoNghi(item)}
-                  style={{
+                  {/* 2. Báo nghỉ */}
+                  <button
+                    type="button"
+                    onClick={() => onRequestBaoNghi && onRequestBaoNghi(item)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.45rem',
+                      padding: '0.65rem 0.75rem',
+                      borderRadius: '8px',
+                      border: '1px solid #fecaca',
+                      background: '#fef2f2',
+                      color: '#dc2626',
+                      fontSize: '0.8125rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s'
+                    }}
+                  >
+                    <AlertTriangle size={15} />
+                    <span>Báo Nghỉ</span>
+                  </button>
+
+                  {/* 3. Dạy thay */}
+                  <button
+                    type="button"
+                    onClick={() => onRequestDayThay && onRequestDayThay(item)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.45rem',
+                      padding: '0.65rem 0.75rem',
+                      borderRadius: '8px',
+                      border: '1px solid #ddd6fe',
+                      background: '#f5f3ff',
+                      color: '#6d28d9',
+                      fontSize: '0.8125rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s'
+                    }}
+                  >
+                    <Users size={15} />
+                    <span>Dạy Thay</span>
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <div style={{
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.45rem',
-                    padding: '0.65rem 0.75rem',
-                    borderRadius: '8px',
-                    border: '1px solid #fecaca',
+                    alignItems: 'flex-start',
+                    gap: '0.6rem',
                     background: '#fef2f2',
-                    color: '#dc2626',
-                    fontSize: '0.8125rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    transition: 'all 0.15s'
-                  }}
-                >
-                  <AlertTriangle size={15} />
-                  <span>Báo Nghỉ</span>
-                </button>
-
-                {/* 3. Dạy thay */}
-                <button
-                  type="button"
-                  onClick={() => onRequestDayThay && onRequestDayThay(item)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.45rem',
-                    padding: '0.65rem 0.75rem',
+                    border: '1px solid #fecaca',
+                    padding: '0.75rem 0.9rem',
                     borderRadius: '8px',
-                    border: '1px solid #ddd6fe',
-                    background: '#f5f3ff',
-                    color: '#6d28d9',
+                    color: '#991b1b',
                     fontSize: '0.8125rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    transition: 'all 0.15s'
-                  }}
-                >
-                  <Users size={15} />
-                  <span>Dạy Thay</span>
-                </button>
-              </div>
+                    lineHeight: 1.5,
+                    marginBottom: '0.75rem'
+                  }}>
+                    <AlertCircle size={17} style={{ flexShrink: 0, marginTop: '2px', color: '#dc2626' }} />
+                    <div>
+                      <div style={{ fontWeight: 700, marginBottom: '2px' }}>Quy định thời gian thao tác:</div>
+                      <div>Chỉ được phép thao tác nghiệp vụ trước ngày học ít nhất <strong>3 ngày</strong> (chỉ khả dụng với các buổi học từ ngày <strong>{getMinValidDateFormatted()}</strong> trở đi).</div>
+                      <div style={{ marginTop: '3px', fontSize: '0.75rem', color: '#b91c1c' }}>
+                        Buổi học này diễn ra vào ngày <strong>{formatDateVN(item.NgayHoc)}</strong> nên không đủ điều kiện thao tác.
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.65rem', opacity: 0.45 }}>
+                    <button
+                      type="button"
+                      disabled
+                      title="Không thể thao tác vì chưa đủ 3 ngày trước buổi học"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.45rem',
+                        padding: '0.65rem 0.75rem',
+                        borderRadius: '8px',
+                        border: '1px solid #cbd5e1',
+                        background: '#f1f5f9',
+                        color: '#64748b',
+                        fontSize: '0.8125rem',
+                        fontWeight: 700,
+                        cursor: 'not-allowed'
+                      }}
+                    >
+                      <RefreshCw size={15} />
+                      <span>Xin Đổi Ca</span>
+                    </button>
+                    <button
+                      type="button"
+                      disabled
+                      title="Không thể thao tác vì chưa đủ 3 ngày trước buổi học"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.45rem',
+                        padding: '0.65rem 0.75rem',
+                        borderRadius: '8px',
+                        border: '1px solid #cbd5e1',
+                        background: '#f1f5f9',
+                        color: '#64748b',
+                        fontSize: '0.8125rem',
+                        fontWeight: 700,
+                        cursor: 'not-allowed'
+                      }}
+                    >
+                      <AlertTriangle size={15} />
+                      <span>Báo Nghỉ</span>
+                    </button>
+                    <button
+                      type="button"
+                      disabled
+                      title="Không thể thao tác vì chưa đủ 3 ngày trước buổi học"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.45rem',
+                        padding: '0.65rem 0.75rem',
+                        borderRadius: '8px',
+                        border: '1px solid #cbd5e1',
+                        background: '#f1f5f9',
+                        color: '#64748b',
+                        fontSize: '0.8125rem',
+                        fontWeight: 700,
+                        cursor: 'not-allowed'
+                      }}
+                    >
+                      <Users size={15} />
+                      <span>Dạy Thay</span>
+                    </button>
+                  </div>
+                </div>
+              )
             ) : (
               <div style={{ fontSize: '0.8125rem', color: '#64748b', fontStyle: 'italic', textAlign: 'center' }}>
                 Buổi học đã hoàn thành hoặc không ở trạng thái bình thường.
