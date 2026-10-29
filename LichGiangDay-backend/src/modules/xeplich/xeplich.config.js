@@ -8,7 +8,7 @@ const DEFAULT_CONFIG = {
     DEFAULT: 1
   },
   ngayKhongXep: [],
-  thuKhongXep: []
+  thuKhongXep: [8] // Chủ nhật nghỉ, không xếp tiết học.
 };
 
 const normalize = (value) => String(value || '')
@@ -18,6 +18,8 @@ const normalize = (value) => String(value || '')
   .replace(/[^a-z0-9]/gi, '')
   .toLowerCase();
 
+// Chỉ TH (Thực hành) mới yêu cầu phòng thực hành/lab.
+// BT (Bài tập), TL (Thảo luận), DA (Đồ án), LT (Lý thuyết) dùng phòng lý thuyết.
 const isPracticeClass = (loaiHoc) => {
   const value = normalize(loaiHoc);
   return ['th', 'thuchanh', 'lab', 'phongmay'].includes(value)
@@ -34,8 +36,12 @@ const isPracticeRoom = (loaiPhong) => {
 };
 
 const isRoomCompatible = (loaiHoc, loaiPhong) => {
-  if (!loaiPhong) return true;
-  if (isPracticeClass(loaiHoc)) return isPracticeRoom(loaiPhong);
+  // Lớp thực hành bắt buộc phải có phòng thực hành/lab
+  if (isPracticeClass(loaiHoc)) {
+    if (!loaiPhong) return false; // Phòng chưa phân loại → không nhận cho TH
+    return isPracticeRoom(loaiPhong);
+  }
+  // BT, LT, TL, DA... → dùng bất kỳ phòng nào (kể cả phòng lab nếu trống)
   return true;
 };
 

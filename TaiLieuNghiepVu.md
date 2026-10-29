@@ -1584,220 +1584,59 @@ Phân hệ **Thời khóa biểu** (Course Scheduling) cho phép người quản
   - Làm mới dữ liệu bảng và TreeView, trạng thái lớp chuyển về chấm cam 🟠 (**Chưa xếp lịch**).
 
 
-### 2.2. Chức năng 2: Tạo và Xếp Thời khóa biểu Tự động (`XepLichTuDong`)
+### 2.2. Chức năng 2: Xếp lịch tự động theo định mức (quy tắc v3)
 
-Phân hệ này hỗ trợ **Admin / Phòng Đào tạo** lập phương án lịch học cho nhiều Lớp học phần (LHP) chưa được xếp lịch trong cùng một Học kỳ. Hệ thống tự tạo phương án theo các điều kiện nghiệp vụ, cho phép người dùng chỉnh sửa từng lớp bằng tay, sau đó mới lưu thành lịch chính thức.
+Cập nhật 29/10/2026. Dùng thuật toán tối ưu có giới hạn trong backend, không gọi API AI bên ngoài.
 
-> **Nguyên tắc nghiệp vụ bắt buộc**:
->
-> - Kết quả của lần chạy tự động là **lịch nháp**, chưa được hiển thị như lịch chính thức và chưa tác động đến `ThoiKhoaBieu`.
-> - Người dùng có thể điều chỉnh thủ công từng dòng lịch nháp. Mọi điều chỉnh thủ công phải đi qua cùng bộ kiểm tra xung đột như lịch tự động.
-> - Chỉ khi người dùng bấm **"Áp dụng lịch"**, hệ thống mới ghi lịch hợp lệ vào bảng `ThoiKhoaBieu`.
-> - Việc phân công giảng viên thực hiện **sau** khi lịch được áp dụng. Vì vậy lịch tự động không dùng giảng viên là điều kiện bắt buộc, trừ lớp đã có giảng viên được phân công trước đó.
+#### 2.2.1. Nhóm lớp và định mức
 
-- **Nguyên tắc triển khai không thay đổi cấu trúc CSDL**:
-  - Phiên xử lý và các dòng lịch nháp được lưu trong file JSON của backend, mặc định tại `src/modules/xeplich/data/sessions.json`.
-  - Không tạo bảng mới, không thêm cột và không yêu cầu chạy migration.
-  - CSDL chỉ bị ghi khi người dùng bấm **"Áp dụng lịch"**; khi đó hệ thống thêm dữ liệu vào bảng `ThoiKhoaBieu` hiện có.
-- **Bảng dữ liệu hiện có được sử dụng**: `HocKy`, `MonHoc`, `TietHoc`, `PhongHoc`, `LopHocPhan`, `LopHocPhan_LopSinhVien`, `LopSinhVien`, `ThoiKhoaBieu`.
-- **Resource ID kiểm tra quyền (`checkPermission`)**: `'ThoiKhoaBieu'`.
-  - `CanRead`: xem lớp chưa xếp lịch và kết quả phiên xếp.
-  - `CanCreate`: tạo phiên xếp lịch tự động.
-  - `CanUpdate`: chỉnh lịch nháp, khóa/mở khóa dòng nháp, áp dụng hoặc hủy phiên.
+Ghép theo **môn học + học kỳ + nhóm (QT01…) + khóa**. Chọn một lớp tự chọn tất cả thành phần của nhóm. Mỗi buổi gồm 3 tiết liên tiếp.
 
-#### 2.2.1. Xem Danh sách Lớp học phần Chưa được Xếp lịch
+| Học phần | Phân bổ tiết | Số buổi |
+|---|---|---|
+| 3 tín chỉ LT/BT | 30 LT + 30 BT | 10 LT + 10 BT |
+| 3 tín chỉ LT/BT/TH | 30 LT + 15 BT + 15 TH | 10 LT + 5 BT + 5 TH |
+| 2 tín chỉ LT/BT | 15 LT + 15 BT | 5 LT + 5 BT |
+| 3 tín chỉ loại khác | Tổng 60 tiết | Tổng 20 buổi, chia đều theo loại, chênh tối đa 1 buổi |
 
-- **Thao tác người dùng (User Action)**:
-  - Người dùng vào màn hình `Thời khóa biểu` → tab `Tạo và xếp lịch`.
-  - Chọn **Học kỳ** bắt buộc; có thể chọn thêm **Khoa**, **Bộ môn**, kiểu học hoặc từ khóa tìm kiếm.
-  - Hệ thống hiển thị danh sách LHP chưa được xếp lịch chính thức.
+Các tuần giữ mẫu thứ cố định của nhóm; tuần ít buổi dùng các thứ đầu mẫu, ngoại trừ tuần đầu bắt đầu giữa tuần. Hai buổi liên tiếp cách nhau tối thiểu 2 ngày (Thứ 2 → Thứ 4), xen kẽ loại học, tối đa 3 buổi/tuần/nhóm. Thuật toán ưu tiên trải đều đến cuối khoảng học. Có thể có tuần không học nếu số buổi ít hơn số tuần; không tăng buổi vượt định mức.
 
-- **Nghiệp vụ xử lý (Business Logic)**:
-  - Gửi request `GET /v1/api/xeplich/lop-chua-xep?maHocKy=...&maKhoa=...&maBoMon=...&search=...`.
-  - Backend chỉ lấy LHP thuộc Học kỳ đã chọn, không có bản ghi `ThoiKhoaBieu` chính thức hoặc đang được người dùng yêu cầu xếp lại.
-  - Với mỗi LHP, hệ thống kiểm tra dữ liệu bắt buộc để xếp lịch:
-    1. Có thời gian học hợp lệ: `NgayBatDau`, `NgayKetThuc`, `SoTuan`.
-    2. Có sĩ số dự kiến hoặc sĩ số đăng ký để kiểm tra sức chứa.
-    3. Có phòng `Ready` phù hợp sức chứa và quy tắc loại phòng trong `xeplich.config.js`.
-    4. Có định mức số buổi/tuần trong `xeplich.config.js`; mặc định là 01 buổi/tuần.
-  - Hệ thống phân loại LHP thành `Ready`, `MissingData` hoặc `AlreadyScheduled`.
+**Chủ nhật là ngày nghỉ, không xếp tiết học.** Mẫu thứ cố định chỉ gồm **Thứ 2 đến Thứ 7**. Backend loại Chủ nhật khi sinh lịch và từ chối buổi Chủ nhật khi kiểm tra, sửa hoặc áp dụng lịch nháp; giao diện chỉnh sửa cũng chặn lưu nếu chọn Chủ nhật. Lịch chính thức đã áp dụng trước đó không tự bị thay đổi; cần rà soát riêng nếu có buổi Chủ nhật.
 
-- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
-  - Không làm thay đổi CSDL (`SELECT` Read-only).
+Ví dụ mẫu Thứ 2/Thứ 4/Thứ 6: tuần ba buổi học cả ba thứ, tuần hai buổi học Thứ 2/Thứ 4, tuần một buổi học Thứ 2. Tuần đầu bắt đầu giữa tuần chỉ dùng phần mẫu còn trong thời gian lớp. Mẫu cố định áp dụng cho thứ học, chưa bắt buộc cố định ca hoặc phòng. Nếu không tìm được phương án đủ định mức trên các thứ hợp lệ, hệ thống báo chưa xếp được, không tự chuyển sang Chủ nhật.
 
-- **Kết quả hiển thị (UI Response)**:
-  - Bảng hiển thị: Mã LHP, tên môn học, loại học, số tín chỉ, sĩ số, Bộ môn, thời gian học và trạng thái dữ liệu.
-  - Các lớp `MissingData` hiển thị rõ lý do, ví dụ: _"Không có phòng sẵn sàng phù hợp loại học và sức chứa"_.
-  - Chỉ các lớp `Ready` được đưa vào lần chạy xếp tự động.
+#### 2.2.2. Tạo và xử lý phiên
 
-#### 2.2.2. Tạo Phiên Xếp lịch Tự động
+Danh sách lớp hiển thị tín chỉ, nhóm, định mức tiết/buổi và lỗi dữ liệu. Nhóm thiếu/mâu thuẫn mã, trùng loại, có thành phần đã có lịch hoặc không có định mức sẽ không được xếp mới. Sinh ngày cụ thể bằng beam search, có giới hạn thời gian/trạng thái và kiểm tra hủy định kỳ. Nhóm không đủ phương án hoàn chỉnh báo chưa xếp được, không lưu lịch thiếu buổi dưới dạng thành công.
 
-- **Thao tác người dùng (User Action)**:
-  - Người dùng chọn một hoặc nhiều LHP `Ready`, hoặc chọn **"Xếp tất cả lớp đủ điều kiện"**.
-  - Bấm nút **"Xếp lịch tự động"**.
-  - Xác nhận phạm vi: Học kỳ, Khoa/Bộ môn, danh sách LHP và các tùy chọn ưu tiên.
+Kiểm tra trùng phòng, giảng viên đã phân công, lớp học phần, lớp sinh viên; đủ sức chứa, loại phòng, ca 3 tiết, thời gian lớp/học kỳ và ngày cấm. Đọc cả lịch chính thức và buổi học thực tế có thời gian giao nhau.
 
-- **Nghiệp vụ xử lý (Business Logic)**:
-  - Client gửi request `POST /v1/api/xeplich/phien`.
-  - Payload tham khảo:
-    ```json
-    {
-      "maHocKy": "HK1_2026_2027",
-      "maKhoa": "CNTT",
-      "maBoMon": "HTTT",
-      "maLopHocPhans": ["INT1001.01", "INT1002.01"],
-      "uuTienPhongGanSiSo": true,
-      "choPhepXepLaiLichDaCo": false
-    }
-    ```
-  - Backend kiểm tra quyền `CanCreate`, xác nhận các LHP thuộc đúng phạm vi và không thuộc một phiên `Processing` khác.
-  - Hệ thống tạo phiên JSON với trạng thái `Processing`, sau đó chạy thuật toán xếp lịch nền.
-  - Thuật toán phải ưu tiên xếp các lớp khó trước, ví dụ lớp thực hành, lớp có sĩ số lớn hoặc chỉ có ít loại phòng phù hợp.
-  - Mỗi phương án được kiểm tra bằng bộ kiểm tra xung đột dùng chung trước khi được thêm vào nháp.
+#### 2.2.3. Xem, sửa và áp dụng
 
-- **Thay đổi / Trạng thái dữ liệu**:
-  - Ghi thông tin phiên và các dòng lịch nháp vào file JSON của backend.
-  - Không tạo hoặc cập nhật bản ghi CSDL ở bước này.
+Mỗi dòng nháp là một buổi vào một ngày, không phải mẫu lặp hằng tuần. Sửa ngày tự cập nhật thứ; kiểm tra lại toàn nhóm và tài nguyên. Áp dụng kiểm tra lại dữ liệu hiện tại trong transaction và ghi một dòng ThoiKhoaBieu cho mỗi buổi với ngày bắt đầu bằng ngày kết thúc. Một lỗi sẽ rollback thao tác. Luồng khóa lịch sinh BuoiHoc từ các ngày này.
 
-- **Kết quả hiển thị (UI Response)**:
-  - Hiển thị trạng thái đang chạy và số lớp đã xử lý/tổng số lớp.
-  - Sau khi hoàn tất, phiên có một trong các trạng thái:
-    - `Completed`: mọi lớp đầu vào đã được xử lý.
-    - `CompletedWithWarnings`: có lớp không xếp được hoặc thiếu dữ liệu.
-    - `Failed`: không thể hoàn tất do lỗi hệ thống.
+Phiên cũ chỉ xem; cần tạo mới để sửa/áp dụng quy tắc v3. Lịch chính thức đã có được giữ nguyên. Mở Xếp lịch tự động về màn chọn lớp; Quản lý phiên dùng xem lại/xóa lịch sử. Đóng cửa sổ vẫn chạy nền; Hủy phiên mới dừng. Xóa lịch sử phiên đã áp dụng không xóa thời khóa biểu.
 
-#### 2.2.3. Kiểm tra Xung đột và Điều kiện Xếp lịch
+#### 2.2.4. API
 
-Mọi lịch tự động, lịch chỉnh tay trong phiên nháp và lịch lưu chính thức đều phải kiểm tra các điều kiện sau. Vi phạm một điều kiện cứng thì không được tạo hoặc lưu dòng lịch đó.
+Các đường dẫn dưới đây tương đối với router xếp lịch; vẫn yêu cầu đăng nhập và quyền ThoiKhoaBieu tương ứng.
 
-| Mã | Điều kiện cứng | Quy tắc xử lý |
-| --- | --- | --- |
-| H1 | Trùng phòng | Hai LHP không được sử dụng cùng một phòng nếu cùng thứ, khoảng ngày học giao nhau và giờ học giao nhau. Hai ca liền kề không được xem là trùng. |
-| H2 | Trạng thái phòng | Chỉ được xếp phòng có `TrangThai = 'Ready'`. Phòng `Maintenance` bị chặn. |
-| H3 | Sức chứa | `PhongHoc.SucChua` phải lớn hơn hoặc bằng sĩ số dùng để xếp lớp. |
-| H4 | Loại phòng | Loại phòng phải phù hợp `LoaiHoc` theo quy tắc trong `xeplich.config.js`. |
-| H5 | Thời gian học kỳ | `NgayBatDau` và `NgayKetThuc` phải nằm trong khoảng thời gian của Học kỳ. |
-| H6 | Giảng viên | Nếu LHP đã có `MaGiangVien`, giảng viên đó không được có lịch khác giao nhau. |
-| H7 | Sinh viên | Các LHP có chung Lớp sinh viên ghép hoặc cùng nhóm sinh viên không được trùng giờ. |
-| H8 | Ca học | `MaTiet` phải tồn tại; giờ bắt đầu phải trước giờ kết thúc. |
-| H9 | Ngày không xếp | Không được xếp vào thứ/ngày bị khóa trong `xeplich.config.js`. |
+| Method | Đường dẫn | Mục đích |
+|---|---|---|
+| GET | /lop-chua-xep | Lớp và định mức nhóm |
+| POST | /phien | Tạo phiên |
+| GET | /phien | Lịch sử theo học kỳ |
+| GET | /phien/:maPhien | Tiến độ/kết quả |
+| POST | /kiem-tra | Kiểm tra sửa nháp khi có maPhien |
+| PATCH | /phien/:maPhien/dong/:maDong | Sửa một buổi |
+| POST | /phien/:maPhien/ap-dung | Áp dụng toàn phương án hợp lệ |
+| DELETE | /phien/:maPhien | Hủy xử lý |
+| DELETE | /phien/:maPhien/ban-ghi | Xóa lịch sử một phiên |
+| POST | /phien/xoa | Xóa nhiều phiên lịch sử |
 
-- **Điều kiện mềm (ưu tiên tối ưu, không chặn lưu)**:
-  - Ưu tiên phòng có sức chứa gần với sĩ số lớp.
-  - Phân bố lịch học đều trong tuần.
-  - Ưu tiên buổi bài tập/thực hành diễn ra sau buổi lý thuyết cùng nhóm lớp khi có quy tắc áp dụng.
-  - Hạn chế giảng viên phải đổi tòa nhà ở hai ca liền nhau, khi LHP đã có giảng viên.
+#### 2.2.5. Review và nghiệm thu
 
-- **Phòng trực tuyến**:
-  - Cấu trúc CSDL hiện tại chưa có cờ phòng trực tuyến dùng chung, vì vậy mọi phòng vẫn áp dụng H1 và H3.
-
-#### 2.2.4. Xem Kết quả Phiên Xếp lịch
-
-- **Thao tác người dùng (User Action)**:
-  - Người dùng chọn một phiên xếp đã hoàn tất.
-  - Chuyển giữa ba nhóm kết quả: **Đã xếp được**, **Không xếp được**, **Thiếu dữ liệu**.
-
-- **Nghiệp vụ xử lý (Business Logic)**:
-  - Gửi request `GET /v1/api/xeplich/phien/:maPhien`.
-  - Backend trả về thông tin phiên, tiến độ, các dòng nháp và danh sách lý do theo từng LHP.
-  - Mỗi dòng đã xếp phải trả về ít nhất: LHP, Thứ, Tiết, giờ bắt đầu/kết thúc, Phòng, tòa nhà, khoảng ngày học, nguồn tạo (`Auto` hoặc `Manual`) và trạng thái khóa dòng.
-
-- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
-  - Không làm thay đổi CSDL (`SELECT` Read-only).
-
-- **Kết quả hiển thị (UI Response)**:
-  - Nhóm **Đã xếp được**: hiển thị phương án lịch đề xuất.
-  - Nhóm **Không xếp được**: hiển thị lý do cụ thể, ví dụ _"Không còn phòng thực hành đủ 90 chỗ trống trong thời gian học kỳ"_.
-  - Nhóm **Thiếu dữ liệu**: hiển thị dữ liệu cần bổ sung trước khi chạy lại.
-
-#### 2.2.5. Chỉnh sửa Thủ công Dòng Lịch Nháp
-
-- **Thao tác người dùng (User Action)**:
-  - Người dùng bấm **"Chỉnh sửa"** tại một dòng lịch nháp.
-  - Thay đổi Thứ, Tiết, Phòng hoặc khoảng ngày học.
-  - Có thể bấm **"Khóa dòng này"** để lần chạy lại không thay đổi phương án người dùng đã chọn.
-  - Bấm **"Kiểm tra"** hoặc **"Lưu dòng nháp"**.
-
-- **Nghiệp vụ xử lý (Business Logic)**:
-  - Client gửi `POST /v1/api/xeplich/kiem-tra` để kiểm tra trước khi lưu hoặc `PATCH /v1/api/xeplich/phien/:maPhien/dong/:maDong` để cập nhật dòng nháp.
-  - Backend chạy toàn bộ điều kiện H1-H9 đối với dòng được sửa, các dòng nháp khác trong cùng phiên và lịch chính thức hiện có.
-  - Nếu hợp lệ, cập nhật dòng nháp trong file JSON, đặt `NguonXep = 'Manual'` và lưu cờ `DaKhoa` theo thao tác của người dùng.
-  - Nếu không hợp lệ, trả HTTP 409 cùng mã điều kiện, lớp/phòng/ca đang gây xung đột và thông điệp tiếng Việt.
-
-- **Thay đổi / Trạng thái dữ liệu**:
-  - Cập nhật một dòng trong file phiên JSON.
-  - Không tác động CSDL.
-
-- **Kết quả hiển thị (UI Response)**:
-  - Hiển thị thông báo hợp lệ hoặc danh sách xung đột.
-  - Dòng chỉnh tay có nhãn **"Xếp tay"**; dòng khóa có biểu tượng khóa.
-
-#### 2.2.6. Áp dụng Lịch Nháp thành Thời khóa biểu Chính thức
-
-- **Thao tác người dùng (User Action)**:
-  - Người dùng kiểm tra kết quả nháp và bấm nút **"Áp dụng lịch"**.
-  - Người dùng xác nhận thao tác trên hộp thoại xác nhận.
-
-- **Nghiệp vụ xử lý (Business Logic)**:
-  - Client gửi request `POST /v1/api/xeplich/phien/:maPhien/ap-dung`.
-  - Backend kiểm tra quyền `CanUpdate` và xác nhận phiên ở trạng thái `Completed` hoặc `CompletedWithWarnings`.
-  - Backend kiểm tra lại toàn bộ các dòng nháp chuẩn bị áp dụng với nhau và với lịch chính thức tại thời điểm áp dụng.
-  - Nếu mọi dòng hợp lệ, mở Transaction CSDL:
-    1. Khóa bản ghi Học kỳ trong transaction để tuần tự hóa thao tác áp dụng lịch.
-    2. Ghi các dòng lịch nháp hợp lệ vào `ThoiKhoaBieu`.
-    3. Commit toàn bộ khi tất cả dòng đều hợp lệ.
-    4. Đánh dấu phiên JSON là `Applied`, ghi người áp dụng và thời gian áp dụng.
-  - Nếu phát hiện lịch chính thức đã thay đổi sau khi tạo nháp, Rollback toàn bộ Transaction và trả danh sách xung đột mới nhất.
-  - Bước này không sinh `BuoiHoc`; `BuoiHoc` chỉ được sinh sau khi Bộ môn phân công giảng viên và Phòng Đào tạo khóa lịch theo quy trình hiện có.
-
-- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
-  - Tạo N dòng chính thức trong `ThoiKhoaBieu` tương ứng với N dòng nháp được áp dụng.
-  - Không thay đổi cấu trúc bảng và không cập nhật các bảng phiên riêng.
-
-- **Kết quả hiển thị (UI Response)**:
-  - Hiển thị số LHP và số buổi học đã áp dụng thành công.
-  - Làm mới TreeView, bảng lịch và lưới thời khóa biểu; các LHP vừa áp dụng chuyển thành trạng thái **Đã xếp lịch**.
-
-#### 2.2.7. Hủy Phiên Xếp lịch Nháp
-
-- **Thao tác người dùng (User Action)**:
-  - Người dùng bấm nút **"Hủy phiên"** tại phiên chưa áp dụng.
-
-- **Nghiệp vụ xử lý (Business Logic)**:
-  - Gửi request `DELETE /v1/api/xeplich/phien/:maPhien`.
-  - Chỉ cho phép hủy phiên `Processing`, `Completed`, `CompletedWithWarnings` hoặc `Failed`; không được hủy phiên `Applied`.
-  - Hệ thống đổi trạng thái phiên thành `Cancelled`; không xóa lịch chính thức.
-
-- **Thay đổi / Trạng thái dữ liệu**:
-  - Cập nhật trạng thái phiên JSON thành `Cancelled`.
-  - Không thay đổi CSDL và các dòng nháp không còn được áp dụng.
-
-- **Kết quả hiển thị (UI Response)**:
-  - Phiên không còn xuất hiện trong danh sách phiên đang hoạt động; danh sách LHP chưa xếp lịch được làm mới.
-
-#### 2.2.8. Danh sách API cho Chức năng Xếp lịch Tự động
-
-| Chức năng | Phương thức và đường dẫn | Quyền yêu cầu |
-| --- | --- | --- |
-| Xem LHP chưa xếp | `GET /v1/api/xeplich/lop-chua-xep` | `CanRead` |
-| Tạo phiên tự động | `POST /v1/api/xeplich/phien` | `CanCreate` |
-| Xem tiến độ/kết quả phiên | `GET /v1/api/xeplich/phien/:maPhien` | `CanRead` |
-| Kiểm tra một vị trí lịch nháp | `POST /v1/api/xeplich/kiem-tra` | `CanUpdate` |
-| Sửa một dòng nháp | `PATCH /v1/api/xeplich/phien/:maPhien/dong/:maDong` | `CanUpdate` |
-| Áp dụng lịch nháp | `POST /v1/api/xeplich/phien/:maPhien/ap-dung` | `CanUpdate` |
-| Hủy phiên nháp | `DELETE /v1/api/xeplich/phien/:maPhien` | `CanUpdate` |
-
-#### 2.2.9. Tiêu chí Hoàn thành Chức năng (Acceptance Criteria)
-
-1. Người dùng xem được danh sách LHP chưa xếp theo Học kỳ và Bộ môn.
-2. Người dùng tạo được một phiên xếp tự động cho các lớp đủ dữ liệu.
-3. Hệ thống phân biệt rõ lớp xếp được, không xếp được và thiếu dữ liệu, kèm lý do.
-4. Người dùng chỉnh tay được một dòng lịch nháp và nhận được lỗi xung đột ngay khi dữ liệu không hợp lệ.
-5. Lịch nháp không xuất hiện ở màn hình thời khóa biểu chính thức và không chiếm phòng chính thức trước khi áp dụng.
-6. Khi áp dụng, mọi dòng lịch phải được kiểm tra lại; nếu một dòng không hợp lệ thì không ghi một phần dữ liệu.
-7. Sau khi áp dụng thành công, lịch xuất hiện ở các màn hình TreeView, bảng và lưới thời khóa biểu đang có.
-8. Phân công giảng viên, khóa lịch và sinh `BuoiHoc` tiếp tục tuân theo luồng nghiệp vụ hiện có.
-
+Xem [mô tả thuật toán, giới hạn và kiểm thử](docs/XepLichToiUu-Review.md). Thuật toán hiện tại không chứng minh tối ưu toàn cục. Kiểm tra đủ định mức từng loại, khoảng cách, tuần, xen kẽ, xung đột, hủy phiên, sửa nháp và rollback trước triển khai dữ liệu thật.
 
 ---
 

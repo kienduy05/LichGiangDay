@@ -849,6 +849,12 @@
   border-color: #93c5fd;
 }
 
+.lhp-link-class-btn:disabled,
+.lhp-unlink-class-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .lhp-link-class-btn.empty {
   margin: 14px auto 0;
 }

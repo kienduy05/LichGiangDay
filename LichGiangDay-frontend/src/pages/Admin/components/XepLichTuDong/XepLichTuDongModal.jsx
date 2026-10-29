@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { AlertCircle, Play, Sparkles, X } from 'lucide-react';
+import { AlertCircle, History, Play, Sparkles, X } from 'lucide-react';
+import { useAuth } from '../../../../context/AuthContext';
 import XepLichClassList from './XepLichClassList';
 import XepLichResults from './XepLichResults';
 import XepLichDraftEditModal from './XepLichDraftEditModal';
+import XepLichSessionHistory from './XepLichSessionHistory';
 import {
   applyPhienXepLich,
   cancelPhienXepLich,
@@ -12,8 +14,6 @@ import {
 } from './apiXepLich';
 import './XepLichTuDong.css';
 
-const storageKey = maHocKy => `xeplich-active-session:${maHocKy}`;
-
 export default function XepLichTuDongModal({
   isOpen,
   onClose,
@@ -22,19 +22,21 @@ export default function XepLichTuDongModal({
   maBoMon = '',
   onApplied
 }) {
+  const { hasPermission } = useAuth();
   const [classes, setClasses] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
   const [search, setSearch] = useState('');
   const [loadingClasses, setLoadingClasses] = useState(false);
   const [creating, setCreating] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
-  const [sessionId, setSessionId] = useState(() => (
-    maHocKy ? localStorage.getItem(storageKey(maHocKy)) || '' : ''
-  ));
+  const [sessionId, setSessionId] = useState('');
   const [sessionData, setSessionData] = useState(null);
   const [editingRow, setEditingRow] = useState(null);
   const [error, setError] = useState('');
+  const [showHistory, setShowHistory] = useState(false);
   const mountedRef = useRef(false);
+  const sessionIdRef = useRef(sessionId);
+  useEffect(() => { sessionIdRef.current = sessionId; }, [sessionId]);
 
   const loadClasses = useCallback(async (keyword = '') => {
     if (!maHocKy) return;
@@ -44,7 +46,7 @@ export default function XepLichTuDongModal({
       const list = await getLopChuaXep({ maHocKy, maKhoa, maBoMon, search: keyword });
       if (!mountedRef.current) return;
       setClasses(list || []);
-      setSelectedIds((list || []).filter(row => row.trangThaiDuLieu === 'Ready').map(row => row.MaLopHocPhan));
+      setSelectedIds([...new Set((list || []).filter(row => row.trangThaiDuLieu === 'Ready').flatMap(row => row.MaLopCungNhom || [row.MaLopHocPhan]))]);
     } catch (err) {
       if (mountedRef.current) setError(err.message);
     } finally {
@@ -55,7 +57,7 @@ export default function XepLichTuDongModal({
   const refreshSession = useCallback(async (id = sessionId) => {
     if (!id) return null;
     const data = await getPhienXepLich(id);
-    if (mountedRef.current) setSessionData(data);
+    if (mountedRef.current && sessionIdRef.current === id) setSessionData(data);
     return data;
   }, [sessionId]);
 
@@ -66,17 +68,23 @@ export default function XepLichTuDongModal({
 
   useEffect(() => {
     if (!isOpen || !maHocKy) return;
+    let active = true;
     if (sessionId) {
       getPhienXepLich(sessionId)
-        .then(data => mountedRef.current && setSessionData(data))
-        .catch(() => {
-          localStorage.removeItem(storageKey(maHocKy));
+        .then(data => active && mountedRef.current && setSessionData(data))
+        .catch((err) => {
+          if (!active || !mountedRef.current) return;
+          if (err.status !== 404) {
+            setError(err.message);
+            return;
+          }
           if (mountedRef.current) {
             setSessionId('');
             setSessionData(null);
           }
         });
     }
+    return () => { active = false; };
   }, [isOpen, maHocKy, sessionId, loadClasses]);
 
   useEffect(() => {
@@ -86,12 +94,29 @@ export default function XepLichTuDongModal({
   }, [search, isOpen, sessionId, maHocKy, loadClasses]);
 
   useEffect(() => {
-    if (!isOpen || !sessionId || sessionData?.phien?.TrangThai !== 'Processing') return undefined;
-    const timeout = setTimeout(() => {
-      refreshSession().catch(err => setError(err.message));
-    }, 1500);
-    return () => clearTimeout(timeout);
-  }, [isOpen, sessionId, sessionData?.phien?.TrangThai, sessionData?.phien?.SoLopDaXuLy, refreshSession]);
+    if (!isOpen || !sessionId || actionLoading || sessionData?.phien?.TrangThai !== 'Processing') return undefined;
+    let active = true;
+    let timeout;
+    let delay = 3000;
+    let previousProgress = sessionData?.phien?.SoLopDaXuLy;
+    const poll = async () => {
+      try {
+        const data = await getPhienXepLich(sessionId);
+        if (!active) return;
+        setSessionData(data);
+        if (data.phien.TrangThai !== 'Processing') return;
+        delay = data.phien.SoLopDaXuLy === previousProgress ? Math.min(delay * 1.5, 10000) : 3000;
+        previousProgress = data.phien.SoLopDaXuLy;
+      } catch (err) {
+        if (!active) return;
+        setError(err.message);
+        delay = Math.min(delay * 1.5, 10000);
+      }
+      if (active) timeout = setTimeout(poll, delay);
+    };
+    timeout = setTimeout(poll, delay);
+    return () => { active = false; clearTimeout(timeout); };
+  }, [isOpen, sessionId, sessionData?.phien?.TrangThai, sessionData?.phien?.SoLopDaXuLy, actionLoading]);
 
   if (!isOpen) return null;
 
@@ -112,7 +137,6 @@ export default function XepLichTuDongModal({
         choPhepXepLaiLichDaCo: false
       });
       setSessionId(result.maPhien);
-      localStorage.setItem(storageKey(maHocKy), result.maPhien);
       setSessionData({
         phien: {
           MaPhien: result.maPhien,
@@ -138,7 +162,6 @@ export default function XepLichTuDongModal({
     setError('');
     try {
       const result = await applyPhienXepLich(sessionId);
-      localStorage.removeItem(storageKey(maHocKy));
       onApplied?.(`Đã áp dụng ${result.soLopDaApDung} lớp với ${result.soDongDaApDung} buổi học.`);
       onClose();
     } catch (err) {
@@ -155,7 +178,7 @@ export default function XepLichTuDongModal({
     setError('');
     try {
       await cancelPhienXepLich(sessionId);
-      localStorage.removeItem(storageKey(maHocKy));
+      sessionIdRef.current = '';
       setSessionId('');
       setSessionData(null);
       await loadClasses(search);
@@ -164,6 +187,34 @@ export default function XepLichTuDongModal({
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const handleSelectSession = (id) => {
+    if (id === sessionIdRef.current) {
+      setShowHistory(false);
+      if (!sessionData) refreshSession(id).catch(err => setError(err.message));
+      return;
+    }
+    sessionIdRef.current = id;
+    setSessionData(null);
+    setSessionId(id);
+    setError('');
+    setShowHistory(false);
+  };
+
+  const handleDeletedSessions = (ids) => {
+    if (!ids.includes(sessionIdRef.current)) return;
+    sessionIdRef.current = '';
+    setSessionId('');
+    setSessionData(null);
+  };
+
+  const handleNewSession = () => {
+    sessionIdRef.current = '';
+    setSessionId('');
+    setSessionData(null);
+    setEditingRow(null);
+    setError('');
   };
 
   return (
@@ -175,19 +226,25 @@ export default function XepLichTuDongModal({
             <h2>Xếp thời khóa biểu tự động</h2>
             <p>Học kỳ {maHocKy}{maBoMon ? ` · Bộ môn ${maBoMon}` : maKhoa ? ` · Khoa ${maKhoa}` : ' · Toàn trường'}</p>
           </div>
+          <button type="button" className="xlt-btn secondary xlt-history-toggle" disabled={actionLoading || creating} onClick={() => setShowHistory(value => !value)}>
+            <History size={16} /> {showHistory ? 'Quay lại xếp lịch' : 'Quản lý phiên'}
+          </button>
           <button type="button" className="xlt-icon-button close" onClick={onClose}><X size={21} /></button>
         </header>
 
         <div className="xlt-modal-body">
           {error && <div className="xlt-inline-alert error"><AlertCircle size={17} /><span>{error}</span></div>}
 
-          {sessionData ? (
+          {showHistory ? (
+            <XepLichSessionHistory key={maHocKy} maHocKy={maHocKy} canDelete={hasPermission('ThoiKhoaBieu', 'CanDelete')} onSelect={handleSelectSession} onDeleted={handleDeletedSessions} />
+          ) : sessionData ? (
             <XepLichResults
               data={sessionData}
               onRefresh={() => refreshSession().catch(err => setError(err.message))}
               onEdit={setEditingRow}
               onApply={handleApply}
               onCancel={handleCancel}
+              onNewSession={handleNewSession}
               actionLoading={actionLoading}
             />
           ) : (
@@ -203,7 +260,7 @@ export default function XepLichTuDongModal({
               <div className="xlt-create-footer">
                 <div>
                   <strong>{selectedIds.length} lớp sẽ được đưa vào phiên</strong>
-                  <span>Hệ thống chỉ tạo lịch nháp để bạn kiểm tra trước khi áp dụng.</span>
+                  <span>Giữ thứ học cố định · Mỗi buổi 3 tiết · Xen kẽ loại học · Cách ít nhất 2 ngày · Tối đa 3 buổi/tuần/nhóm.</span>
                 </div>
                 <button type="button" className="xlt-btn primary large" onClick={handleCreate} disabled={creating || loadingClasses || selectedIds.length === 0}>
                   <Play size={17} /> {creating ? 'Đang tạo phiên…' : 'Xếp lịch tự động'}

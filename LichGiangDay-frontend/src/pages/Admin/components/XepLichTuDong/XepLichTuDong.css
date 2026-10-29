@@ -74,6 +74,17 @@
 .xlt-icon-button:hover { color: #0f172a; border-color: #94a3b8; }
 .xlt-icon-button.close { margin-left: auto; }
 
+.xlt-history-toggle { margin-left: auto; white-space: nowrap; }
+.xlt-history-toggle + .xlt-icon-button.close { margin-left: 0; }
+.xlt-history-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+.xlt-history-toolbar > div { flex: 1; min-width: 180px; }
+.xlt-history-toolbar h3 { margin: 0; color: #0f172a; font-size: 1rem; }
+.xlt-history-toolbar p, .xlt-history-note { margin: 4px 0; color: #64748b; font-size: .82rem; }
+.xlt-history-table { max-height: 54vh; overflow: auto; }
+.xlt-history-note { margin-top: 12px; }
+.xlt-workload-summary { padding: 14px 16px; border: 1px solid #c7d2fe; border-radius: 10px; background: #f5f7ff; color: #334155; font-size: .84rem; line-height: 1.6; max-height: 220px; overflow: auto; }
+.xlt-workload-summary p { margin: 4px 0 8px; color: #64748b; }
+
 .xlt-modal-body {
   min-height: 0;
   overflow: auto;

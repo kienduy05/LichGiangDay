@@ -1,14 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, CheckCircle2, Lock, Save, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Save, X } from 'lucide-react';
 import { apiGetPhongHocList, apiGetTietHocList } from '../../../../utils/api';
 import { checkDongXepLich, updateDongXepLich } from './apiXepLich';
 
 const WEEKDAYS = [
   [2, 'Thứ 2'], [3, 'Thứ 3'], [4, 'Thứ 4'], [5, 'Thứ 5'],
-  [6, 'Thứ 6'], [7, 'Thứ 7'], [8, 'Chủ nhật']
+  [6, 'Thứ 6'], [7, 'Thứ 7'], [8, 'Chủ nhật (ngày nghỉ)']
 ];
 
 const dateValue = value => value ? String(value).slice(0, 10) : '';
+const hasThreePeriods = item => {
+  const match = String(item.TenTiet || '').match(/(\d+)\s*[-–—]\s*(\d+)/);
+  return Number(item.SoTiet) === 3 || (match && Number(match[2]) - Number(match[1]) + 1 === 3);
+};
 
 export default function XepLichDraftEditModal({ maPhien, dong, onClose, onSaved }) {
   const [periods, setPeriods] = useState([]);
@@ -29,11 +33,13 @@ export default function XepLichDraftEditModal({ maPhien, dong, onClose, onSaved 
   useEffect(() => {
     Promise.all([apiGetTietHocList(), apiGetPhongHocList()])
       .then(([periodList, roomList]) => {
-        setPeriods(periodList || []);
+        setPeriods((periodList || []).filter(hasThreePeriods));
         setRooms(roomList || []);
       })
       .catch(err => setError(err.message || 'Không thể tải danh mục tiết và phòng học.'));
   }, []);
+
+  const isSunday = Number(form.thuTrongTuan) === 8;
 
   const payload = {
     maLopHocPhan: dong.MaLopHocPhan,
@@ -42,7 +48,16 @@ export default function XepLichDraftEditModal({ maPhien, dong, onClose, onSaved 
     excludeMaDong: dong.MaDong
   };
 
+  const changeDate = (value) => {
+    const date = new Date(`${value}T00:00:00Z`);
+    const day = date.getUTCDay();
+    setForm(current => ({ ...current, ngayBatDau: value, ngayKetThuc: value,
+      thuTrongTuan: Number.isFinite(day) ? (day === 0 ? 8 : day + 1) : current.thuTrongTuan }));
+    setResult(null);
+  };
+
   const handleCheck = async () => {
+    if (isSunday) return;
     setChecking(true);
     setError('');
     try {
@@ -57,6 +72,7 @@ export default function XepLichDraftEditModal({ maPhien, dong, onClose, onSaved 
   };
 
   const handleSave = async () => {
+    if (isSunday) return;
     setSaving(true);
     setError('');
     try {
@@ -76,7 +92,7 @@ export default function XepLichDraftEditModal({ maPhien, dong, onClose, onSaved 
       <div className="xlt-edit-card">
         <div className="xlt-edit-header">
           <div>
-            <h3>Chỉnh lịch nháp</h3>
+            <h3>Chỉnh buổi học</h3>
             <p>{dong.MaLopHocPhan} · {dong.TenMonHoc}</p>
           </div>
           <button type="button" className="xlt-icon-button" onClick={onClose}><X size={19} /></button>
@@ -84,7 +100,7 @@ export default function XepLichDraftEditModal({ maPhien, dong, onClose, onSaved 
 
         <div className="xlt-edit-grid">
           <label>Thứ
-            <select value={form.thuTrongTuan} onChange={event => setForm({ ...form, thuTrongTuan: Number(event.target.value) })}>
+            <select value={form.thuTrongTuan} disabled>
               {WEEKDAYS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
           </label>
@@ -107,19 +123,12 @@ export default function XepLichDraftEditModal({ maPhien, dong, onClose, onSaved 
               ))}
             </select>
           </label>
-          <label>Ngày bắt đầu
-            <input type="date" value={form.ngayBatDau} onChange={event => setForm({ ...form, ngayBatDau: event.target.value })} />
-          </label>
-          <label>Ngày kết thúc
-            <input type="date" value={form.ngayKetThuc} onChange={event => setForm({ ...form, ngayKetThuc: event.target.value })} />
+          <label className="xlt-field-wide">Ngày học (một buổi gồm 3 tiết)
+            <input type="date" value={form.ngayBatDau} onChange={event => changeDate(event.target.value)} />
           </label>
         </div>
 
-        <label className="xlt-lock-row">
-          <input type="checkbox" checked={form.daKhoa} onChange={event => setForm({ ...form, daKhoa: event.target.checked })} />
-          <Lock size={15} /> Giữ nguyên dòng này khi chạy lại phương án
-        </label>
-
+        {isSunday && <div className="xlt-inline-alert error">Chủ nhật là ngày nghỉ. Vui lòng chọn ngày từ Thứ 2 đến Thứ 7.</div>}
         {error && <div className="xlt-inline-alert error"><AlertTriangle size={16} /> {error}</div>}
         {result && (
           <div className={`xlt-check-result ${result.valid ? 'valid' : 'invalid'}`}>
@@ -132,10 +141,10 @@ export default function XepLichDraftEditModal({ maPhien, dong, onClose, onSaved 
         )}
 
         <div className="xlt-edit-footer">
-          <button type="button" className="xlt-btn secondary" onClick={handleCheck} disabled={checking || saving || !form.maPhong}>
+          <button type="button" className="xlt-btn secondary" onClick={handleCheck} disabled={checking || saving || !form.maPhong || !form.ngayBatDau || isSunday}>
             {checking ? 'Đang kiểm tra…' : 'Kiểm tra xung đột'}
           </button>
-          <button type="button" className="xlt-btn primary" onClick={handleSave} disabled={saving || checking || !form.maPhong}>
+          <button type="button" className="xlt-btn primary" onClick={handleSave} disabled={saving || checking || !form.maPhong || !form.ngayBatDau || isSunday}>
             <Save size={16} /> {saving ? 'Đang lưu…' : 'Lưu dòng nháp'}
           </button>
         </div>
