@@ -145,6 +145,7 @@ class YeuCauNghiService {
       }
 
       const buoiHoc = bhRows[0];
+      const ngayHocStr = String(buoiHoc.NgayHoc).slice(0, 10);
 
       // 2. Validate quyền sở hữu buổi học
       if (buoiHoc.MaGiangVien !== maGiangVien) {
