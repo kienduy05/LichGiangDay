@@ -78,7 +78,7 @@ class XepLichService {
         if (keyword && ![member.MaLopHocPhan, member.TenLopHocPhan, member.TenMonHoc].some(value => String(value || '').toLowerCase().includes(keyword))) continue;
         result.push({ ...member, MaNhomXep: group.MaNhomXep, NhomLop: group.NhomLop,
           MaLopCungNhom: group.members.map(row => row.MaLopHocPhan),
-          ToiDaBuoiMoiTuan: group.ToiDaBuoiMoiTuan, KhoangCachNgay: 2,
+          ToiDaBuoiMoiTuan: 3, KhoangCachNgay: 2,
           trangThaiDuLieu: issues.length ? 'MissingData' : 'Ready', lyDoThieuDuLieu: [...new Set(issues)] });
       }
     }
@@ -177,9 +177,9 @@ class XepLichService {
       const eligible = [];
       session.phien.DinhMucNhom = groups.map(group => ({
         MaNhomXep: group.MaNhomXep, NhomLop: group.NhomLop, KhoaHoc: group.KhoaHoc,
-        SoTinChi: group.SoTinChi, SoTuan: group.SoTuan, TongSoBuoi: group.TongSoBuoi, TongSoTiet: group.TongSoTiet,
+        SoTinChi: group.SoTinChi, TongSoBuoi: group.TongSoBuoi, TongSoTiet: group.TongSoTiet,
         members: group.members.map(row => ({ MaLopHocPhan: row.MaLopHocPhan, LoaiHoc: row.LoaiHoc,
-          SoBuoiMoiTuan: row.SoBuoiMoiTuan, SoBuoiYeuCau: row.SoBuoiYeuCau, SoTietYeuCau: row.SoTietYeuCau }))
+          SoBuoiYeuCau: row.SoBuoiYeuCau, SoTietYeuCau: row.SoTietYeuCau }))
       }));
       for (const id of targetIds) {
         if (!catalog.some(row => row.MaLopHocPhan === id)) addRow(session, { MaPhien: maPhien, MaLopHocPhan: id,
@@ -190,7 +190,7 @@ class XepLichService {
         if (!data.periods.some(period => periodUnits(period) === 3)) group.issues.push('Không có ca học gồm đúng 3 tiết.');
         if (group.issues.length) {
           for (const member of group.members.filter(row => targetIds.has(row.MaLopHocPhan))) addRow(session, {
-            MaPhien: maPhien, MaLopHocPhan: member.MaLopHocPhan, TenMonHoc: member.TenMonHoc, TenLopHocPhan: member.TenLopHocPhan, LoaiHoc: member.LoaiHoc,
+            MaPhien: maPhien, MaLopHocPhan: member.MaLopHocPhan, TenMonHoc: member.TenMonHoc,
             TrangThai: 'MissingData', MaLoi: 'INVALID_GROUP', LyDo: group.issues
           });
         } else eligible.push(group);
@@ -212,17 +212,9 @@ class XepLichService {
       for (const item of result.results) {
         if (item.rows) item.rows.forEach(row => addRow(session, { ...row, MaPhien: maPhien }));
         else for (const member of item.group.members) addRow(session, {
-          MaPhien: maPhien, MaLopHocPhan: member.MaLopHocPhan, TenMonHoc: member.TenMonHoc, TenLopHocPhan: member.TenLopHocPhan, LoaiHoc: member.LoaiHoc,
+          MaPhien: maPhien, MaLopHocPhan: member.MaLopHocPhan, TenMonHoc: member.TenMonHoc,
           TrangThai: 'Unscheduled', MaLoi: item.reason, LyDo: [item.message]
         });
-      }
-      for (const group of session.phien.DinhMucNhom) {
-        for (const member of group.members) {
-          const own = session.dong.filter(row => row.TrangThai === 'Draft' && row.MaLopHocPhan === member.MaLopHocPhan);
-          if (own.length) { member.SoBuoiYeuCau = own.length; member.SoTietYeuCau = own.length * 3; }
-        }
-        group.TongSoBuoi = group.members.reduce((sum, member) => sum + member.SoBuoiYeuCau, 0);
-        group.TongSoTiet = group.TongSoBuoi * 3;
       }
       updateCounters(session);
       session.phien.ThongKeTimKiem = result.metrics;

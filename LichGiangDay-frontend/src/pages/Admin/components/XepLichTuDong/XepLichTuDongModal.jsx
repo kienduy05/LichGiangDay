@@ -260,7 +260,7 @@ export default function XepLichTuDongModal({
               <div className="xlt-create-footer">
                 <div>
                   <strong>{selectedIds.length} lớp sẽ được đưa vào phiên</strong>
-                  <span>Lặp cố định thứ, ca và phòng · 3 tín chỉ LT: 2 buổi/tuần · TH/BT, loại khác và 2 tín chỉ: 1 buổi/tuần · Nghỉ Chủ nhật.</span>
+                  <span>Giữ thứ học cố định · Mỗi buổi 3 tiết · Xen kẽ loại học · Cách ít nhất 2 ngày · Tối đa 3 buổi/tuần/nhóm.</span>
                 </div>
                 <button type="button" className="xlt-btn primary large" onClick={handleCreate} disabled={creating || loadingClasses || selectedIds.length === 0}>
                   <Play size={17} /> {creating ? 'Đang tạo phiên…' : 'Xếp lịch tự động'}

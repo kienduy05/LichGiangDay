@@ -74,12 +74,12 @@ export default function XepLichClassList({
                   </td>
                   <td>
                     <strong>{row.MaLopHocPhan}</strong>
-                    <span>{row.TenLopHocPhan || row.TenMonHoc}</span>
+                    <span>{row.TenMonHoc || row.TenLopHocPhan}</span>
                     <span>{row.SoTinChi} tín chỉ · Nhóm {row.NhomLop || 'chưa xác định'} · {row.KhoaHoc}</span>
                   </td>
                   <td><span className="xlt-type-badge">{row.LoaiHoc}</span></td>
                   <td>{size}</td>
-                  <td>{row.SoBuoiMoiTuan ? `${row.SoBuoiMoiTuan} buổi/tuần × 3 tiết · Tổng ${row.SoBuoiToiThieu}–${row.SoBuoiToiDa} buổi tùy thứ học` : 'Chưa có định mức'}</td>
+                  <td>{row.SoBuoiYeuCau ? `${row.SoTietYeuCau} tiết = ${row.SoBuoiYeuCau} buổi × 3 tiết` : 'Chưa có định mức'}</td>
                   <td>
                     {ready ? (
                       <span className="xlt-status ready"><CheckCircle2 size={14} /> Đủ dữ liệu</span>

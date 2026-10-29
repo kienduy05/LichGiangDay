@@ -111,7 +111,7 @@ test('deleting is blocked while apply or draft edit is in progress', async () =>
       getConnection: () => pending.promise,
       loadCatalog: () => pending.promise
     });
-    store.save({ phien: { MaPhien: 'session', MaHocKy: 'HK1', PhienBanQuyTac: 4, TrangThai: 'Completed' },
+    store.save({ phien: { MaPhien: 'session', MaHocKy: 'HK1', PhienBanQuyTac: 3, TrangThai: 'Completed' },
       dong: [{ MaDong: 1, MaLopHocPhan: 'HP1', TrangThai: 'Draft' }] });
     const operation = mode === 'apply' ? service.applyPhien({}, 'session') : service.updateDong('session', 1, {});
     await assert.rejects(service.deletePhien('session'), error => error.status === 409);
@@ -141,16 +141,16 @@ const complete = async service => {
   return created.maPhien;
 };
 
-test('selecting one component expands the group and produces 24 dated meetings', async () => {
+test('selecting one component expands the group and produces 20 dated meetings', async () => {
   const { service, store } = readySetup();
   const id = await complete(service);
   const result = store.get(id);
   assert.equal(result.phien.TrangThai, 'Completed');
   assert.equal(result.phien.TongSoLop, 2);
-  assert.equal(result.phien.TongSoBuoiDaXep, 24);
+  assert.equal(result.phien.TongSoBuoiDaXep, 20);
   assert.equal(result.phien.SoLopDaXep, 2);
   assert.ok(result.phien.SoTrangThaiDaXet > 0);
-  assert.equal(result.dong.length, 24);
+  assert.equal(result.dong.length, 20);
   assert.ok(result.dong.every(row => row.NgayBatDau === row.NgayKetThuc));
 });
 
@@ -168,8 +168,8 @@ test('apply inserts every dated meeting, and missing meetings roll back before i
       assert.equal(rolledBack, true); assert.equal(inserts.length, 0); assert.equal(committed, false);
     } else {
       const result = await service.applyPhien({ userId: 'ADMIN' }, id);
-      assert.equal(result.soDongDaApDung, 24); assert.equal(result.soLopDaApDung, 2);
-      assert.equal(inserts.length, 24); assert.equal(committed, true);
+      assert.equal(result.soDongDaApDung, 20); assert.equal(result.soLopDaApDung, 2);
+      assert.equal(inserts.length, 20); assert.equal(committed, true);
       assert.ok(inserts.every(args => args[5] === args[6]));
       assert.equal(store.get(id).phien.TrangThai, 'Applied');
     }

@@ -19,7 +19,7 @@ export default function XepLichResults({ data, onRefresh, onEdit, onApply, onCan
   const rows = grouped[activeTab];
   const processing = phien.TrangThai === 'Processing';
   const datedPlan = phien.PhienBanQuyTac >= 2;
-  const canEdit = phien.PhienBanQuyTac === 4 && ['Completed', 'CompletedWithWarnings'].includes(phien.TrangThai);
+  const canEdit = phien.PhienBanQuyTac === 3 && ['Completed', 'CompletedWithWarnings'].includes(phien.TrangThai);
   const canApply = canEdit && grouped.Draft.length > 0;
   const progress = phien.TongSoLop > 0 ? Math.round((phien.SoLopDaXuLy / phien.TongSoLop) * 100) : 0;
 
@@ -54,17 +54,17 @@ export default function XepLichResults({ data, onRefresh, onEdit, onApply, onCan
       {datedPlan && !processing && (
         <div className="xlt-workload-summary">
           <strong>{grouped.Draft.length} buổi đã xếp · {grouped.Draft.length * 3} tiết</strong>
-          <p>Mỗi dòng là một ngày học cụ thể. Lịch lặp mỗi tuần theo từng lớp, giữ cùng thứ, ca và phòng. Chủ nhật nghỉ.</p>
+          <p>Mỗi dòng là một ngày học cụ thể. Các buổi trong cùng nhóm cách nhau ít nhất 2 ngày, tối đa 3 buổi/tuần.</p>
           {(phien.DinhMucNhom || []).map(group => (
             <div key={group.MaNhomXep}>
-              <b>Nhóm {group.NhomLop} · {group.KhoaHoc} · {group.SoTinChi} tín chỉ · {group.SoTuan} tuần: </b>
-              {group.members.map(member => `${member.LoaiHoc} (${member.SoBuoiMoiTuan || "–"} buổi/tuần) ${grouped.Draft.filter(row => row.MaLopHocPhan === member.MaLopHocPhan).length}/${member.SoBuoiYeuCau} buổi`).join(' · ')}
+              <b>Nhóm {group.NhomLop} · {group.KhoaHoc} · {group.SoTinChi} tín chỉ: </b>
+              {group.members.map(member => `${member.LoaiHoc} ${grouped.Draft.filter(row => row.MaLopHocPhan === member.MaLopHocPhan).length}/${member.SoBuoiYeuCau} buổi`).join(' · ')}
             </div>
           ))}
         </div>
       )}
-      {phien.PhienBanQuyTac !== 4 && !processing && phien.TrangThai !== 'Applied' && (
-        <div className="xlt-inline-alert error">Phiên dùng quy tắc cũ. Vui lòng tạo phiên mới để xếp đúng số buổi mỗi tuần và giữ cố định thứ/ca/phòng.</div>
+      {phien.PhienBanQuyTac !== 3 && !processing && phien.TrangThai !== 'Applied' && (
+        <div className="xlt-inline-alert error">Phiên dùng quy tắc cũ. Vui lòng tạo phiên mới để xếp đủ tiết và giữ thứ học cố định.</div>
       )}
 
       <div className="xlt-result-stats">
@@ -115,7 +115,7 @@ export default function XepLichResults({ data, onRefresh, onEdit, onApply, onCan
                   <tr><td colSpan="6" className="xlt-empty">Không có dữ liệu trong nhóm này.</td></tr>
                 ) : rows.map(row => (
                   <tr key={row.MaDong}>
-                    <td><strong>{row.MaLopHocPhan}</strong>{row.TenLopHocPhan && <span>{row.TenLopHocPhan}</span>}<span>{row.TenMonHoc} · {row.LoaiHoc}</span></td>
+                    <td><strong>{row.MaLopHocPhan}</strong><span>{row.TenMonHoc} · {row.LoaiHoc}</span></td>
                     {activeTab === 'Draft' ? (
                       <>
                         <td><strong>{DAY_LABELS[row.ThuTrongTuan]}</strong><span>{row.TenTiet} · {row.GioBatDau}–{row.GioKetThuc}</span></td>
