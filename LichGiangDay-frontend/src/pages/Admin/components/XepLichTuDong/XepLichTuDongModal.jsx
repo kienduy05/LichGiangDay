@@ -1,3 +1,4 @@
+import { useAuth } from '../../../../context/AuthContext';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertCircle, Play, Sparkles, X } from 'lucide-react';
 import XepLichClassList from './XepLichClassList';
@@ -5,6 +6,7 @@ import XepLichResults from './XepLichResults';
 import XepLichDraftEditModal from './XepLichDraftEditModal';
 import {
   applyPhienXepLich,
+  deleteLichNhap,
   cancelPhienXepLich,
   createPhienXepLich,
   getLopChuaXep,
@@ -22,6 +24,7 @@ export default function XepLichTuDongModal({
   maBoMon = '',
   onApplied
 }) {
+  const { hasPermission } = useAuth();
   const [classes, setClasses] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
   const [search, setSearch] = useState('');
@@ -133,13 +136,19 @@ export default function XepLichTuDongModal({
   };
 
   const handleApply = async () => {
-    if (!window.confirm('Áp dụng toàn bộ lịch nháp hợp lệ thành thời khóa biểu chính thức?')) return;
+    if (!window.confirm('Gửi lịch nháp cho bộ môn phân công giảng viên? Lịch chỉ thành chính thức và sinh buổi học khi khóa lịch.')) return;
     setActionLoading(true);
     setError('');
     try {
       const result = await applyPhienXepLich(sessionId);
+      if (result.canhBaoThongBao?.length) {
+        await refreshSession();
+        setError(`Nháp đã gửi duyệt nhưng thông báo chưa gửi được: ${result.canhBaoThongBao.join(' ')}`);
+        onApplied?.('Đã gửi nháp. Có lỗi gửi thông báo, hãy chọn Gửi lại thông báo.');
+        return;
+      }
       localStorage.removeItem(storageKey(maHocKy));
-      onApplied?.(`Đã áp dụng ${result.soLopDaApDung} lớp với ${result.soDongDaApDung} buổi học.`);
+      onApplied?.(`Đã gửi nháp ${result.soLopChoDuyet} lớp cho bộ môn phân công giảng viên.`);
       onClose();
     } catch (err) {
       setError(err.message);
@@ -147,6 +156,14 @@ export default function XepLichTuDongModal({
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const handleDeleteDraft = async row => {
+    if (!window.confirm(`Xóa toàn bộ lịch nháp của lớp ${row.TenLopHocPhan || row.MaLopHocPhan}?`)) return;
+    setActionLoading(true); setError('');
+    try { await deleteLichNhap(sessionId, row.MaLopHocPhan); await refreshSession(); await loadClasses(search); }
+    catch (err) { setError(err.message); }
+    finally { setActionLoading(false); }
   };
 
   const handleCancel = async () => {
@@ -186,6 +203,8 @@ export default function XepLichTuDongModal({
               data={sessionData}
               onRefresh={() => refreshSession().catch(err => setError(err.message))}
               onEdit={setEditingRow}
+              onDeleteDraft={handleDeleteDraft}
+              canDelete={hasPermission('ThoiKhoaBieu', 'CanDelete')}
               onApply={handleApply}
               onCancel={handleCancel}
               actionLoading={actionLoading}
@@ -203,7 +222,7 @@ export default function XepLichTuDongModal({
               <div className="xlt-create-footer">
                 <div>
                   <strong>{selectedIds.length} lớp sẽ được đưa vào phiên</strong>
-                  <span>Hệ thống chỉ tạo lịch nháp để bạn kiểm tra trước khi áp dụng.</span>
+                  <span>LT 3 tín chỉ: 2 buổi/tuần; TH/BT và 2 tín chỉ: 1 buổi/tuần. Cùng thứ, ca, phòng; hai buổi cách ít nhất 2 ngày. Chủ nhật nghỉ.</span>
                 </div>
                 <button type="button" className="xlt-btn primary large" onClick={handleCreate} disabled={creating || loadingClasses || selectedIds.length === 0}>
                   <Play size={17} /> {creating ? 'Đang tạo phiên…' : 'Xếp lịch tự động'}

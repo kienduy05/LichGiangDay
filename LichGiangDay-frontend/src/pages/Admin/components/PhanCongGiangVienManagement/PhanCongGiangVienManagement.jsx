@@ -13,6 +13,7 @@ import {
   apiUnassignLecturerFromClass
 } from '../../../../utils/apiPhanCongGiangVien';
 
+import XepLichApprovalQueue from '../XepLichTuDong/XepLichApprovalQueue';
 import PhanCongClassList from './PhanCongClassList';
 import PhanCongInspector from './PhanCongInspector';
 import PhanCongWorkloadMatrix from './PhanCongWorkloadMatrix';
@@ -20,12 +21,12 @@ import PhanCongLecturerScheduleModal from './PhanCongLecturerScheduleModal';
 
 import './PhanCongGiangVien.css';
 
-export default function PhanCongGiangVienManagement() {
-  const { user } = useAuth();
+export default function PhanCongGiangVienManagement({ approvalTarget } = {}) {
+  const { user, hasPermission } = useAuth();
 
   // Học kỳ & Bộ môn
   const [hocKyList, setHocKyList] = useState([]);
-  const [selectedHocKy, setSelectedHocKy] = useState('');
+  const [selectedHocKy, setSelectedHocKy] = useState(approvalTarget?.maHocKy || '');
   const [boMonInfo, setBoMonInfo] = useState(null);
 
   // Tab: 'WORKSPACE' | 'WORKLOAD'
@@ -62,7 +63,7 @@ export default function PhanCongGiangVienManagement() {
         const list = await apiGetHocKyList();
         if (list && list.length > 0) {
           setHocKyList(list);
-          setSelectedHocKy(list[0].MaHocKy);
+          setSelectedHocKy(list.find(item => item.MaHocKy === approvalTarget?.maHocKy)?.MaHocKy || list[0].MaHocKy);
         }
       } catch (err) {
         console.error('Lỗi tải danh sách học kỳ:', err);
@@ -222,6 +223,7 @@ export default function PhanCongGiangVienManagement() {
 
   return (
     <div className="pcgv-container">
+      <XepLichApprovalQueue key={selectedHocKy} maHocKy={selectedHocKy} user={user} focusSessionId={approvalTarget?.maPhien} refreshToken={classes} canDelete={hasPermission('ThoiKhoaBieu', 'CanDelete')} onChanged={fetchClasses} />
       {/* ─── 1. TOP HEADER & KPI CARDS ─── */}
       <div className="pcgv-header-card">
         <div className="pcgv-header-top">

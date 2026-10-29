@@ -36,6 +36,8 @@ export default function AdminDashboard() {
 
   // Navigation active tab: 'dashboard' | 'toanha' | 'phonghoc' | 'roles' | 'users' | 'permissions'
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [approvalTarget, setApprovalTarget] = useState(null);
+  const approvalNavigationId = useRef(0);
 
   // Khóa & chuyển hướng nếu vai trò BOMON đang ở tab thoikhoabieu
   useEffect(() => {
@@ -188,7 +190,11 @@ export default function AdminDashboard() {
           onOpenEditModal={handleOpenEditModal}
           onOpenPasswordModal={handleOpenPasswordModal}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
-          onNavigateTab={setActiveTab}
+          onNavigateTab={(tab, target) => {
+            approvalNavigationId.current += 1;
+            setApprovalTarget(target ? { ...target, nonce: approvalNavigationId.current } : null);
+            setActiveTab(tab);
+          }}
         />
 
         {/* Main Body Dynamic View Switching */}
@@ -212,8 +218,8 @@ export default function AdminDashboard() {
           {activeTab === 'tiethoc' && <TietHocManagement />}
           {activeTab === 'lophocphan' && <LopHocPhanManagement />}
           {activeTab === 'lichgiangday' && <LichGiangDayManagement />}
-          {activeTab === 'thoikhoabieu' && user?.role !== 'BOMON' && <ThoiKhoaBieuManagement />}
-          {activeTab === 'phanconggiangvien' && <PhanCongGiangVienManagement />}
+          {activeTab === 'thoikhoabieu' && user?.role !== 'BOMON' && <ThoiKhoaBieuManagement key={approvalTarget?.nonce || 'normal'} approvalTarget={approvalTarget} />}
+          {activeTab === 'phanconggiangvien' && <PhanCongGiangVienManagement key={approvalTarget?.nonce || 'normal'} approvalTarget={approvalTarget} />}
           {activeTab === 'duyetyeucau' && <DuyetYeuCauManagement />}
           {activeTab === 'biendonglich' && <LichBienDongMonitor />}
           {activeTab === 'roles' && <RolesManagement />}

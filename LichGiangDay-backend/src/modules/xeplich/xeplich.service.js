@@ -1,4 +1,6 @@
 const crypto = require('crypto');
+const Approval = require('./xeplich.approval');
+const { findWeeklyTemplate } = require('./weeklySchedule');
 const db = require('../../../config/db');
 const ScheduleConstraintService = require('./scheduleConstraint.service');
 const XepLichStore = require('./xeplich.store');
@@ -76,10 +78,12 @@ class XepLichService {
     `);
     const [periods] = await db.query('SELECT MaTiet FROM TietHoc LIMIT 1');
 
+    const pendingIds = new Set(XepLichStore.list().filter(item => Approval.pendingStates.includes(item.phien.TrangThai)).flatMap(item => item.dong.filter(row => row.TrangThai === 'Draft').map(row => row.MaLopHocPhan)));
     return rows.map((row) => {
       const missing = [];
+      if (pendingIds.has(row.MaLopHocPhan)) missing.push('Lớp đã có lịch nháp chờ bộ môn phân công/PĐT khóa');
       const size = Number(row.SiSoDangKy || row.SiSoDuKien || 0);
-      const soBuoiMoiTuan = getSoBuoiMoiTuan(row.LoaiHoc);
+      const soBuoiMoiTuan = getSoBuoiMoiTuan(row.LoaiHoc, row.SoTinChi);
       if (!row.NgayBatDau || !row.NgayKetThuc || !row.SoTuan) missing.push('Thiếu thời gian học hợp lệ');
       if (!size) missing.push('Thiếu sĩ số');
       if (periods.length === 0) missing.push('Chưa có danh mục ca/tiết học');
@@ -128,7 +132,7 @@ class XepLichService {
     const readyIds = available.filter(row => row.trangThaiDuLieu === 'Ready').map(row => row.MaLopHocPhan);
     const selectedIds = [...new Set(maLopHocPhans.map(String).map(value => value.trim()).filter(Boolean))];
     const targetIds = selectedIds.length > 0 ? selectedIds : readyIds;
-    const invalidIds = targetIds.filter(id => !availableIds.has(id));
+    const invalidIds = targetIds.filter(id => !availableIds.has(id) || !readyIds.includes(id));
     if (invalidIds.length > 0) {
       throw makeError('Có lớp không thuộc phạm vi hoặc đã được xếp lịch.', 400, { maLopHocPhans: invalidIds });
     }
@@ -216,76 +220,24 @@ class XepLichService {
           continue;
         }
 
-        const [periods] = await db.query('SELECT MaTiet FROM TietHoc ORDER BY GioBatDau, MaTiet');
-        const weekdays = [2, 3, 4, 5, 6, 7, 8];
-        const soBuoiMoiTuan = getSoBuoiMoiTuan(lop.LoaiHoc);
-        const classRows = [];
-        const lastConflicts = [];
-
-        for (let sessionIndex = 0; sessionIndex < soBuoiMoiTuan; sessionIndex += 1) {
-          let found = false;
-          const orderedDays = weekdays.slice(sessionIndex).concat(weekdays.slice(0, sessionIndex));
-          for (const thuTrongTuan of orderedDays) {
-            if (found) break;
-            for (const periodItem of periods) {
-              if (found) break;
-              for (const room of rooms) {
-                const check = await ScheduleConstraintService.check({
-                  maLopHocPhan,
-                  thuTrongTuan,
-                  maTiet: periodItem.MaTiet,
-                  maPhong: room.MaPhong,
-                  ngayBatDau: lop.NgayBatDau,
-                  ngayKetThuc: lop.NgayKetThuc,
-                  maPhien
-                });
-                if (check.valid) {
-                  const row = addRow(session, {
-                    MaPhien: maPhien,
-                    MaLopHocPhan: maLopHocPhan,
-                    TenLopHocPhan: lop.TenLopHocPhan,
-                    TenMonHoc: lop.TenMonHoc,
-                    LoaiHoc: lop.LoaiHoc,
-                    ThuTrongTuan: thuTrongTuan,
-                    MaTiet: periodItem.MaTiet,
-                    TenTiet: check.context.tietHoc.TenTiet,
-                    GioBatDau: check.context.tietHoc.GioBatDau,
-                    GioKetThuc: check.context.tietHoc.GioKetThuc,
-                    MaPhong: room.MaPhong,
-                    TenPhong: room.TenPhong,
-                    MaToaNha: room.MaToaNha,
-                    NgayBatDau: dateOnly(lop.NgayBatDau),
-                    NgayKetThuc: dateOnly(lop.NgayKetThuc),
-                    NguonXep: 'Auto',
-                    TrangThai: 'Draft',
-                    DaKhoa: 0,
-                    DiemPhuongAn: Number(room.ChenhLechSucChua || 0),
-                    LyDo: []
-                  });
-                  classRows.push(row.MaDong);
-                  XepLichStore.save(session);
-                  found = true;
-                  break;
-                }
-                if (lastConflicts.length < 10) lastConflicts.push(...check.conflicts.slice(0, 2));
-              }
-            }
-          }
-          if (!found) break;
-        }
-
-        if (classRows.length !== soBuoiMoiTuan) {
-          session.dong = session.dong.filter(row => !classRows.includes(row.MaDong));
-          addRow(session, {
-            MaPhien: maPhien,
-            MaLopHocPhan: maLopHocPhan,
-            TenLopHocPhan: lop.TenLopHocPhan,
-            TenMonHoc: lop.TenMonHoc,
-            TrangThai: 'Unscheduled',
-            MaLoi: 'NO_SOLUTION',
-            LyDo: lastConflicts.slice(0, 10)
-          });
-        }
+        const [periods] = await db.query('SELECT MaTiet, TenTiet, GioBatDau, GioKetThuc FROM TietHoc ORDER BY GioBatDau, MaTiet');
+        const result = await findWeeklyTemplate({ member: lop, rooms, periods,
+          checkpoint: async () => {
+            await new Promise(resolve => setImmediate(resolve));
+            if (XepLichStore.get(maPhien)?.phien.TrangThai !== 'Processing') throw makeError('Phiên đã dừng.', 409);
+          },
+          check: row => ScheduleConstraintService.check({ maLopHocPhan, thuTrongTuan: row.ThuTrongTuan,
+            maTiet: row.MaTiet, maPhong: row.MaPhong, ngayBatDau: row.NgayBatDau,
+            ngayKetThuc: row.NgayKetThuc, maPhien })
+        });
+        session = XepLichStore.get(maPhien);
+        if (!session || session.phien.TrangThai !== 'Processing') return;
+        if (result.rows) result.rows.forEach(row => addRow(session, { ...row, MaPhien: maPhien }));
+        else addRow(session, { MaPhien: maPhien, MaLopHocPhan: maLopHocPhan,
+          TenLopHocPhan: lop.TenLopHocPhan, TenMonHoc: lop.TenMonHoc, LoaiHoc: lop.LoaiHoc,
+          TrangThai: 'Unscheduled', MaLoi: 'NO_WEEKLY_TEMPLATE',
+          LyDo: result.conflicts.length ? result.conflicts : ['Không có mẫu cố định đủ buổi, cùng phòng và cách ngày.'] });
+        session.phien.SoViTriDaThu = (session.phien.SoViTriDaThu || 0) + result.attempts;
         updateCounters(session);
         XepLichStore.save(session);
       }
@@ -300,6 +252,7 @@ class XepLichService {
       }
     } catch (error) {
       session = XepLichStore.get(maPhien);
+      if (session?.phien.TrangThai === 'Cancelled') return;
       if (session && session.phien.TrangThai === 'Processing') {
         session.phien.TrangThai = 'Failed';
         session.phien.LoiHeThong = error.message;
@@ -359,75 +312,18 @@ class XepLichService {
     return { phien: session.phien, dong: session.dong };
   };
 
-  static applyPhien = async (user, maPhien) => {
-    const session = XepLichStore.get(maPhien);
-    if (!session) throw makeError('Không tìm thấy phiên xếp lịch.', 404);
-    if (!['Completed', 'CompletedWithWarnings'].includes(session.phien.TrangThai)) {
-      throw makeError('Phiên chưa hoàn tất hoặc đã được áp dụng/hủy.', 409);
-    }
-    const draftRows = session.dong.filter(row => row.TrangThai === 'Draft');
-    if (draftRows.length === 0) throw makeError('Phiên không có dòng lịch hợp lệ để áp dụng.');
-
-    const conn = await db.getConnection();
-    try {
-      await conn.beginTransaction();
-      await conn.query('SELECT MaHocKy FROM HocKy WHERE MaHocKy = ? FOR UPDATE', [session.phien.MaHocKy]);
-
-      const classIds = [...new Set(draftRows.map(row => row.MaLopHocPhan))];
-      const placeholders = classIds.map(() => '?').join(',');
-      const [scheduledRows] = await conn.query(
-        `SELECT DISTINCT MaLopHocPhan FROM ThoiKhoaBieu WHERE MaLopHocPhan IN (${placeholders})`,
-        classIds
-      );
-      if (scheduledRows.length > 0) {
-        throw makeError('Một số lớp đã được xếp lịch chính thức sau khi tạo phương án.', 409, {
-          maLopHocPhans: scheduledRows.map(row => row.MaLopHocPhan)
-        });
-      }
-
-      for (const row of draftRows) {
-        const check = await ScheduleConstraintService.check({
-          maLopHocPhan: row.MaLopHocPhan,
-          thuTrongTuan: row.ThuTrongTuan,
-          maTiet: row.MaTiet,
-          maPhong: row.MaPhong,
-          ngayBatDau: row.NgayBatDau,
-          ngayKetThuc: row.NgayKetThuc,
-          maPhien,
-          excludeMaDong: row.MaDong
-        }, conn);
-        if (!check.valid) throw makeError(`Không thể áp dụng lịch của lớp '${row.MaLopHocPhan}'.`, 409, check);
-      }
-
-      for (const row of draftRows) {
-        const maThoiKhoaBieu = `TKB_AUTO_${maPhien.replace(/-/g, '').slice(0, 12)}_${row.MaDong}`;
-        await conn.query(`
-          INSERT INTO ThoiKhoaBieu
-            (MaThoiKhoaBieu, MaLopHocPhan, ThuTrongTuan, MaTiet, MaPhong,
-             NgayBatDau, NgayKetThuc, TrangThai, ThoiGianSuaDoi)
-          VALUES (?, ?, ?, ?, ?, ?, ?, 'Scheduled', NOW())
-        `, [maThoiKhoaBieu, row.MaLopHocPhan, row.ThuTrongTuan, row.MaTiet,
-          row.MaPhong, row.NgayBatDau, row.NgayKetThuc]);
-      }
-      await conn.commit();
-
-      session.phien.TrangThai = 'Applied';
-      session.phien.NguoiApDung = user?.userId || null;
-      session.phien.ThoiGianApDung = now();
-      XepLichStore.save(session);
-      return { maPhien, soDongDaApDung: draftRows.length, soLopDaApDung: classIds.length };
-    } catch (error) {
-      await conn.rollback();
-      throw error;
-    } finally {
-      conn.release();
-    }
-  };
+  // Compatibility endpoint now submits a draft; it never publishes schedules.
+  static applyPhien = async (user, maPhien) => Approval.submit(user, maPhien);
+  static removeClassDraft = async (user, maPhien, maLopHocPhan) => Approval.removeClassDraft(user, maPhien, maLopHocPhan);
+  static resolveNotification = async (user, reference) => Approval.resolveNotification(user, reference);
+  static listChoXacNhan = async (user, maHocKy) => Approval.list(user, maHocKy);
+  static updateClassDraft = async (user, maPhien, maLopHocPhan, schedules) => Approval.updateClassDraft(user, maPhien, maLopHocPhan, schedules);
 
   static cancelPhien = async (maPhien) => {
     const session = XepLichStore.get(maPhien);
     if (!session) throw makeError('Không tìm thấy phiên xếp lịch.', 404);
-    if (session.phien.TrangThai === 'Applied') throw makeError('Không thể hủy phiên đã áp dụng.', 409);
+    if (Approval.isBusy(maPhien)) throw makeError('Phiên đang được xử lý.', 409);
+    if (['Applied', ...Approval.pendingStates].includes(session.phien.TrangThai)) throw makeError('Không thể hủy phiên đã gửi bộ môn phân công hoặc đã áp dụng.', 409);
     session.phien.TrangThai = 'Cancelled';
     session.phien.ThoiGianHuy = now();
     XepLichStore.save(session);

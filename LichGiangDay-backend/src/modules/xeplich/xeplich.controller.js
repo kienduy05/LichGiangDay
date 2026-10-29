@@ -90,12 +90,38 @@ class XepLichController {
       const result = await XepLichService.applyPhien(req.user, req.params.maPhien);
       return res.status(200).json({
         status: 'success', code: 200,
-        message: 'Áp dụng thời khóa biểu thành công.',
+        message: 'Đã gửi lịch nháp cho bộ môn phân công giảng viên. Chưa tạo lịch chính thức hoặc buổi học.',
         metadata: result
       });
     } catch (error) {
       return sendError(res, error, 'Không thể áp dụng thời khóa biểu.');
     }
+  };
+
+  listChoXacNhan = async (req, res) => {
+    try {
+      const metadata = await XepLichService.listChoXacNhan(req.user, req.query.maHocKy);
+      return res.status(200).json({ status: 'success', code: 200, metadata });
+    } catch (error) { return sendError(res, error, 'Không thể lấy lịch chờ phân công/khóa.'); }
+  };
+  updateClassDraft = async (req, res) => {
+    try {
+      const metadata = await XepLichService.updateClassDraft(req.user, req.params.maPhien, req.params.maLopHocPhan, req.body.schedules);
+      return res.status(200).json({ status: 'success', code: 200, message: 'Đã cập nhật mẫu lịch nháp.', metadata });
+    } catch (error) { return sendError(res, error, 'Không thể sửa mẫu lịch nháp.'); }
+  };
+
+  removeClassDraft = async (req, res) => {
+    try {
+      const metadata = await XepLichService.removeClassDraft(req.user, req.params.maPhien, req.params.maLopHocPhan);
+      return res.status(200).json({ status: 'success', code: 200, message: 'Đã xóa lịch nháp của lớp.', metadata });
+    } catch (error) { return sendError(res, error, 'Không thể xóa lịch nháp.'); }
+  };
+  resolveNotification = async (req, res) => {
+    try {
+      const metadata = await XepLichService.resolveNotification(req.user, req.params.maLienKet);
+      return res.status(200).json({ status: 'success', code: 200, metadata });
+    } catch (error) { return sendError(res, error, 'Không thể mở lịch nháp.'); }
   };
 
   cancelPhien = async (req, res) => {

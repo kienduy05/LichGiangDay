@@ -8,7 +8,7 @@ const DEFAULT_CONFIG = {
     DEFAULT: 1
   },
   ngayKhongXep: [],
-  thuKhongXep: []
+  thuKhongXep: [8]
 };
 
 const normalize = (value) => String(value || '')
@@ -39,7 +39,8 @@ const isRoomCompatible = (loaiHoc, loaiPhong) => {
   return true;
 };
 
-const getSoBuoiMoiTuan = (loaiHoc) => {
+const getSoBuoiMoiTuan = (loaiHoc, soTinChi = 2) => {
+  if (Number(soTinChi) === 3 && ['lt', 'lythuyet'].includes(normalize(loaiHoc))) return 2;
   const key = String(loaiHoc || '').trim().toUpperCase();
   return Number(DEFAULT_CONFIG.soBuoiMoiTuan[key] || DEFAULT_CONFIG.soBuoiMoiTuan.DEFAULT);
 };

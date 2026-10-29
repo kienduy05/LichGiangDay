@@ -269,3 +269,13 @@
   .xlt-field-wide { grid-column: auto; }
 }
 
+
+.xlt-approval-queue { margin: 16px 0; padding: 16px; border: 1px solid #dbe4f0; border-radius: 12px; background: #fff; }
+.xlt-approval-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.xlt-approval-heading h3 { margin: 0 0 6px; }
+.xlt-approval-heading p { margin: 0; color: #64748b; }
+.xlt-approval-queue details p { margin: 8px 0; }
+
+.xlt-approval-highlight { background: #eff6ff; }
+.xlt-notification-error { color: #b91c1c; }
+.xlt-approval-queue td .xlt-btn { margin: 4px; }

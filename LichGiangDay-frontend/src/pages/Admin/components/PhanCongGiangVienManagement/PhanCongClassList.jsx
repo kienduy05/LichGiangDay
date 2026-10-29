@@ -120,6 +120,7 @@ export default function PhanCongClassList({
                 </div>
               )}
 
+              {item.isDraftSchedule && <span className="pcgv-status-pill status-unassigned">Lịch nháp · Chưa khóa</span>}
               {/* Status Footer */}
               <div className="pcgv-item-footer">
                 <span style={{ color: '#64748b', fontSize: '0.75rem' }}>

@@ -14,6 +14,8 @@ import ThoiKhoaBieuTreeView from './ThoiKhoaBieuTreeView';
 import ThoiKhoaBieuTable from './ThoiKhoaBieuTable';
 import ThoiKhoaBieuGrid from './ThoiKhoaBieuGrid';
 import ThoiKhoaBieuScheduleModal from './ThoiKhoaBieuScheduleModal';
+import XepLichApprovalQueue from '../XepLichTuDong/XepLichApprovalQueue';
+import { deleteLichNhap } from '../XepLichTuDong/apiXepLich';
 import { XepLichTuDongModal } from '../XepLichTuDong';
 
 import {
@@ -23,14 +25,14 @@ import {
 } from 'lucide-react';
 import './ThoiKhoaBieuManagement.css';
 
-export default function ThoiKhoaBieuManagement() {
+export default function ThoiKhoaBieuManagement({ approvalTarget } = {}) {
   const { user, hasPermission } = useAuth();
   const isBoMonRole = user?.role === 'BOMON';
   const scopedBoMonId = isBoMonRole ? (user?.username || '') : '';
 
   // 1. Học kỳ states
   const [hocKyList, setHocKyList] = useState([]);
-  const [selectedHocKy, setSelectedHocKy] = useState('');
+  const [selectedHocKy, setSelectedHocKy] = useState(approvalTarget?.maHocKy || '');
   const [loadingHocKy, setLoadingHocKy] = useState(false);
 
   // 2. View mode: 'TABLE' (Dạng bảng) | 'GRID' (Dạng lưới ma trận)
@@ -58,6 +60,7 @@ export default function ThoiKhoaBieuManagement() {
   const [isAutoScheduleModalOpen, setIsAutoScheduleModalOpen] = useState(false);
 
   // 6. Toast message
+  const [approvalVersion, setApprovalVersion] = useState(0);
   const [toastMessage, setToastMessage] = useState(null);
 
   const showToast = (text, type = 'success') => {
@@ -76,7 +79,7 @@ export default function ThoiKhoaBieuManagement() {
         setHocKyList(list || []);
         if (list && list.length > 0) {
           // Mặc định chọn học kỳ đầu tiên
-          setSelectedHocKy(list[0].MaHocKy);
+          setSelectedHocKy(list.find(item => item.MaHocKy === approvalTarget?.maHocKy)?.MaHocKy || list[0].MaHocKy);
         }
       } catch (err) {
         showToast(err.message || 'Lỗi tải danh sách học kỳ.', 'error');
@@ -155,7 +158,9 @@ export default function ThoiKhoaBieuManagement() {
     }
 
     try {
-      await apiDeleteSchedulesByLopHocPhan(lhp.MaLopHocPhan);
+      if (lhp.isDraftSchedule) await deleteLichNhap(lhp.MaPhienNhap, lhp.MaLopHocPhan);
+      else await apiDeleteSchedulesByLopHocPhan(lhp.MaLopHocPhan);
+      setApprovalVersion(value => value + 1);
       showToast(`Đã xóa thời khóa biểu của lớp ${lhp.MaLopHocPhan}`);
       fetchTreeView();
       fetchTableData();
@@ -229,6 +234,7 @@ export default function ThoiKhoaBieuManagement() {
 
   // Làm mới toàn bộ
   const handleRefreshAll = () => {
+    setApprovalVersion(value => value + 1);
     fetchTreeView();
     fetchTableData();
   };
@@ -441,6 +447,8 @@ export default function ThoiKhoaBieuManagement() {
             </div>
           </div>
 
+          <XepLichApprovalQueue key={selectedHocKy} maHocKy={selectedHocKy} user={user} focusSessionId={approvalTarget?.maPhien} refreshToken={approvalVersion}
+            canDelete={hasPermission('ThoiKhoaBieu', 'CanDelete')} canUpdate={hasPermission('ThoiKhoaBieu', 'CanUpdate')} onChanged={handleRefreshAll} />
           {/* VIEW CONTENT (TABLE vs MATRIX GRID) */}
           {viewMode === 'TABLE' ? (
             <ThoiKhoaBieuTable
@@ -481,6 +489,7 @@ export default function ThoiKhoaBieuManagement() {
           maKhoa={selectedKhoaId !== 'ALL' ? selectedKhoaId : ''}
           maBoMon={selectedBoMonId !== 'ALL' ? selectedBoMonId : ''}
           onApplied={(message) => {
+            setApprovalVersion(value => value + 1);
             showToast(message);
             fetchTreeView();
             fetchTableData();

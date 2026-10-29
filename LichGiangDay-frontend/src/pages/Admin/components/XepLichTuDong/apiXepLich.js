@@ -43,7 +43,7 @@ export const updateDongXepLich = (maPhien, maDong, payload) => request(
 );
 
 export const applyPhienXepLich = (maPhien) => request(
-  `/phien/${encodeURIComponent(maPhien)}/ap-dung`,
+  `/phien/${encodeURIComponent(maPhien)}/gui-xac-nhan`,
   { method: 'POST', body: JSON.stringify({}) }
 );
 
@@ -52,3 +52,14 @@ export const cancelPhienXepLich = (maPhien) => request(
   { method: 'DELETE' }
 );
 
+
+export const getLichChoXacNhan = maHocKy => request(`/cho-xac-nhan?${new URLSearchParams({ maHocKy })}`);
+export const updateClassLichNhap = (maPhien, maLopHocPhan, schedules) => request(
+  `/phien/${encodeURIComponent(maPhien)}/lop/${encodeURIComponent(maLopHocPhan)}/nhap`,
+  { method: 'PUT', body: JSON.stringify({ schedules }) }
+);
+
+export const deleteLichNhap = (maPhien, maLopHocPhan) => request(
+  `/phien/${encodeURIComponent(maPhien)}/lop/${encodeURIComponent(maLopHocPhan)}/nhap`, { method: 'DELETE' }
+);
+export const resolveLichNhapNotification = reference => request(`/thong-bao/${encodeURIComponent(reference)}`);

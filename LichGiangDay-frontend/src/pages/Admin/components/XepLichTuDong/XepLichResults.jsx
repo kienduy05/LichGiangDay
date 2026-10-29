@@ -8,7 +8,7 @@ const DAY_LABELS = { 2: 'Thứ 2', 3: 'Thứ 3', 4: 'Thứ 4', 5: 'Thứ 5', 6: 
 
 const reasonText = reason => typeof reason === 'string' ? reason : reason?.message || reason?.code || 'Không xác định được nguyên nhân';
 
-export default function XepLichResults({ data, onRefresh, onEdit, onApply, onCancel, actionLoading }) {
+export default function XepLichResults({ data, onRefresh, onEdit, onApply, onCancel, actionLoading, onDeleteDraft, canDelete = false }) {
   const [activeTab, setActiveTab] = useState('Draft');
   const { phien, dong = [] } = data;
   const grouped = useMemo(() => ({
@@ -18,6 +18,8 @@ export default function XepLichResults({ data, onRefresh, onEdit, onApply, onCan
   }), [dong]);
   const rows = grouped[activeTab];
   const processing = phien.TrangThai === 'Processing';
+  const canEdit = ['Completed', 'CompletedWithWarnings'].includes(phien.TrangThai);
+  const submitted = ['PendingAssignment', 'PendingConfirmation', 'Confirmed', 'Applied'].includes(phien.TrangThai);
   const canApply = ['Completed', 'CompletedWithWarnings'].includes(phien.TrangThai) && grouped.Draft.length > 0;
   const progress = phien.TongSoLop > 0 ? Math.round((phien.SoLopDaXuLy / phien.TongSoLop) * 100) : 0;
 
@@ -33,7 +35,7 @@ export default function XepLichResults({ data, onRefresh, onEdit, onApply, onCan
               <h3>{processing ? 'Đang tạo phương án thời khóa biểu' : 'Kết quả xếp lịch tự động'}</h3>
               <p>Mã phiên: {phien.MaPhien}</p>
             </div>
-            <span className={`xlt-session-status ${phien.TrangThai}`}>{phien.TrangThai}</span>
+            <span className={`xlt-session-status ${phien.TrangThai}`}>{{ PendingAssignment: 'Đã gửi bộ môn · Chờ phân công/khóa', PendingConfirmation: 'Đã gửi bộ môn · Chờ phân công/khóa', Confirmed: 'Đã gửi bộ môn · Chờ phân công/khóa', Applied: 'Đã áp dụng trước đây' }[phien.TrangThai] || phien.TrangThai}</span>
           </div>
           <div className="xlt-progress-track"><span style={{ width: `${processing ? progress : 100}%` }} /></div>
           <div className="xlt-progress-caption">
@@ -46,6 +48,7 @@ export default function XepLichResults({ data, onRefresh, onEdit, onApply, onCan
         </button>
       </div>
 
+      {Object.values(phien.ThongBaoBoMon || {}).some(item => item.Loi) && <div className="xlt-inline-alert error">Có bộ môn chưa nhận được thông báo. Chọn Gửi lại thông báo bộ môn để thử lại.</div>}
       <div className="xlt-result-stats">
         <div className="success"><CheckCircle2 size={18} /><span><strong>{phien.SoLopDaXep}</strong> lớp đã xếp</span></div>
         <div className="warning"><XCircle size={18} /><span><strong>{phien.SoLopKhongXep}</strong> lớp chưa xếp được</span></div>
@@ -91,7 +94,7 @@ export default function XepLichResults({ data, onRefresh, onEdit, onApply, onCan
                           <span className={`xlt-source ${row.NguonXep}`}>{row.NguonXep === 'Manual' ? 'Xếp tay' : 'Tự động'}</span>
                           {Boolean(row.DaKhoa) && <span className="xlt-row-lock"><Lock size={12} /> Đã khóa</span>}
                         </td>
-                        <td><button className="xlt-row-action" onClick={() => onEdit(row)}><Edit3 size={15} /> Sửa</button></td>
+                        <td><button disabled={!canEdit} className="xlt-row-action" onClick={() => onEdit(row)}><Edit3 size={15} /> Sửa</button>{canDelete && ['Completed', 'CompletedWithWarnings', 'Failed', 'PendingAssignment', 'PendingConfirmation', 'Confirmed'].includes(phien.TrangThai) && <button className="xlt-row-action" disabled={actionLoading} onClick={() => onDeleteDraft(row)}>Xóa nháp lớp</button>}</td>
                       </>
                     ) : (
                       <td>
@@ -109,11 +112,11 @@ export default function XepLichResults({ data, onRefresh, onEdit, onApply, onCan
           </div>
 
           <div className="xlt-result-actions">
-            <button type="button" className="xlt-btn danger-ghost" onClick={onCancel} disabled={actionLoading || phien.TrangThai === 'Applied'}>
+            <button type="button" className="xlt-btn danger-ghost" onClick={onCancel} disabled={actionLoading || submitted}>
               <Ban size={16} /> Hủy phiên
             </button>
-            <button type="button" className="xlt-btn primary" onClick={onApply} disabled={actionLoading || !canApply}>
-              <CheckCircle2 size={16} /> {actionLoading ? 'Đang xử lý…' : `Áp dụng ${phien.SoLopDaXep} lớp`}
+            <button type="button" className="xlt-btn primary" onClick={onApply} disabled={actionLoading || (!canApply && !['PendingAssignment', 'PendingConfirmation', 'Confirmed'].includes(phien.TrangThai))}>
+              <CheckCircle2 size={16} /> {actionLoading ? 'Đang xử lý…' : (submitted && phien.TrangThai !== 'Applied' ? 'Gửi lại thông báo bộ môn' : `Gửi bộ môn phân công ${phien.SoLopDaXep} lớp`)}
             </button>
           </div>
         </>

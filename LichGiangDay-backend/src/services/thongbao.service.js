@@ -40,7 +40,7 @@ class ThongBaoService {
   /**
    * Tạo thông báo cho Bộ môn (gửi đồng thời cho tài khoản role BOMON và tài khoản Giảng viên Trưởng bộ môn)
    */
-  static notifyBoMon = async (maBoMon, { tieuDe, noiDung, loaiThongBao, maDoiTuongLienQuan }, connection = db) => {
+  static notifyBoMon = async (maBoMon, { tieuDe, noiDung, loaiThongBao, maDoiTuongLienQuan, deduplicate = false }, connection = db) => {
     if (!maBoMon) return [];
 
     const targetUserIds = new Set();
@@ -68,6 +68,14 @@ class ThongBaoService {
     // 3. Bắn thông báo đến từng UserId (chỉ lưu vào ThongBao chưa đọc)
     const createdIds = [];
     for (const uId of targetUserIds) {
+      if (deduplicate && maDoiTuongLienQuan) {
+        const [existing] = await connection.query(`
+          SELECT MaThongBao FROM ThongBao WHERE UserId = ? AND LoaiThongBao = ? AND MaDoiTuongLienQuan = ?
+          UNION ALL
+          SELECT MaThongBao FROM ThongBaoDaDoc WHERE UserId = ? AND LoaiThongBao = ? AND MaDoiTuongLienQuan = ? LIMIT 1`,
+        [uId, loaiThongBao, maDoiTuongLienQuan, uId, loaiThongBao, maDoiTuongLienQuan]);
+        if (existing.length) { createdIds.push(existing[0].MaThongBao); continue; }
+      }
       const id = await this.createNotification({
         userId: uId,
         tieuDe,

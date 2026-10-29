@@ -119,6 +119,7 @@ export default function ThoiKhoaBieuTable({
                 {/* 6. Khung Thời Khóa Biểu */}
                 <td>
                   <div className="schedule-slots-container">
+                    {lhp.isDraftSchedule && <span className="code-pill">Nháp · Chưa khóa</span>}
                     {isLocked && (
                       <div style={{
                         display: 'inline-flex',

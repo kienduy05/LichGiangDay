@@ -1732,31 +1732,29 @@ Mọi lịch tự động, lịch chỉnh tay trong phiên nháp và lịch lưu
   - Hiển thị thông báo hợp lệ hoặc danh sách xung đột.
   - Dòng chỉnh tay có nhãn **"Xếp tay"**; dòng khóa có biểu tượng khóa.
 
-#### 2.2.6. Áp dụng Lịch Nháp thành Thời khóa biểu Chính thức
+#### 2.2.6. Gửi Nháp, Bộ môn Xác nhận và Khóa Lịch
 
-- **Thao tác người dùng (User Action)**:
-  - Người dùng kiểm tra kết quả nháp và bấm nút **"Áp dụng lịch"**.
-  - Người dùng xác nhận thao tác trên hộp thoại xác nhận.
+- **Luồng bắt buộc**: Xếp tự động → Lịch nháp → Gửi bộ môn → Bộ môn phân công giảng viên và xác nhận → ADMIN/Phòng Đào tạo khóa lịch → Ghi thời khóa biểu chính thức và sinh `BuoiHoc`.
+- Nút **Gửi bộ môn xác nhận** gọi `POST /v1/api/xeplich/phien/:maPhien/gui-xac-nhan`. Endpoint `/ap-dung` cũ được giữ tương thích nhưng cũng chỉ gửi nháp, không xuất bản lịch.
+- Chỉ gửi phiên `Completed` hoặc `CompletedWithWarnings` có dòng `Draft`. Kiểm tra lại lớp/học kỳ, bộ môn, lịch hiện có và xung đột trước khi gửi. Một lớp không được có nhiều phiên đang chờ duyệt.
+- Gửi nháp chỉ cập nhật JSON: trạng thái `PendingConfirmation`, người/thời gian gửi, danh sách lớp và bộ môn. **Không ghi `ThoiKhoaBieu`, không sinh `BuoiHoc`, không giữ phòng chính thức.**
+- Sau gửi, nháp không được chỉnh sửa hoặc hủy trực tiếp để tránh thay đổi nội dung đã chuyển duyệt. Lớp đang có nháp chờ duyệt không được tạo phương án thay thế hoặc ghi lịch thủ công đè lên. Luồng thu hồi/từ chối nháp là chức năng nâng cấp riêng.
 
-- **Nghiệp vụ xử lý (Business Logic)**:
-  - Client gửi request `POST /v1/api/xeplich/phien/:maPhien/ap-dung`.
-  - Backend kiểm tra quyền `CanUpdate` và xác nhận phiên ở trạng thái `Completed` hoặc `CompletedWithWarnings`.
-  - Backend kiểm tra lại toàn bộ các dòng nháp chuẩn bị áp dụng với nhau và với lịch chính thức tại thời điểm áp dụng.
-  - Nếu mọi dòng hợp lệ, mở Transaction CSDL:
-    1. Khóa bản ghi Học kỳ trong transaction để tuần tự hóa thao tác áp dụng lịch.
-    2. Ghi các dòng lịch nháp hợp lệ vào `ThoiKhoaBieu`.
-    3. Commit toàn bộ khi tất cả dòng đều hợp lệ.
-    4. Đánh dấu phiên JSON là `Applied`, ghi người áp dụng và thời gian áp dụng.
-  - Nếu phát hiện lịch chính thức đã thay đổi sau khi tạo nháp, Rollback toàn bộ Transaction và trả danh sách xung đột mới nhất.
-  - Bước này không sinh `BuoiHoc`; `BuoiHoc` chỉ được sinh sau khi Bộ môn phân công giảng viên và Phòng Đào tạo khóa lịch theo quy trình hiện có.
+**Trưởng/phó bộ môn xác nhận:**
 
-- **Thay đổi / Trạng thái trong CSDL (Database State & Impact)**:
-  - Tạo N dòng chính thức trong `ThoiKhoaBieu` tương ứng với N dòng nháp được áp dụng.
-  - Không thay đổi cấu trúc bảng và không cập nhật các bảng phiên riêng.
+1. Xem danh sách nháp tại màn Thời khóa biểu hoặc Phân công giảng viên, qua `GET /v1/api/xeplich/cho-xac-nhan?maHocKy=...`. Vai trò `BOMON` chỉ thấy lớp của bộ môn mình.
+2. Phân công giảng viên dựa trên lịch nháp; các dòng nháp được dùng để quét khả dụng nhưng chưa xuất hiện trong lịch chính thức.
+3. Gọi `POST /v1/api/xeplich/phien/:maPhien/xac-nhan` với `maLopHocPhan`. Backend bắt buộc vai trò `BOMON`, lớp thuộc đúng bộ môn tài khoản, có giảng viên và chưa khóa; kiểm tra lại xung đột.
+4. Lưu xác nhận từng lớp trong JSON gồm người, bộ môn, giảng viên và thời gian. Khi tất cả lớp đã xác nhận, phiên chuyển `Confirmed`; có thể khóa từng lớp đã được xác nhận mà không cần chờ bộ môn khác trong cùng phiên.
+5. Bước xác nhận **chưa ghi lịch chính thức hoặc sinh buổi học**. Thay đổi giảng viên sau xác nhận làm xác nhận cũ không còn hiệu lực; bộ môn phải xác nhận lại.
 
-- **Kết quả hiển thị (UI Response)**:
-  - Hiển thị số LHP và số buổi học đã áp dụng thành công.
-  - Làm mới TreeView, bảng lịch và lưới thời khóa biểu; các LHP vừa áp dụng chuyển thành trạng thái **Đã xếp lịch**.
+**Khóa lịch và sinh buổi học:**
+
+- Quyền khóa giữ theo luồng hiện có: `ADMIN` hoặc `PHONGDAOTAO`, có `CanUpdate`. Trưởng/phó bộ môn xác nhận; ADMIN/PĐT thực hiện khóa.
+- Trong cùng transaction: khóa bản ghi học kỳ và lớp → kiểm tra giảng viên/xác nhận còn hiệu lực → kiểm tra lại dữ liệu và xung đột mới nhất → ghi các dòng nháp vào `ThoiKhoaBieu` với trạng thái `Locked` → chuyển lớp `Locked` → sinh `BuoiHoc` → commit.
+- Nếu bất kỳ bước nào lỗi thì rollback toàn bộ, không để lịch chính thức hoặc buổi học ghi dở. Gọi lại khóa lớp đã khóa không tạo thêm buổi học.
+- Chỉ sau khóa thành công, dữ liệu mới xuất hiện trong thời khóa biểu chính thức, TreeView/bảng/lưới và lịch giảng viên. Khóa đồng loạt có thể lấy thêm các lớp nháp đã xác nhận và được phân công.
+- Không cần migration bảng cho luồng này; dữ liệu phê duyệt nằm trong kho JSON phiên. Các lịch đã áp dụng trước thay đổi không tự bị chuyển về nháp.
 
 #### 2.2.7. Hủy Phiên Xếp lịch Nháp
 
@@ -1765,7 +1763,7 @@ Mọi lịch tự động, lịch chỉnh tay trong phiên nháp và lịch lưu
 
 - **Nghiệp vụ xử lý (Business Logic)**:
   - Gửi request `DELETE /v1/api/xeplich/phien/:maPhien`.
-  - Chỉ cho phép hủy phiên `Processing`, `Completed`, `CompletedWithWarnings` hoặc `Failed`; không được hủy phiên `Applied`.
+  - Chỉ cho phép hủy phiên `Processing`, `Completed`, `CompletedWithWarnings` hoặc `Failed`; không hủy trực tiếp phiên `PendingConfirmation`, `Confirmed` hoặc `Applied`.
   - Hệ thống đổi trạng thái phiên thành `Cancelled`; không xóa lịch chính thức.
 
 - **Thay đổi / Trạng thái dữ liệu**:
@@ -1784,7 +1782,11 @@ Mọi lịch tự động, lịch chỉnh tay trong phiên nháp và lịch lưu
 | Xem tiến độ/kết quả phiên | `GET /v1/api/xeplich/phien/:maPhien` | `CanRead` |
 | Kiểm tra một vị trí lịch nháp | `POST /v1/api/xeplich/kiem-tra` | `CanUpdate` |
 | Sửa một dòng nháp | `PATCH /v1/api/xeplich/phien/:maPhien/dong/:maDong` | `CanUpdate` |
-| Áp dụng lịch nháp | `POST /v1/api/xeplich/phien/:maPhien/ap-dung` | `CanUpdate` |
+| Gửi bộ môn xác nhận | `POST /v1/api/xeplich/phien/:maPhien/gui-xac-nhan` | `CanUpdate` |
+| Gửi nháp (tương thích API cũ) | `POST /v1/api/xeplich/phien/:maPhien/ap-dung` | `CanUpdate` |
+| Xem nháp chờ xác nhận/khóa | `GET /v1/api/xeplich/cho-xac-nhan` | `CanRead`, phạm vi theo vai trò |
+| Bộ môn xác nhận từng lớp | `POST /v1/api/xeplich/phien/:maPhien/xac-nhan` | `CanUpdate`, vai trò BOMON, đúng bộ môn |
+| Khóa và sinh buổi học | `POST /v1/api/thoikhoabieu/lock-class` | `CanUpdate`, ADMIN/PHONGDAOTAO |
 | Hủy phiên nháp | `DELETE /v1/api/xeplich/phien/:maPhien` | `CanUpdate` |
 
 #### 2.2.9. Tiêu chí Hoàn thành Chức năng (Acceptance Criteria)
@@ -1793,10 +1795,10 @@ Mọi lịch tự động, lịch chỉnh tay trong phiên nháp và lịch lưu
 2. Người dùng tạo được một phiên xếp tự động cho các lớp đủ dữ liệu.
 3. Hệ thống phân biệt rõ lớp xếp được, không xếp được và thiếu dữ liệu, kèm lý do.
 4. Người dùng chỉnh tay được một dòng lịch nháp và nhận được lỗi xung đột ngay khi dữ liệu không hợp lệ.
-5. Lịch nháp không xuất hiện ở màn hình thời khóa biểu chính thức và không chiếm phòng chính thức trước khi áp dụng.
-6. Khi áp dụng, mọi dòng lịch phải được kiểm tra lại; nếu một dòng không hợp lệ thì không ghi một phần dữ liệu.
-7. Sau khi áp dụng thành công, lịch xuất hiện ở các màn hình TreeView, bảng và lưới thời khóa biểu đang có.
-8. Phân công giảng viên, khóa lịch và sinh `BuoiHoc` tiếp tục tuân theo luồng nghiệp vụ hiện có.
+5. Lịch nháp, kể cả sau gửi và xác nhận, không xuất hiện trong lịch chính thức hoặc chiếm phòng chính thức trước khi khóa.
+6. Khi khóa, kiểm tra lại xác nhận, giảng viên và mọi dòng lịch; có lỗi phải rollback cả thời khóa biểu và buổi học.
+7. Sau khi khóa thành công, lịch xuất hiện ở TreeView, bảng, lưới và có BuoiHoc tương ứng; gửi hoặc xác nhận nháp không sinh buổi học.
+8. Bộ môn chỉ được xác nhận lớp thuộc bộ môn mình; chưa xác nhận hoặc thay đổi giảng viên sau xác nhận thì không được khóa nháp tự động.
 
 
 ---

@@ -9,6 +9,7 @@ import {
   apiCountThongBaoChuaDoc,
   apiMarkThongBaoDaDoc
 } from '../../../utils/apiBienDongLich';
+import { resolveLichNhapNotification } from './XepLichTuDong/apiXepLich';
 import './AdminTopbar.css';
 
 export default function AdminTopbar({
@@ -122,18 +123,26 @@ export default function AdminTopbar({
       }
       setIsNotifOpen(false);
 
+      if (onNavigateTab && item.LoaiThongBao === 'ScheduleDraft' && item.MaDoiTuongLienQuan?.startsWith('XLS_')) {
+        const target = await resolveLichNhapNotification(item.MaDoiTuongLienQuan);
+        onNavigateTab(user?.role === 'BOMON' ? 'phanconggiangvien' : 'thoikhoabieu', target);
+        return;
+      }
       // Nếu có điều hướng đến tab duyệt yêu cầu
       if (onNavigateTab && (item.LoaiThongBao === 'NewRequest' || item.MaDoiTuongLienQuan?.startsWith('YCN_') || item.MaDoiTuongLienQuan?.startsWith('DKDB_'))) {
         onNavigateTab('duyetyeucau');
       }
     } catch (err) {
       console.error(err);
+      if (item.LoaiThongBao === 'ScheduleDraft') window.alert(err.message || 'Không thể mở lịch nháp.');
     }
   };
 
   // Helper render icon theo loại thông báo
   const renderNotifIcon = (type) => {
     switch (type) {
+      case 'ScheduleDraft':
+        return <Calendar size={18} className="notif-type-icon makeup" />;
       case 'NewRequest':
         return <AlertCircle size={18} className="notif-type-icon new-req" />;
       case 'Approved':

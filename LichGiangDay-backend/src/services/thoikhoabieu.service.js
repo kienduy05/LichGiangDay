@@ -1,7 +1,16 @@
 
 const db = require('../../config/db');
 const ScheduleConstraintService = require('../modules/xeplich/scheduleConstraint.service');
+const XepLichApproval = require('../modules/xeplich/xeplich.approval');
 const { getBlockedDates } = require('../modules/xeplich/xeplich.config');
+
+// Pending automatic schedules are visible for management, but remain JSON until lock.
+const withDraft = (member, official, pending) => {
+  const source = !official.length && member.TrangThaiPhanCong !== 'Locked' ? pending.get(member.MaLopHocPhan) : null;
+  const schedules = source ? source.rows : official;
+  return { ...member, schedules, hasSchedule: schedules.length > 0, SoBuoiDaXep: schedules.length,
+    isDraftSchedule: Boolean(source), MaPhienNhap: source?.maPhien || null };
+};
 
 class ThoiKhoaBieuService {
 
@@ -108,15 +117,8 @@ class ThoiKhoaBieuService {
     }
 
     // Gắn schedules vào từng LHP và lọc theo filterStatus
-    const processedLhp = lhpRows.map(lhp => {
-      const schedules = tkbMap[lhp.MaLopHocPhan] || [];
-      const hasSchedule = schedules.length > 0;
-      return {
-        ...lhp,
-        hasSchedule,
-        schedules
-      };
-    }).filter(lhp => {
+    const pending = XepLichApproval.draftMap();
+    const processedLhp = lhpRows.map(lhp => withDraft(lhp, tkbMap[lhp.MaLopHocPhan] || [], pending)).filter(lhp => {
       if (filterStatus === 'SCHEDULED') return lhp.hasSchedule;
       if (filterStatus === 'UNSCHEDULED') return !lhp.hasSchedule;
       return true;
@@ -249,16 +251,6 @@ class ThoiKhoaBieuService {
       params.push(maMonHoc.trim());
     }
 
-    if (maPhong && maPhong.trim() !== '') {
-      sql += ` AND tkb.MaPhong = ?`;
-      params.push(maPhong.trim());
-    }
-
-    if (thuTrongTuan && thuTrongTuan.trim() !== '') {
-      sql += ` AND tkb.ThuTrongTuan = ?`;
-      params.push(parseInt(thuTrongTuan, 10));
-    }
-
     if (search && search.trim() !== '') {
       sql += ` AND (lhp.MaLopHocPhan LIKE ? OR lhp.TenLopHocPhan LIKE ? OR mh.TenMonHoc LIKE ? OR mh.MaMonHoc LIKE ?)`;
       const kw = `%${search.trim()}%`;
@@ -308,15 +300,10 @@ class ThoiKhoaBieuService {
       tkbMap[tkb.MaLopHocPhan].push(tkb);
     }
 
-    return rows.map(lhp => {
-      const schedules = tkbMap[lhp.MaLopHocPhan] || [];
-      const hasSchedule = schedules.length > 0;
-      return {
-        ...lhp,
-        hasSchedule,
-        schedules
-      };
-    }).filter(lhp => {
+    const pending = XepLichApproval.draftMap();
+    return rows.map(lhp => withDraft(lhp, tkbMap[lhp.MaLopHocPhan] || [], pending)).filter(lhp => {
+      if ((maPhong || thuTrongTuan) && !lhp.schedules.some(slot => (!maPhong || slot.MaPhong === maPhong)
+        && (!thuTrongTuan || Number(slot.ThuTrongTuan) === Number(thuTrongTuan)))) return false;
       if (filterStatus === 'SCHEDULED') return lhp.hasSchedule;
       if (filterStatus === 'UNSCHEDULED') return !lhp.hasSchedule;
       return true;
@@ -406,13 +393,9 @@ class ThoiKhoaBieuService {
       ORDER BY tkb.ThuTrongTuan ASC, tkb.MaTiet ASC
     `, [maLopHocPhan]);
 
-    return {
-      lopHocPhan: {
-        ...lopHocPhan,
-        lopSinhViens: lsvList
-      },
-      schedules
-    };
+    const display = withDraft(lopHocPhan, schedules, XepLichApproval.draftMap());
+    return { lopHocPhan: { ...display, lopSinhViens: lsvList }, schedules: display.schedules,
+      MaPhienNhap: display.MaPhienNhap, isDraftSchedule: display.isDraftSchedule };
   };
 
   // ================================================================
@@ -712,6 +695,8 @@ class ThoiKhoaBieuService {
       throw new Error(`Không tìm thấy lớp học phần '${trimmedLhp}'.`);
     }
     const lhp = lhpRows[0];
+
+    if (XepLichApproval.pendingForClass(trimmedLhp).length) throw new Error('Lớp có lịch nháp đang chờ bộ môn xác nhận/khóa; không thể ghi lịch thủ công thay thế.');
 
     if (lhp.TrangThaiPhanCong === 'Locked') {
       throw new Error(`Thời khóa biểu của lớp '${lhp.TenLopHocPhan || lhp.MaLopHocPhan}' đã được KHÓA CHÍNH THỨC. Không thể thay đổi lịch học.`);
@@ -1320,7 +1305,10 @@ class ThoiKhoaBieuService {
 
     // Ghép schedules vào từng class
     const enhancedClasses = classRows.map(c => {
-      const schedules = schedulesByClass[c.MaLopHocPhan] || [];
+      const official = schedulesByClass[c.MaLopHocPhan] || [];
+      const draft = official.length ? [] : XepLichApproval.pendingForClass(c.MaLopHocPhan)
+        .flatMap(session => session.dong.filter(row => row.TrangThai === 'Draft' && row.MaLopHocPhan === c.MaLopHocPhan));
+      const schedules = official.length ? official : draft;
       const hasSchedule = schedules.length > 0;
       const isAssigned = !!c.MaGiangVien;
       const isLocked = c.TrangThaiPhanCong === 'Locked';
@@ -1328,6 +1316,8 @@ class ThoiKhoaBieuService {
         ...c,
         schedules,
         hasSchedule,
+        isDraftSchedule: !official.length && draft.length > 0,
+        SoBuoiDaXep: schedules.length,
         isAssigned,
         isLocked,
         statusGroup: !hasSchedule ? 'UNSCHEDULED' : (isLocked ? 'LOCKED' : (isAssigned ? 'ASSIGNED' : 'UNASSIGNED'))
@@ -1455,6 +1445,9 @@ class ThoiKhoaBieuService {
       ORDER BY tkb.ThuTrongTuan ASC, tkb.MaTiet ASC
     `, [maLopHocPhan.trim()]);
 
+    if (!targetSchedules.length) targetSchedules.push(...XepLichApproval.pendingForClass(maLopHocPhan.trim())
+      .flatMap(session => session.dong.filter(row => row.TrangThai === 'Draft' && row.MaLopHocPhan === maLopHocPhan.trim())));
+
     if (targetSchedules.length === 0) {
       return {
         targetClass,
@@ -1506,6 +1499,11 @@ class ThoiKhoaBieuService {
         AND lhp.MaLopHocPhan != ?
     `, [targetClass.MaHocKy, maLopHocPhan.trim()]);
 
+    const pending = await XepLichApproval.list({ role: 'ADMIN' }, targetClass.MaHocKy);
+    const officialIds = new Set(otherAssignedSchedules.map(row => row.MaLopHocPhan));
+    for (const draft of pending.filter(row => row.MaGiangVien && row.MaLopHocPhan !== maLopHocPhan.trim() && !officialIds.has(row.MaLopHocPhan))) {
+      otherAssignedSchedules.push(...draft.dong.map(row => ({ ...row, MaGiangVien: draft.MaGiangVien, TenLopHocPhan: draft.TenLopHocPhan })));
+    }
     // Gom lịch theo MaGiangVien
     const schedulesByLecturer = {};
     for (const item of otherAssignedSchedules) {
@@ -1924,44 +1922,31 @@ class ThoiKhoaBieuService {
   // 16. [ADMIN / PHONGDAOTAO] Khóa lịch Lớp học phần & Phát sinh BuoiHoc chính thức
   // ================================================================
   static lockScheduleForClass = async ({ maLopHocPhan } = {}) => {
-    if (!maLopHocPhan || !maLopHocPhan.trim()) {
-      throw new Error('Mã lớp học phần không được để trống.');
-    }
-
-    // 1. Kiểm tra Lớp học phần
-    const [lhpRows] = await db.query(`
-      SELECT lhp.MaLopHocPhan, lhp.TenLopHocPhan, lhp.MaGiangVien, lhp.MaBoMon,
-             lhp.NgayBatDau, lhp.NgayKetThuc, lhp.TrangThaiPhanCong,
-             gv.HoTen AS TenGiangVien
-      FROM LopHocPhan lhp
-      LEFT JOIN GiangVien gv ON lhp.MaGiangVien = gv.MaGiangVien
-      WHERE lhp.MaLopHocPhan = ? LIMIT 1
-    `, [maLopHocPhan.trim()]);
-
-    if (lhpRows.length === 0) {
-      throw new Error(`Lớp học phần '${maLopHocPhan}' không tồn tại.`);
-    }
-
-    const lhp = lhpRows[0];
-    if (!lhp.MaGiangVien) {
-      throw new Error(`Lớp học phần '${lhp.TenLopHocPhan || lhp.MaLopHocPhan}' chưa được Bộ môn phân công giảng viên. Vui lòng phân công giảng viên trước khi khóa lịch.`);
-    }
-
-    // 2. Lấy danh sách TKB của lớp này
-    const [schedules] = await db.query(`
-      SELECT MaThoiKhoaBieu, ThuTrongTuan, MaTiet, MaPhong, NgayBatDau, NgayKetThuc
-      FROM ThoiKhoaBieu
-      WHERE MaLopHocPhan = ?
-      ORDER BY ThuTrongTuan ASC, MaTiet ASC
-    `, [lhp.MaLopHocPhan]);
-
-    if (schedules.length === 0) {
-      throw new Error(`Lớp học phần '${lhp.TenLopHocPhan || lhp.MaLopHocPhan}' chưa có lịch học thời khóa biểu. Không thể khóa lịch.`);
-    }
-
+    if (!maLopHocPhan || !maLopHocPhan.trim()) throw new Error('Mã lớp học phần không được để trống.');
     const conn = await db.getConnection();
+    let draftLease;
     try {
       await conn.beginTransaction();
+      const [[term]] = await conn.query('SELECT MaHocKy FROM LopHocPhan WHERE MaLopHocPhan = ?', [maLopHocPhan.trim()]);
+      if (!term) throw new Error('Lớp học phần không tồn tại.');
+      await conn.query('SELECT MaHocKy FROM HocKy WHERE MaHocKy = ? FOR UPDATE', [term.MaHocKy]);
+      const [[lhp]] = await conn.query(`
+        SELECT lhp.MaLopHocPhan, lhp.TenLopHocPhan, lhp.MaGiangVien, lhp.MaBoMon,
+               lhp.NgayBatDau, lhp.NgayKetThuc, lhp.TrangThaiPhanCong, gv.HoTen AS TenGiangVien
+        FROM LopHocPhan lhp LEFT JOIN GiangVien gv ON gv.MaGiangVien = lhp.MaGiangVien
+        WHERE lhp.MaLopHocPhan = ? FOR UPDATE`, [maLopHocPhan.trim()]);
+      if (!lhp) throw new Error('Lớp học phần không tồn tại.');
+      if (lhp.TrangThaiPhanCong === 'Locked') {
+        await conn.commit();
+        return { success: true, maLopHocPhan: lhp.MaLopHocPhan, trangThai: 'Locked', message: 'Lớp đã khóa lịch trước đó.' };
+      }
+      if (!lhp.MaGiangVien) throw new Error('Cần phân công giảng viên trước khi khóa lịch.');
+      // Assignment is sufficient; lock revalidates the draft before writing schedules and lessons.
+      draftLease = XepLichApproval.acquireLockLease(lhp.MaLopHocPhan);
+      await XepLichApproval.materializeForLock(lhp, conn, draftLease?.id);
+      const [schedules] = await conn.query(`SELECT MaThoiKhoaBieu, ThuTrongTuan, MaTiet, MaPhong, NgayBatDau, NgayKetThuc
+        FROM ThoiKhoaBieu WHERE MaLopHocPhan = ? ORDER BY ThuTrongTuan, MaTiet`, [lhp.MaLopHocPhan]);
+      if (!schedules.length) throw new Error('Lớp chưa có lịch hoặc nháp đã gửi bộ môn để khóa.');
 
       // 3. Đánh dấu trạng thái 'Locked'
       await conn.query(`
@@ -1972,7 +1957,7 @@ class ThoiKhoaBieuService {
 
       await conn.query(`
         UPDATE ThoiKhoaBieu
-        SET TrangThai = 'Locked', ThoiGianBoMonXacNhan = NOW()
+        SET TrangThai = 'Locked', ThoiGianBoMonXacNhan = COALESCE(ThoiGianBoMonXacNhan, NOW())
         WHERE MaLopHocPhan = ?
       `, [lhp.MaLopHocPhan]);
 
@@ -2061,6 +2046,7 @@ class ThoiKhoaBieuService {
       await conn.rollback();
       throw err;
     } finally {
+      draftLease?.release();
       conn.release();
     }
   };
@@ -2102,8 +2088,17 @@ class ThoiKhoaBieuService {
 
     const [rows] = await db.query(sql, params);
 
+    const pending = await XepLichApproval.list({ role: 'ADMIN' }, maHocKy.trim());
+    const candidates = new Map(rows.map(row => [row.MaLopHocPhan, row]));
+    for (const row of pending.filter(row => row.MaGiangVien && (!maBoMon || row.MaBoMon === maBoMon))) {
+      if (maKhoa) {
+        const [[dept]] = await db.query('SELECT MaKhoa FROM BoMon WHERE MaBoMon = ?', [row.MaBoMon]);
+        if (dept?.MaKhoa !== maKhoa) continue;
+      }
+      candidates.set(row.MaLopHocPhan, row);
+    }
     let lockedCount = 0;
-    for (const row of rows) {
+    for (const row of candidates.values()) {
       await this.lockScheduleForClass({ maLopHocPhan: row.MaLopHocPhan });
       lockedCount++;
     }

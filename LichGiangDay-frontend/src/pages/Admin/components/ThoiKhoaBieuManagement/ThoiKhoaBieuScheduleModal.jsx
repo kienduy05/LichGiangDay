@@ -5,6 +5,7 @@ import {
   apiSaveSchedules,
   apiDeleteSchedulesByLopHocPhan
 } from '../../../../utils/apiThoiKhoaBieu';
+import { updateClassLichNhap, deleteLichNhap } from '../XepLichTuDong/apiXepLich';
 import { apiGetTietHocList } from '../../../../utils/api';
 import RoomGridPicker from './RoomGridPicker';
 import {
@@ -39,6 +40,7 @@ export default function ThoiKhoaBieuScheduleModal({
 
   const [tietHocList, setTietHocList] = useState([]);
   const [schedules, setSchedules] = useState([]);
+  const [draftSessionId, setDraftSessionId] = useState(null);
   const [activeSessionIndex, setActiveSessionIndex] = useState(0);
 
   // Load danh sách Tiết học và Dữ liệu lịch của lớp học phần
@@ -47,6 +49,7 @@ export default function ThoiKhoaBieuScheduleModal({
       loadInitialData();
     } else {
       setSchedules([]);
+      setDraftSessionId(null);
       setConflictResult(null);
       setError('');
     }
@@ -64,6 +67,7 @@ export default function ThoiKhoaBieuScheduleModal({
       // 2. Tải lịch hiện có của LHP
       const detailData = await apiGetThoiKhoaBieuByLopHocPhan(lopHocPhan.MaLopHocPhan);
       const existingSchedules = detailData?.schedules || [];
+      setDraftSessionId(detailData?.MaPhienNhap || null);
 
       if (existingSchedules.length > 0) {
         setSchedules(existingSchedules.map(s => ({
@@ -203,10 +207,8 @@ export default function ThoiKhoaBieuScheduleModal({
     setSaving(true);
     setError('');
     try {
-      await apiSaveSchedules({
-        maLopHocPhan: lopHocPhan.MaLopHocPhan,
-        schedules
-      });
+      if (draftSessionId) await updateClassLichNhap(draftSessionId, lopHocPhan.MaLopHocPhan, schedules);
+      else await apiSaveSchedules({ maLopHocPhan: lopHocPhan.MaLopHocPhan, schedules });
 
       if (onSuccess) {
         onSuccess('Lưu thời khóa biểu thành công!');
@@ -228,7 +230,8 @@ export default function ThoiKhoaBieuScheduleModal({
     setDeleting(true);
     setError('');
     try {
-      await apiDeleteSchedulesByLopHocPhan(lopHocPhan.MaLopHocPhan);
+      if (draftSessionId) await deleteLichNhap(draftSessionId, lopHocPhan.MaLopHocPhan);
+      else await apiDeleteSchedulesByLopHocPhan(lopHocPhan.MaLopHocPhan);
       if (onSuccess) {
         onSuccess('Đã xóa toàn bộ lịch thời khóa biểu của lớp học phần.');
       }
@@ -293,6 +296,7 @@ export default function ThoiKhoaBieuScheduleModal({
             </div>
           </div>
 
+          {draftSessionId && <div className="tkb-alert-box warning">Đang sửa lịch nháp. Lưu chỉ cập nhật nháp; PĐT khóa lịch mới sinh buổi học. LT 3 tín chỉ: 2 buổi/tuần; TH/BT và 2 tín chỉ: 1 buổi/tuần. Giữ cùng phòng, hai buổi cách ít nhất 2 ngày.</div>}
           {/* ERROR ALERT */}
           {error && (
             <div className="tkb-alert-box error">

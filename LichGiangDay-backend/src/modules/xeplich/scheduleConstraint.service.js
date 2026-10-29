@@ -27,7 +27,8 @@ class ScheduleConstraintService {
     ngayBatDau,
     ngayKetThuc,
     maPhien = null,
-    excludeMaDong = null
+    excludeMaDong = null,
+    draftRowsOverride = null
   }, connection = db) => {
     const conflicts = [];
     const thu = Number(thuTrongTuan);
@@ -171,7 +172,7 @@ class ScheduleConstraintService {
 
     if (maPhien) {
       const session = XepLichStore.get(maPhien);
-      const draftRows = (session?.dong || []).filter(row => (
+      const draftRows = (draftRowsOverride || session?.dong || []).filter(row => (
         row.TrangThai === 'Draft' && String(row.MaDong) !== String(excludeMaDong || '')
       ));
       const periodIds = [...new Set(draftRows.map(row => Number(row.MaTiet)).filter(Number.isInteger))];
