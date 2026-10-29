@@ -248,7 +248,7 @@ export function DetachLopSinhVienModal({ isOpen, lopHocPhan, currentList, onClos
     setLoading(true); setError('');
     try {
       await apiDetachLopSinhVien(lopHocPhan.MaLopHocPhan, selected);
-      setSuccess('Gỡ lớp sinh viên thành công!');
+      setSuccess('Đã xóa lớp sinh viên khỏi lớp học phần!');
       setTimeout(() => { onSuccess(); onClose(); }, 800);
     } catch (err) { setError(err.message); }
     finally { setLoading(false); }
@@ -260,12 +260,12 @@ export function DetachLopSinhVienModal({ isOpen, lopHocPhan, currentList, onClos
     <div className="modal-overlay">
       <div className="modal-card wide">
         <div className="modal-header">
-          <h3 className="modal-title">Gỡ Lớp Sinh Viên</h3>
+          <h3 className="modal-title">Xóa Lớp Sinh Viên Khỏi Lớp Học Phần</h3>
           <button onClick={onClose} className="modal-close-btn"><X size={20} /></button>
         </div>
 
         <div style={{ fontSize: '0.85rem', color: 'var(--admin-text-sub)', marginBottom: 12 }}>
-          Chọn lớp SV muốn gỡ khỏi <b style={{ color: 'var(--admin-text-main)' }}>{lopHocPhan?.MaLopHocPhan}</b>
+          Chọn lớp sinh viên muốn xóa khỏi lớp học phần <b style={{ color: 'var(--admin-text-main)' }}>{lopHocPhan?.MaLopHocPhan}</b>
           {selected.length > 0 && <span style={{ marginLeft: 8, fontWeight: 600, color: '#dc2626' }}>— Đã chọn: {selected.length}</span>}
         </div>
 
@@ -291,7 +291,7 @@ export function DetachLopSinhVienModal({ isOpen, lopHocPhan, currentList, onClos
         <div className="modal-footer">
           <button type="button" onClick={onClose} className="btn-cancel">Hủy</button>
           <button type="button" onClick={handleSave} className="btn-delete" disabled={loading || selected.length === 0}>
-            {loading ? <><Loader2 size={16} className="animate-spin" /> Đang gỡ...</> : `Gỡ ${selected.length} Lớp SV`}
+            {loading ? <><Loader2 size={16} className="animate-spin" /> Đang xóa...</> : `Xóa ${selected.length} lớp sinh viên`}
           </button>
         </div>
       </div>

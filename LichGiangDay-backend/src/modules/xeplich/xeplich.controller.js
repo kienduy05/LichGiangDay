@@ -42,6 +42,33 @@ class XepLichController {
     }
   };
 
+  listPhien = async (req, res) => {
+    try {
+      const result = await XepLichService.listPhien(req.query);
+      return res.status(200).json({ status: 'success', code: 200, metadata: result });
+    } catch (error) {
+      return sendError(res, error, 'Không thể lấy danh sách phiên xếp lịch.');
+    }
+  };
+
+  deletePhien = async (req, res) => {
+    try {
+      const result = await XepLichService.deletePhien(req.params.maPhien);
+      return res.status(200).json({ status: 'success', code: 200, metadata: result });
+    } catch (error) {
+      return sendError(res, error, 'Không thể xóa phiên xếp lịch.');
+    }
+  };
+
+  deletePhienBatch = async (req, res) => {
+    try {
+      const result = await XepLichService.deletePhienBatch(req.body?.maPhien);
+      return res.status(200).json({ status: 'success', code: 200, metadata: result });
+    } catch (error) {
+      return sendError(res, error, 'Không thể xóa các phiên xếp lịch.');
+    }
+  };
+
   getPhien = async (req, res) => {
     try {
       const result = await XepLichService.getPhien(req.params.maPhien);
