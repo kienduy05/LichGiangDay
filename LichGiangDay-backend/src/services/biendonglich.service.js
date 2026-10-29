@@ -308,6 +308,9 @@ class BienDongLichService {
             SET NgayHoc = NgayGocDoiCa,
                 MaTiet = MaTietGocDoiCa,
                 MaPhong = MaPhongGocDoiCa,
+                NgayGocDoiCa = NULL,
+                MaTietGocDoiCa = NULL,
+                MaPhongGocDoiCa = NULL,
                 TrangThai = 'Normal',
                 GhiChu = ?
             WHERE MaBuoiHoc = ?
@@ -349,6 +352,16 @@ class BienDongLichService {
       else if (ycn?.LoaiYeuCau === 'ABSENCE' || buoiHocTarget?.TrangThai === 'Absent') {
         if (buoiHocTarget) {
           await connection.query("UPDATE BuoiHoc SET TrangThai = 'Normal', DaDayBu = 0, GhiChu = ? WHERE MaBuoiHoc = ?", [lyDoDayDu, buoiHocTarget.MaBuoiHoc]);
+
+          // Nếu ca này đã từng đăng ký dạy bù trước đó, tự động hủy ca dạy bù phát sinh
+          const [linkedDkdb] = await connection.query(
+            "SELECT MaDangKyDayBu, MaBuoiHocTao FROM DangKyDayBu WHERE MaBuoiHocTao IN (SELECT MaBuoiHoc FROM BuoiHoc WHERE MaBuoiHocGoc = ?) OR MaYeuCauNghi = ?",
+            [buoiHocTarget.MaBuoiHoc, ycn?.MaYeuCauNghi || '']
+          );
+          for (const dk of linkedDkdb) {
+            await connection.query("UPDATE BuoiHoc SET TrangThai = 'Cancelled', GhiChu = ? WHERE MaBuoiHoc = ?", [lyDoDayDu, dk.MaBuoiHocTao]);
+            await connection.query("UPDATE DangKyDayBu SET TrangThai = 'Revoked', LyDoTuChoi = ? WHERE MaDangKyDayBu = ?", [lyDoDayDu, dk.MaDangKyDayBu]);
+          }
         }
         if (ycn) {
           await connection.query("UPDATE YeuCauNghi SET TrangThai = 'Revoked', LyDoTuChoi = ? WHERE MaYeuCauNghi = ?", [lyDoDayDu, ycn.MaYeuCauNghi]);

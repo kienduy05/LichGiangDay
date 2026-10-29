@@ -18,6 +18,18 @@ export default function RequestBaoNghiModal({ isOpen, onClose, classItem, onSucc
       return;
     }
 
+    if (classItem?.NgayHoc) {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const parts = String(classItem.NgayHoc).slice(0, 10).split('-').map(Number);
+      const sessionDate = new Date(parts[0], parts[1] - 1, parts[2]);
+      const diffDays = Math.round((sessionDate.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+      if (diffDays < 3) {
+        setError('Theo quy định, buổi học phải trước ít nhất 3 ngày tính từ hôm nay mới được phép gửi báo nghỉ.');
+        return;
+      }
+    }
+
     setLoading(true);
     setError('');
 

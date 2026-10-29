@@ -162,6 +162,17 @@ class DangKyDayBuService {
         throw err;
       }
 
+      const now = new Date();
+      const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const [dxYear, dxMonth, dxDate] = String(ngayDeXuat).slice(0, 10).split('-').map(Number);
+      const deXuatMidnight = new Date(dxYear, dxMonth - 1, dxDate).getTime();
+      const diffDeXuat = Math.round((deXuatMidnight - todayMidnight) / (24 * 60 * 60 * 1000));
+      if (diffDeXuat < 3) {
+        const err = new Error('Thời gian đăng ký dạy bù phải trước ít nhất 3 ngày tính từ hôm nay để kịp thông báo cho sinh viên.');
+        err.status = 400;
+        throw err;
+      }
+
       // 2. Khóa dòng phòng đề xuất để ngăn chặn race condition khi 2 yêu cầu gửi cùng lúc
       await connection.query('SELECT MaPhong FROM PhongHoc WHERE MaPhong = ? FOR UPDATE', [maPhong]);
 
