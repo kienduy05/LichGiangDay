@@ -598,14 +598,14 @@ export default function PhongHocManagement() {
                 <input
                   type="text"
                   className="modal-input"
-                  placeholder="Ví dụ: 101_A2, 202_A2, LAB01..."
+                  placeholder="Ví dụ: 101-A2, 202-A2, LAB01..."
                   value={formData.maPhong}
                   onChange={(e) => setFormData({ ...formData, maPhong: e.target.value })}
                   disabled={modalMode === 'edit'}
                   required
                 />
                 <span className="form-hint" style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '4px', display: 'block' }}>
-                  Format khuyến nghị: &#123;số_phòng&#125;_&#123;mã_tòa&#125; (VD: 101_A2 = Tầng 1 phòng 01 tòa A2)
+                  Format khuyến nghị: &#123;số_phòng&#125;-&#123;mã_tòa&#125; (VD: 101-A2 = Tầng 1 phòng 01 tòa A2)
                 </span>
               </div>
 

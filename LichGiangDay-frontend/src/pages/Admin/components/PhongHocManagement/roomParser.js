@@ -52,18 +52,27 @@ export function parseRoomCode(maPhong, maToaNha = '', tenPhong = '', loaiPhong =
   } else if (lastHyphenIndex !== -1) {
     const partBefore = safeMaPhong.substring(0, lastHyphenIndex).trim();
     const partAfter = safeMaPhong.substring(lastHyphenIndex + 1).trim();
-    // Nếu phần sau là số -> phần trước là tòa nhà (vd: A1-201)
-    if (/\d/.test(partAfter)) {
-      roomPart = partAfter;
-      if (!inferredBuildingCode) inferredBuildingCode = partBefore;
-    } else {
+    // Nếu partBefore bắt đầu bằng số hoặc P+số (VD: 201-A8, P201-A8, 101a-A2, 402-A3B) -> partBefore là phòng, partAfter là mã tòa
+    if (/^P?\d/i.test(partBefore)) {
       roomPart = partBefore;
       if (!inferredBuildingCode) inferredBuildingCode = partAfter;
+    } else {
+      // Ngược lại (VD: A1-201) -> partAfter là phòng, partBefore là mã tòa
+      roomPart = partAfter;
+      if (!inferredBuildingCode) inferredBuildingCode = partBefore;
+    }
+  } else {
+    // Trường hợp không có gạch nối hay gạch dưới (VD: 201A5 NCT(80), 202A5 NCT)
+    const m = safeMaPhong.match(/^P?(\d{1,4}[a-zA-Z]?)/i);
+    if (m) {
+      roomPart = m[1];
     }
   }
 
-  // 3. Tách số tầng & số phòng từ roomPart (chỉ lấy các chữ số)
-  const numericStr = roomPart.replace(/\D/g, '');
+  // 3. Tách số tầng & số phòng từ roomPart (chỉ lấy các chữ số đầu)
+  const cleanRoom = roomPart.replace(/^P/i, '');
+  const numericMatch = cleanRoom.match(/^(\d+)/);
+  const numericStr = numericMatch ? numericMatch[1] : '';
 
   if (!numericStr) {
     return {
@@ -91,7 +100,7 @@ export function parseRoomCode(maPhong, maToaNha = '', tenPhong = '', loaiPhong =
     };
   }
 
-  // Nếu có từ 3 chữ số trở lên (VD: '101' -> Tầng 1 Phòng 1; '202' -> Tầng 2 Phòng 2; '1005' -> Tầng 10 Phòng 5)
+  // Nếu có từ 3 chữ số trở lên (VD: '101' -> Tầng 1 Phòng 1; '202' -> Tầng 2 Phòng 2; '704' -> Tầng 7; '1005' -> Tầng 10)
   const roomNumStr = numericStr.slice(-2);
   const floorStr = numericStr.slice(0, -2);
 
@@ -205,10 +214,14 @@ export function groupRoomsByBuildingAndFloor(phongHocList = [], toaNhaList = [])
     };
   });
 
-  // Đưa Tòa chưa phân loại xuống cuối cùng, các tòa khác xếp theo Alphabet
+  // Đưa Tòa Trực tuyến và Tòa chưa phân loại xuống cuối cùng, các tòa khác xếp theo Alphabet
   resultBuildings.sort((a, b) => {
+    const isOnlineA = a.buildingCode.toUpperCase().includes('ONLINE');
+    const isOnlineB = b.buildingCode.toUpperCase().includes('ONLINE');
     if (a.buildingCode === 'UNCLASSIFIED') return 1;
     if (b.buildingCode === 'UNCLASSIFIED') return -1;
+    if (isOnlineA && !isOnlineB) return 1;
+    if (!isOnlineA && isOnlineB) return -1;
     return a.buildingCode.localeCompare(b.buildingCode);
   });
 

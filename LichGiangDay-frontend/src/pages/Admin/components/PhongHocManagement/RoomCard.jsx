@@ -23,7 +23,9 @@ export default function RoomCard({ room, onEdit, onDelete, onToggleStatus }) {
           <span className="room-card-name" title={room.TenPhong}>
             {room.TenPhong || room.MaPhong}
           </span>
-          <span className="room-card-code">({room.MaPhong})</span>
+          {room.MaPhong && room.TenPhong !== room.MaPhong && (
+            <span className="room-card-code">({room.MaPhong})</span>
+          )}
         </div>
         <span className={`room-status-dot-badge ${statusClass}`} title={`Trạng thái: ${statusText}`}>
           <span className="dot-indicator"></span>
