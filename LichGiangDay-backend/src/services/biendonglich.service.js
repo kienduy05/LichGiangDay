@@ -15,13 +15,29 @@ class BienDongLichService {
     const kpiSql = `
       SELECT 
         COUNT(DISTINCT bh.MaBuoiHoc) AS tongCaBienDong,
-        COUNT(DISTINCT CASE WHEN bh.TrangThai IN ('Absent', 'Absence_Pending') OR ycn.LoaiYeuCau = 'ABSENCE' THEN bh.MaBuoiHoc END) AS soCaBaoNghi,
-        COUNT(DISTINCT CASE WHEN (bh.TrangThai = 'Absent' OR ycn.LoaiYeuCau = 'ABSENCE') AND bh.DaDayBu = 1 THEN bh.MaBuoiHoc END) AS soCaDaBu,
-        COUNT(DISTINCT CASE WHEN (bh.TrangThai = 'Absent' OR ycn.LoaiYeuCau = 'ABSENCE') AND bh.DaDayBu = 0 AND DATEDIFF(CURRENT_DATE(), bh.NgayHoc) > 14 THEN bh.MaBuoiHoc END) AS soCaQuaHan14Ngay
+        COUNT(DISTINCT CASE 
+          WHEN bh.TrangThai IN ('Absent', 'Absence_Pending') 
+            OR (ycn.LoaiYeuCau = 'ABSENCE' AND ycn.TrangThai IN ('Approved', 'Pending')) 
+          THEN bh.MaBuoiHoc 
+        END) AS soCaBaoNghi,
+        COUNT(DISTINCT CASE 
+          WHEN (bh.TrangThai = 'Absent' OR (ycn.LoaiYeuCau = 'ABSENCE' AND ycn.TrangThai = 'Approved')) AND bh.DaDayBu = 1 
+          THEN bh.MaBuoiHoc 
+        END) AS soCaDaBu,
+        COUNT(DISTINCT CASE 
+          WHEN (bh.TrangThai = 'Absent' OR (ycn.LoaiYeuCau = 'ABSENCE' AND ycn.TrangThai = 'Approved')) AND bh.DaDayBu = 0 AND DATEDIFF(CURRENT_DATE(), bh.NgayHoc) > 14 
+          THEN bh.MaBuoiHoc 
+        END) AS soCaQuaHan14Ngay
       FROM BuoiHoc bh
       JOIN LopHocPhan lhp ON bh.MaLopHocPhan = lhp.MaLopHocPhan
       LEFT JOIN BoMon bm ON lhp.MaBoMon = bm.MaBoMon
-      LEFT JOIN YeuCauNghi ycn ON bh.MaBuoiHoc = ycn.MaBuoiHoc
+      LEFT JOIN YeuCauNghi ycn ON ycn.MaYeuCauNghi = (
+        SELECT y2.MaYeuCauNghi
+        FROM YeuCauNghi y2
+        WHERE y2.MaBuoiHoc = bh.MaBuoiHoc
+        ORDER BY y2.ThoiGianGui DESC, y2.MaYeuCauNghi DESC
+        LIMIT 1
+      )
       LEFT JOIN DangKyDayBu dkdb ON (bh.MaBuoiHoc = dkdb.MaBuoiHocTao OR ycn.MaYeuCauNghi = dkdb.MaYeuCauNghi)
       WHERE (bh.TrangThai != 'Normal' OR bh.LoaiBuoiHoc = 'Makeup' OR ycn.MaYeuCauNghi IS NOT NULL OR dkdb.MaDangKyDayBu IS NOT NULL)
       ${baseConditionSql ? `AND ${baseConditionSql}` : ''}
@@ -161,9 +177,19 @@ class BienDongLichService {
       LEFT JOIN PhongHoc phGoc ON bhGoc.MaPhong = phGoc.MaPhong
       LEFT JOIN GiangVien gv ON bh.MaGiangVien = gv.MaGiangVien
       LEFT JOIN GiangVien gvGoc ON bh.MaGiangVienGoc = gvGoc.MaGiangVien
-      LEFT JOIN YeuCauNghi ycn ON bh.MaBuoiHoc = ycn.MaBuoiHoc
+      LEFT JOIN YeuCauNghi ycn ON ycn.MaYeuCauNghi = (
+        SELECT y2.MaYeuCauNghi
+        FROM YeuCauNghi y2
+        WHERE y2.MaBuoiHoc = bh.MaBuoiHoc
+        ${loaiBienDong && loaiBienDong !== 'ALL' && loaiBienDong !== 'MAKEUP' ? `AND y2.LoaiYeuCau = ${db.escape(loaiBienDong)}` : ''}
+        ORDER BY y2.ThoiGianGui DESC, y2.MaYeuCauNghi DESC
+        LIMIT 1
+      )
       LEFT JOIN GiangVien gvDuyet ON ycn.MaGiangVienDuyet = gvDuyet.MaGiangVien
-      LEFT JOIN GiangVien gvThay ON (ycn.MaGiangVienDeXuat = gvThay.MaGiangVien OR bh.MaGiangVien = gvThay.MaGiangVien)
+      LEFT JOIN GiangVien gvThay ON gvThay.MaGiangVien = COALESCE(
+        ycn.MaGiangVienDeXuat,
+        CASE WHEN bh.TrangThai = 'Substituted' AND bh.MaGiangVienGoc IS NOT NULL THEN bh.MaGiangVien END
+      )
       LEFT JOIN DangKyDayBu dkdb ON (bh.MaBuoiHoc = dkdb.MaBuoiHocTao OR (ycn.MaYeuCauNghi IS NOT NULL AND ycn.MaYeuCauNghi = dkdb.MaYeuCauNghi AND bh.LoaiBuoiHoc != 'Makeup'))
       ${whereClause}
       ORDER BY ThoiGianSapXep DESC
@@ -203,8 +229,8 @@ class BienDongLichService {
         tenNguoiDuyet = 'Chờ Bộ môn duyệt';
       }
 
-      const isAbsent = r.TrangThaiBuoiHoc === 'Absent' || r.LoaiYeuCau === 'ABSENCE';
-      const overdueWarning = isAbsent && r.DaDayBu === 0 && r.SoNgayDaQua > 14;
+      const isAbsentApproved = r.TrangThaiBuoiHoc === 'Absent' || (r.LoaiYeuCau === 'ABSENCE' && (r.TrangThaiYeuCau === 'Approved' || r.trangThaiHienThi === 'Approved'));
+      const overdueWarning = isAbsentApproved && r.DaDayBu === 0 && r.SoNgayDaQua > 14;
 
       return {
         ...r,

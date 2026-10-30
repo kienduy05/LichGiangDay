@@ -98,6 +98,9 @@ export const normalizeBienDong = (r) => {
     ngayDuyet: r.ThoiGianDuyet ? (typeof r.ThoiGianDuyet === 'string' ? r.ThoiGianDuyet.slice(0, 10) : '') : (r.ngayDuyet || '-'),
     daDayBu: Boolean(r.DaDayBu),
     overdueWarning: Boolean(r.overdueWarning),
+    lyDo: r.LyDo || r.lyDo || '',
+    minhChungUrl: r.MinhChungUrl || r.minhChungUrl || '',
+    lyDoThuHoi: r.LyDoTuChoi || r.lyDoTuChoi || r.GhiChu || r.ghiChu || '',
     raw: r
   };
 };
@@ -706,9 +709,14 @@ export default function LichBienDongMonitor() {
 
               <div style={{ background: '#f8fafc', padding: '0.85rem', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.8125rem', color: '#334155' }}>
                 <div><strong>Đơn vị phê duyệt:</strong> {detailItem.nguoiDuyet} ({detailItem.ngayDuyet})</div>
+                {detailItem.lyDo && (
+                  <div style={{ marginTop: '0.4rem', color: '#475569' }}>
+                    <strong>Lý do gửi đơn:</strong> {detailItem.lyDo}
+                  </div>
+                )}
                 {detailItem.lyDoThuHoi && (
                   <div style={{ marginTop: '0.5rem', color: '#dc2626' }}>
-                    <strong>Lý do PĐT thu hồi:</strong> {detailItem.lyDoThuHoi}
+                    <strong>Lý do xử lý / thu hồi:</strong> {detailItem.lyDoThuHoi}
                   </div>
                 )}
               </div>
