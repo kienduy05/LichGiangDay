@@ -1,7 +1,5 @@
 
 const db = require('../../config/db');
-const ScheduleConstraintService = require('../modules/xeplich/scheduleConstraint.service');
-const { getBlockedDates } = require('../modules/xeplich/xeplich.config');
 
 class ThoiKhoaBieuService {
 
@@ -658,34 +656,6 @@ class ThoiKhoaBieuService {
       }
     }
 
-    // Dùng chung bộ quy tắc H1-H9 với chức năng xếp lịch tự động.
-    // Giữ các kiểm tra phía trên để tương thích cấu trúc lỗi cũ của frontend.
-    for (let i = 0; i < schedules.length; i++) {
-      const s = schedules[i];
-      const sharedResult = await ScheduleConstraintService.check({
-        maLopHocPhan,
-        thuTrongTuan: s.thuTrongTuan,
-        maTiet: s.maTiet,
-        maPhong: s.maPhong,
-        ngayBatDau: s.ngayBatDau || lhp.NgayBatDau,
-        ngayKetThuc: s.ngayKetThuc || lhp.NgayKetThuc
-      });
-      for (const conflict of sharedResult.conflicts) {
-        const duplicated = conflicts.some(existing =>
-          existing.scheduleIndex === i && existing.message === conflict.message
-        );
-        if (!duplicated) {
-          conflicts.push({
-            type: conflict.code,
-            code: conflict.code,
-            message: conflict.message,
-            scheduleIndex: i,
-            details: conflict.details
-          });
-        }
-      }
-    }
-
     return {
       hasConflict: conflicts.length > 0,
       conflicts
@@ -745,8 +715,10 @@ class ThoiKhoaBieuService {
       schedules
     });
 
-    // Mọi điều kiện cứng H1-H9 đều phải chặn lưu.
-    const blockingConflicts = conflictResult.conflicts;
+    // Nếu có xung đột phòng học hoặc bảo trì -> chặn lưu
+    const blockingConflicts = conflictResult.conflicts.filter(
+      c => c.type === 'ROOM_CONFLICT' || c.type === 'ROOM_MAINTENANCE' || c.type === 'INTERNAL_SLOT_DUPLICATE'
+    );
 
     if (blockingConflicts.length > 0) {
       throw new Error(blockingConflicts.map(c => c.message).join(' | '));
@@ -759,23 +731,6 @@ class ThoiKhoaBieuService {
 
       // Khóa theo học kỳ để tuần tự hóa các thao tác ghi lịch trong cùng phạm vi.
       await conn.query('SELECT MaHocKy FROM HocKy WHERE MaHocKy = ? FOR UPDATE', [lhp.MaHocKy]);
-
-      // Kiểm tra lại bên trong transaction để tránh hai người cùng chọn một
-      // phòng trống rồi ghi lịch đồng thời.
-      for (let i = 0; i < schedules.length; i++) {
-        const s = schedules[i];
-        const transactionCheck = await ScheduleConstraintService.check({
-          maLopHocPhan: trimmedLhp,
-          thuTrongTuan: s.thuTrongTuan,
-          maTiet: s.maTiet,
-          maPhong: s.maPhong,
-          ngayBatDau: s.ngayBatDau || lhp.NgayBatDau,
-          ngayKetThuc: s.ngayKetThuc || lhp.NgayKetThuc
-        }, conn);
-        if (!transactionCheck.valid) {
-          throw new Error(transactionCheck.conflicts.map(c => c.message).join(' | '));
-        }
-      }
 
       // Xóa các buổi học cũ của TKB lớp này
       await conn.query(`DELETE FROM BuoiHoc WHERE MaLopHocPhan = ?`, [trimmedLhp]);
@@ -1983,9 +1938,6 @@ class ThoiKhoaBieuService {
       );
 
       if (existingBh[0].count === 0) {
-        // Ngày nghỉ cụ thể không làm vô hiệu toàn bộ mẫu lịch tuần; khi sinh
-        // BuoiHoc, hệ thống bỏ qua đúng ngày đã khóa trong học kỳ.
-        const blockedDates = getBlockedDates();
 
         for (const sc of schedules) {
           const rawStart = String(sc.NgayBatDau || lhp.NgayBatDau).slice(0, 10);
@@ -2018,11 +1970,6 @@ class ThoiKhoaBieuService {
             const d = String(curr.getDate()).padStart(2, '0');
             const ngayHocStr = `${y}-${m}-${d}`;
             const dateCompact = `${y}${m}${d}`;
-
-            if (blockedDates.has(ngayHocStr)) {
-              curr.setDate(curr.getDate() + 7);
-              continue;
-            }
 
             const randHex = Math.random().toString(36).substring(2, 6).toUpperCase();
             const maBuoiHoc = `BH_${dateCompact}_${randHex}`;
