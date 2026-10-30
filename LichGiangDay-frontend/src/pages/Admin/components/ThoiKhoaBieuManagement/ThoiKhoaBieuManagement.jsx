@@ -14,12 +14,11 @@ import ThoiKhoaBieuTreeView from './ThoiKhoaBieuTreeView';
 import ThoiKhoaBieuTable from './ThoiKhoaBieuTable';
 import ThoiKhoaBieuGrid from './ThoiKhoaBieuGrid';
 import ThoiKhoaBieuScheduleModal from './ThoiKhoaBieuScheduleModal';
-import { XepLichTuDongModal } from '../XepLichTuDong';
 
 import {
   Calendar, LayoutGrid, List, RefreshCw, CheckCircle2,
   AlertCircle, School, Network, Search,
-  PanelLeftClose, PanelLeftOpen, Lock, Sparkles
+  PanelLeftClose, PanelLeftOpen, Lock
 } from 'lucide-react';
 import './ThoiKhoaBieuManagement.css';
 
@@ -55,7 +54,6 @@ export default function ThoiKhoaBieuManagement() {
   // 5. Schedule Modal states
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [selectedLhpForModal, setSelectedLhpForModal] = useState(null);
-  const [isAutoScheduleModalOpen, setIsAutoScheduleModalOpen] = useState(false);
 
   // 6. Toast message
   const [toastMessage, setToastMessage] = useState(null);
@@ -394,19 +392,6 @@ export default function ThoiKhoaBieuManagement() {
                 </div>
               )}
 
-              {viewMode === 'TABLE' && hasPermission('ThoiKhoaBieu', 'CanCreate') && (
-                <button
-                  type="button"
-                  className="tkb-btn-auto-schedule"
-                  onClick={() => setIsAutoScheduleModalOpen(true)}
-                  disabled={!selectedHocKy}
-                  title="Tạo phương án lịch nháp cho các lớp học phần chưa được xếp"
-                >
-                  <Sparkles size={15} />
-                  <span>Xếp lịch tự động</span>
-                </button>
-              )}
-
               {/* Nút Khóa lịch đồng loạt cho Admin / Phòng Đào Tạo */}
               {lopHocPhans.some(l => l.MaGiangVien && l.TrangThaiPhanCong !== 'Locked') && (
                 <button
@@ -472,21 +457,6 @@ export default function ThoiKhoaBieuManagement() {
           fetchTableData();
         }}
       />
-
-      {isAutoScheduleModalOpen && (
-        <XepLichTuDongModal
-          isOpen
-          onClose={() => setIsAutoScheduleModalOpen(false)}
-          maHocKy={selectedHocKy}
-          maKhoa={selectedKhoaId !== 'ALL' ? selectedKhoaId : ''}
-          maBoMon={selectedBoMonId !== 'ALL' ? selectedBoMonId : ''}
-          onApplied={(message) => {
-            showToast(message);
-            fetchTreeView();
-            fetchTableData();
-          }}
-        />
-      )}
 
     </div>
   );
