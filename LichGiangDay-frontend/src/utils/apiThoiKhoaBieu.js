@@ -184,3 +184,45 @@ export const apiLockAllSemesterSchedules = async ({ maHocKy, maKhoa = '', maBoMo
   if (!response.ok) throw new Error(data.message || 'Khóa toàn bộ thời khóa biểu thất bại.');
   return data;
 };
+
+// ================================================================
+// 13. IMPORT THỜI KHÓA BIỂU TOÀN DIỆN (LỚP HỌC PHẦN + LỊCH HỌC)
+// ================================================================
+
+/** 13a. Gửi file Excel lên backend để parse và đối soát xem trước */
+export const apiPreviewImportThoiKhoaBieu = async (file, maHocKy, maBoMon = '') => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('maHocKy', maHocKy);
+  if (maBoMon) formData.append('maBoMon', maBoMon);
+
+  const headers = {};
+  const userId = localStorage.getItem('userId');
+  const accessToken = localStorage.getItem('accessToken');
+  headers['x-api-key'] = 'lichgiangday_secret_apikey_2026';
+  if (userId) headers['x-client-id'] = userId;
+  if (accessToken) headers['authorization'] = `Bearer ${accessToken}`;
+
+  const response = await fetch(`${API_BASE_URL}/thoikhoabieu/preview-import`, {
+    method: 'POST',
+    headers,
+    body: formData
+  });
+
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Phân tích file Excel thất bại.');
+  return data.metadata || data;
+};
+
+/** 13b. Lưu danh sách Lớp học phần và các khung Thời khóa biểu vào CSDL */
+export const apiSaveImportedThoiKhoaBieu = async ({ maHocKy, maBoMon = '', classes = [] }) => {
+  const response = await fetch(`${API_BASE_URL}/thoikhoabieu/save-imported`, {
+    method: 'POST',
+    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ maHocKy, maBoMon, classes })
+  });
+
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Lưu Thời khóa biểu thất bại.');
+  return data.metadata || data;
+};

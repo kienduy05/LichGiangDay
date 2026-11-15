@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Building, Layers, School, Network, UserCheck,
   BookOpen, Users, BookMarked, CalendarDays, Clock,
   Calendar, CalendarRange, ShieldCheck, KeyRound, GraduationCap, X,
-  ClipboardCheck, Activity
+  ClipboardCheck, Activity, FileSpreadsheet
 } from 'lucide-react';
 import './AdminSidebar.css';
 
@@ -219,6 +219,16 @@ export default function AdminSidebar({ activeTab, setActiveTab, isOpenMobile, on
               >
                 <Calendar size={18} />
                 <span>Tạo & Xếp Thời Khóa Biểu</span>
+              </div>
+            )}
+
+            {hasPermission('ThoiKhoaBieu', 'CanCreate') && user?.role !== 'BOMON' && (
+              <div
+                className={`admin-nav-item ${activeTab === 'importthoikhoabieu' ? 'active' : ''}`}
+                onClick={() => handleNavClick('importthoikhoabieu')}
+              >
+                <FileSpreadsheet size={18} />
+                <span>Import Thời Khóa Biểu</span>
               </div>
             )}
 

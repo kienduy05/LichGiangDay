@@ -84,3 +84,29 @@ export const apiUnassignLecturerFromClass = async (maLopHocPhan) => {
   if (!response.ok) throw new Error(data.message || 'Hủy phân công giảng viên thất bại.');
   return data;
 };
+
+/** 7. Chạy mô phỏng Phân công giảng viên tự động (Preview) */
+export const apiPreviewAutoAssign = async ({ maHocKy, scope = 'ONLY_UNASSIGNED' } = {}) => {
+  const url = `${API_BASE_URL}/thoikhoabieu/bomon/auto-assign/preview`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ maHocKy, scope })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Chạy thuật toán phân công tự động thất bại.');
+  return data.metadata;
+};
+
+/** 8. Áp dụng kết quả Phân công giảng viên tự động vào Database (Apply) */
+export const apiApplyAutoAssign = async ({ maHocKy, assignments = [] } = {}) => {
+  const url = `${API_BASE_URL}/thoikhoabieu/bomon/auto-assign/apply`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ maHocKy, assignments })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Áp dụng phân công tự động thất bại.');
+  return data.metadata;
+};

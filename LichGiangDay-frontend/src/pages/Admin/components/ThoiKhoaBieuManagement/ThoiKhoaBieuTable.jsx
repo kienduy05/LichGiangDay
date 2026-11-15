@@ -2,7 +2,7 @@ import React from 'react';
 import {
   Calendar, Clock, Building2, User, Users,
   Edit3, Plus, Trash2, CheckCircle2, AlertCircle,
-  BookOpen, Layers, Sparkles, Lock, Eye
+  BookOpen, Layers, Sparkles, Lock, Eye, Loader2
 } from 'lucide-react';
 import './ThoiKhoaBieuComponents.css';
 
@@ -11,9 +11,31 @@ const THU_MAP = {
   5: 'Thứ 5', 6: 'Thứ 6', 7: 'Thứ 7', 8: 'Chủ nhật'
 };
 
+// Helper: Định dạng khoảng ngày hiển thị dạng DD/MM - DD/MM/YYYY
+const formatScheduleDateRange = (startDate, endDate) => {
+  if (!startDate && !endDate) return null;
+  const sStr = String(startDate || '').slice(0, 10);
+  const eStr = String(endDate || '').slice(0, 10);
+  if (!sStr && !eStr) return null;
+
+  const sParts = sStr.split('-');
+  const eParts = eStr.split('-');
+
+  if (sParts.length === 3 && eParts.length === 3) {
+    if (sParts[0] === eParts[0]) {
+      // Cùng năm: 11/08 - 31/08/2025
+      return `${sParts[2]}/${sParts[1]} - ${eParts[2]}/${eParts[1]}/${eParts[0]}`;
+    }
+    // Khác năm: 15/12/2025 - 15/01/2026
+    return `${sParts[2]}/${sParts[1]}/${sParts[0]} - ${eParts[2]}/${eParts[1]}/${eParts[0]}`;
+  }
+  return `${sStr} - ${eStr}`;
+};
+
 export default function ThoiKhoaBieuTable({
   lopHocPhans = [],
   loading = false,
+  lockingLhpId = null,
   onScheduleClick,
   onDeleteSchedule,
   onLockSchedule,
@@ -140,6 +162,7 @@ export default function ThoiKhoaBieuTable({
                       <div className="schedule-badges-list">
                         {lhp.schedules.map((s, sIdx) => {
                           const thuStr = THU_MAP[s.ThuTrongTuan] || `Thứ ${s.ThuTrongTuan}`;
+                          const dateRangeStr = formatScheduleDateRange(s.NgayBatDau || lhp.NgayBatDau, s.NgayKetThuc || lhp.NgayKetThuc);
                           return (
                             <div key={s.MaThoiKhoaBieu || sIdx} className="schedule-badge-chip">
                               <span className="chip-thu">{thuStr}</span>
@@ -148,6 +171,12 @@ export default function ThoiKhoaBieuTable({
                                 <Building2 size={11} />
                                 <strong>{s.TenPhong || s.MaPhong}</strong>
                               </span>
+                              {dateRangeStr && (
+                                <span className="chip-date" title={`Thời gian học: ${dateRangeStr}`}>
+                                  <Calendar size={11} />
+                                  <span>{dateRangeStr}</span>
+                                </span>
+                              )}
                             </div>
                           );
                         })}
@@ -201,13 +230,28 @@ export default function ThoiKhoaBieuTable({
                           color: '#ffffff',
                           padding: '0.35rem 0.65rem',
                           fontWeight: 700,
-                          boxShadow: '0 1px 4px rgba(124, 58, 237, 0.25)'
+                          boxShadow: '0 1px 4px rgba(124, 58, 237, 0.25)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          opacity: lockingLhpId === lhp.MaLopHocPhan ? 0.75 : 1,
+                          cursor: lockingLhpId === lhp.MaLopHocPhan ? 'wait' : 'pointer'
                         }}
                         onClick={() => onLockSchedule && onLockSchedule(lhp)}
+                        disabled={lockingLhpId === lhp.MaLopHocPhan}
                         title="Bộ môn đã phân công: Chốt & Khóa lịch lớp học phần (Khóa vĩnh viễn)"
                       >
-                        <Lock size={13} />
-                        <span>Khóa lịch</span>
+                        {lockingLhpId === lhp.MaLopHocPhan ? (
+                          <>
+                            <Loader2 size={13} className="animate-spin" />
+                            <span>Đang khóa...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Lock size={13} />
+                            <span>Khóa lịch</span>
+                          </>
+                        )}
                       </button>
                     )}
 

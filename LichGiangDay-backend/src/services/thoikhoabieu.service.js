@@ -1,5 +1,6 @@
 
 const db = require('../../config/db');
+const XLSX = require('xlsx');
 
 class ThoiKhoaBieuService {
 
@@ -43,8 +44,8 @@ class ThoiKhoaBieuService {
         bm.MaKhoa,
         lhp.MaGiangVien,
         gv.HoTen AS TenGiangVien,
-        lhp.NgayBatDau,
-        lhp.NgayKetThuc,
+        DATE_FORMAT(lhp.NgayBatDau, '%Y-%m-%d') AS NgayBatDau,
+        DATE_FORMAT(lhp.NgayKetThuc, '%Y-%m-%d') AS NgayKetThuc,
         lhp.SoTuan,
         COUNT(DISTINCT tkb.MaThoiKhoaBieu) AS SoBuoiDaXep
       FROM LopHocPhan lhp
@@ -87,7 +88,9 @@ class ThoiKhoaBieuService {
         th.TenTiet,
         tkb.MaPhong,
         ph.TenPhong,
-        ph.MaToaNha
+        ph.MaToaNha,
+        DATE_FORMAT(tkb.NgayBatDau, '%Y-%m-%d') AS NgayBatDau,
+        DATE_FORMAT(tkb.NgayKetThuc, '%Y-%m-%d') AS NgayKetThuc
       FROM ThoiKhoaBieu tkb
       JOIN LopHocPhan lhp ON tkb.MaLopHocPhan = lhp.MaLopHocPhan
       LEFT JOIN TietHoc th ON tkb.MaTiet = th.MaTiet
@@ -288,8 +291,8 @@ class ThoiKhoaBieuService {
         ph.MaToaNha,
         ph.SucChua,
         ph.LoaiPhong,
-        tkb.NgayBatDau,
-        tkb.NgayKetThuc
+        DATE_FORMAT(tkb.NgayBatDau, '%Y-%m-%d') AS NgayBatDau,
+        DATE_FORMAT(tkb.NgayKetThuc, '%Y-%m-%d') AS NgayKetThuc
       FROM ThoiKhoaBieu tkb
       JOIN LopHocPhan lhp ON tkb.MaLopHocPhan = lhp.MaLopHocPhan
       LEFT JOIN TietHoc th ON tkb.MaTiet = th.MaTiet
@@ -391,8 +394,8 @@ class ThoiKhoaBieuService {
         ph.SucChua,
         ph.LoaiPhong,
         ph.TrangThai AS TrangThaiPhong,
-        tkb.NgayBatDau,
-        tkb.NgayKetThuc,
+        DATE_FORMAT(tkb.NgayBatDau, '%Y-%m-%d') AS NgayBatDau,
+        DATE_FORMAT(tkb.NgayKetThuc, '%Y-%m-%d') AS NgayKetThuc,
         tkb.TrangThai,
         tkb.ThoiGianSuaDoi,
         tkb.ThoiGianBoMonXacNhan
@@ -1308,18 +1311,18 @@ class ThoiKhoaBieuService {
       filteredList = enhancedClasses.filter(c => !c.hasSchedule);
     }
 
-    // Thống kê KPIs cho Bộ môn
+    // Thống kê KPIs cho Bộ môn (Chỉ tính phân công cho các lớp đã có TKB)
     const totalClasses = enhancedClasses.length;
     const scheduledCount = enhancedClasses.filter(c => c.hasSchedule).length;
-    const assignedCount = enhancedClasses.filter(c => c.isAssigned).length;
-    const lockedCount = enhancedClasses.filter(c => c.isLocked).length;
+    const assignedCount = enhancedClasses.filter(c => c.hasSchedule && c.isAssigned).length;
+    const lockedCount = enhancedClasses.filter(c => c.hasSchedule && c.isLocked).length;
     const unassignedScheduledCount = enhancedClasses.filter(c => c.hasSchedule && !c.isAssigned).length;
     const unscheduledCount = enhancedClasses.filter(c => !c.hasSchedule).length;
 
-    // Đếm số giảng viên trong bộ môn đã nhận ít nhất 1 lớp
+    // Đếm số giảng viên trong bộ môn đã nhận ít nhất 1 lớp có lịch TKB
     const assignedLecturerSet = new Set();
     enhancedClasses.forEach(c => {
-      if (c.MaGiangVien) assignedLecturerSet.add(c.MaGiangVien);
+      if (c.hasSchedule && c.MaGiangVien) assignedLecturerSet.add(c.MaGiangVien);
     });
 
     const [totalGvRows] = await db.query(
@@ -2060,6 +2063,1235 @@ class ThoiKhoaBieuService {
       lockedCount,
       message: `Đã chốt & khóa thành công ${lockedCount} lớp học phần đã được phân công trong học kỳ.`
     };
+  };
+
+  // ================================================================
+  // 19. IMPORT THỜI KHÓA BIỂU TOÀN DIỆN (LỚP HỌC PHẦN + LỊCH HỌC)
+  // ================================================================
+
+  /**
+   * Chuẩn hóa chuỗi tiết từ Excel thành MaTiet (1..4) khớp với bảng TietHoc
+   */
+  static mapExcelTietToMaTiet(rawTiet) {
+    if (!rawTiet) return null;
+    const str = String(rawTiet).replace(/\s+/g, '');
+    if (str.includes('1,2,3') || str === '1-3' || str.startsWith('1,')) return 1;
+    if (str.includes('4,5,6') || str === '4-6' || str.startsWith('4,')) return 2;
+    if (str.includes('7,8,9') || str === '7-9' || str.startsWith('7,')) return 3;
+    if (str.includes('10,11,12') || str === '10-12' || str.startsWith('10,')) return 4;
+
+    const firstNum = parseInt(str.match(/\d+/)?.[0], 10);
+    if (firstNum >= 1 && firstNum <= 3) return 1;
+    if (firstNum >= 4 && firstNum <= 6) return 2;
+    if (firstNum >= 7 && firstNum <= 9) return 3;
+    if (firstNum >= 10 && firstNum <= 12) return 4;
+    return null;
+  }
+
+  /**
+   * Phân tích khoảng thời gian (DD/MM-DD/MM/YY) thành YYYY-MM-DD
+   */
+  static parseDateRange(str, defaultStart, defaultEnd) {
+    if (!str) return { startDate: defaultStart, endDate: defaultEnd };
+    let cleaned = String(str)
+      .replace(/[\r\n\t]+/g, ' ')
+      .trim()
+      .replace(/\s*(?:–|—|->|đến|den)\s*/gi, '-')
+      .replace(/\s+/g, '');
+
+    const m = cleaned.match(/^(\d{1,2})[\/\.](\d{1,2})(?:[\/\.](\d{2,4}))?-(\d{1,2})[\/\.](\d{1,2})(?:[\/\.](\d{2,4}))?$/);
+    if (!m) return { startDate: defaultStart, endDate: defaultEnd };
+
+    let [, sD, sM, sY, eD, eM, eY] = m;
+    const fallbackYear = (defaultStart && String(defaultStart).slice(0, 4)) || new Date().getFullYear().toString();
+
+    if (eY && eY.length === 2) eY = '20' + eY;
+    if (!eY) eY = fallbackYear;
+
+    if (sY && sY.length === 2) sY = '20' + sY;
+    if (!sY) sY = eY;
+
+    const startDate = `${sY}-${String(sM).padStart(2, '0')}-${String(sD).padStart(2, '0')}`;
+    const endDate = `${eY}-${String(eM).padStart(2, '0')}-${String(eD).padStart(2, '0')}`;
+    return { startDate, endDate };
+  }
+
+  /**
+   * Chuẩn hóa mã phòng học, nhận diện phòng trực tuyến -> ONLINE
+   * Xử lý triệt để lỗi dấu cách, xuống dòng trong Excel (VD: "603- A7", "603 - A7", "603\nA7" -> "603-A7")
+   * Riêng phòng có hậu tố NCT (VD: "201A5 NCT(80)", "202A5 NCT") thì giữ nguyên khoảng trắng
+   */
+  static normalizeRoom(raw) {
+    if (!raw) return '';
+    let s = String(raw).replace(/[\r\n\t]+/g, ' ').trim();
+    if (/trực\s*tuyến|online|zoom|meet|teams/i.test(s)) {
+      return 'ONLINE';
+    }
+    // Bỏ tiền tố Phòng, P., P (nếu sau đó là số phòng)
+    s = s.replace(/^(?:phòng|p)[\.\s]*(?=\d)/iu, '');
+
+    // RIÊNG VỚI CÁC PHÒNG CÓ HẬU TỐ NCT (VD: "201A5 NCT(80)", "202A5 NCT", "203A5 NCT"):
+    // Chuẩn hóa về đúng định dạng: {số_phòng}A5 NCT
+    if (/NCT/i.test(s)) {
+      s = s.replace(/[_/\\–—]/g, '-').replace(/\s*-\s*/g, '-');
+      s = s.replace(/\s+/g, ' ').trim().toUpperCase();
+      s = s.replace(/^(\d+)\s*[- ]\s*A5\s*[- ]\s*NCT/i, '$1A5 NCT');
+      s = s.replace(/\s+\(/g, '(');
+      return s;
+    }
+
+    // Với các phòng thông thường (VD: "603- A7", "104-A5", "406-A3"):
+    // Thay thế các ký tự gạch nối đặc biệt hoặc gạch dưới, gạch chéo
+    s = s.replace(/[_/\\–—]/g, '-');
+    // Xóa sạch khoảng trắng xung quanh dấu gạch ngang (VD: "603- A7" -> "603-A7")
+    s = s.replace(/\s*-\s*/g, '-');
+    // Nếu giữa số phòng và tên tòa chỉ có dấu cách (VD: "603 A7" -> "603-A7")
+    s = s.replace(/^(\d+)\s+([a-zA-Z0-9]+.*)$/, '$1-$2');
+    // Xóa mọi khoảng trắng còn sót lại và viết hoa
+    s = s.replace(/\s+/g, '').toUpperCase();
+    return s;
+  }
+
+  /**
+   * Sinh mã lớp học phần chuẩn: [Mã học phần]-[Hậu tố lớp tín chỉ]
+   * Ví dụ:
+   *  - IT1.233.3 và An ninh mạng-1-1-25(N01) -> IT1.233.3-1-1-25(N01)
+   *  - IT1.233.3 và An ninh mạng-1-1-25(N01.BT1) -> IT1.233.3-1-1-25(N01.BT1)
+   */
+  static generateMaLopHocPhan(cleanMaMonHoc, lopMonTinChi) {
+    if (!lopMonTinChi) return cleanMaMonHoc || '';
+    const safeLop = String(lopMonTinChi).trim();
+    const match = safeLop.match(/-\s*(\d+.*)$/);
+    let suffix = '';
+    if (match) {
+      suffix = `-${match[1].trim()}`;
+    } else if (safeLop.includes('-')) {
+      suffix = `-${safeLop.substring(safeLop.indexOf('-') + 1).trim()}`;
+    } else {
+      suffix = `-${safeLop}`;
+    }
+    return cleanMaMonHoc ? `${cleanMaMonHoc}${suffix}` : suffix.replace(/^-/, '');
+  }
+
+  /**
+   * Đọc và phân tích file Excel Thời khóa biểu, đối soát CSDL và trả về danh sách xem trước
+   */
+  static previewImportThoiKhoaBieu = async ({ fileBuffer, maHocKy, maBoMon = '' }) => {
+    if (!maHocKy || !maHocKy.trim()) {
+      throw new Error('Vui lòng chọn Học kỳ trước khi tải file.');
+    }
+
+    // 1. Lấy thông tin học kỳ
+    const [hkRows] = await db.query(
+      `SELECT MaHocKy, TenHocKy, NamHoc, NgayBatDau, NgayKetThuc FROM HocKy WHERE MaHocKy = ? LIMIT 1`,
+      [maHocKy]
+    );
+    if (hkRows.length === 0) {
+      throw new Error(`Không tìm thấy học kỳ '${maHocKy}'.`);
+    }
+    const hocKy = hkRows[0];
+    const defaultStart = hocKy.NgayBatDau ? String(hocKy.NgayBatDau).slice(0, 10) : '2025-08-11';
+    const defaultEnd = hocKy.NgayKetThuc ? String(hocKy.NgayKetThuc).slice(0, 10) : '2025-12-31';
+
+    // 2. Đảm bảo phòng ONLINE luôn tồn tại trong CSDL để không lỗi khóa ngoại
+    try {
+      await db.query(`
+        INSERT IGNORE INTO ToaNha (MaToaNha, TenToaNha, CoSo) 
+        VALUES ('ONLINE', 'Trực tuyến', 'Hà Nội')
+      `);
+      await db.query(`
+        INSERT IGNORE INTO PhongHoc (MaPhong, TenPhong, MaToaNha, SucChua, LoaiPhong, TrangThai) 
+        VALUES ('ONLINE', 'Phòng học trực tuyến (Zoom/Teams)', 'ONLINE', 9999, 'LT', 'Available')
+      `);
+    } catch (e) {
+      // Bỏ qua nếu đã tồn tại
+    }
+
+    // 3. Tải danh mục Môn học, Phòng học, Bộ môn từ CSDL
+    const [monHocRows] = await db.query(`SELECT MaMonHoc, TenMonHoc, SoTinChi, MaBoMon FROM MonHoc`);
+    const monHocMap = new Map();
+    monHocRows.forEach(m => monHocMap.set(m.MaMonHoc, m));
+
+    const [phongHocRows] = await db.query(`SELECT MaPhong, TenPhong, SucChua, LoaiPhong, TrangThai FROM PhongHoc`);
+    const phongHocMap = new Map();
+    phongHocRows.forEach(p => phongHocMap.set(p.MaPhong, p));
+
+    const [boMonRows] = await db.query(`SELECT MaBoMon, TenBoMon FROM BoMon`);
+    const boMonList = boMonRows;
+
+    const [existingLhpRows] = await db.query(
+      `SELECT MaLopHocPhan, TenLopHocPhan FROM LopHocPhan WHERE MaHocKy = ?`,
+      [maHocKy]
+    );
+    const existingLhpMap = new Map();
+    existingLhpRows.forEach(l => existingLhpMap.set(l.MaLopHocPhan, l));
+
+    // Lấy toàn bộ các khung TKB hiện có trong học kỳ để quét trùng lịch phòng học (Room Conflict)
+    const [existingScheduleRows] = await db.query(`
+      SELECT 
+        tkb.MaThoiKhoaBieu,
+        tkb.MaLopHocPhan,
+        lhp.TenLopHocPhan,
+        tkb.ThuTrongTuan,
+        tkb.MaTiet,
+        tkb.MaPhong,
+        tkb.NgayBatDau,
+        tkb.NgayKetThuc
+      FROM ThoiKhoaBieu tkb
+      JOIN LopHocPhan lhp ON tkb.MaLopHocPhan = lhp.MaLopHocPhan
+      WHERE lhp.MaHocKy = ?
+    `, [maHocKy]);
+
+    // Hàm tiện ích kiểm tra giao thoa khoảng thời gian [NgayBatDau, NgayKetThuc]
+    const isDateOverlap = (s1, e1, s2, e2) => {
+      if (!s1 || !e1 || !s2 || !e2) return true;
+      const dS1 = new Date(s1).getTime();
+      const dE1 = new Date(e1).getTime();
+      const dS2 = new Date(s2).getTime();
+      const dE2 = new Date(e2).getTime();
+      return !(dE1 < dS2 || dS1 > dE2);
+    };
+
+    // 4. Đọc dữ liệu từ file Excel
+    const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+
+    if (!rows || rows.length === 0) {
+      throw new Error('File Excel không có dữ liệu.');
+    }
+
+    // Hàm tiện ích chuẩn hóa chuỗi ô Excel
+    const norm = (s) => String(s || '').replace(/[\r\n\s]+/g, ' ').trim().toLowerCase();
+
+    // 5. Nhận diện Bộ môn từ các dòng tiêu đề (Preamble rows)
+    let detectedBoMon = maBoMon || '';
+    for (let r = 0; r < Math.min(10, rows.length); r++) {
+      const rowStr = rows[r].map(c => norm(c)).join(' ');
+      if (rowStr.includes('đơn vị đảm nhận') || rowStr.includes('bộ môn')) {
+        if (rowStr.includes('mạng') || rowStr.includes('httt') || rowStr.includes('mht')) {
+          detectedBoMon = 'MHT';
+        } else if (rowStr.includes('phần mềm') || rowStr.includes('cnpm') || rowStr.includes('cpm')) {
+          detectedBoMon = 'CPM';
+        } else if (rowStr.includes('khoa học máy tính') || rowStr.includes('khmt')) {
+          detectedBoMon = 'KHM';
+        }
+      }
+    }
+    if (!detectedBoMon && boMonList.length > 0) {
+      detectedBoMon = boMonList[0].MaBoMon;
+    }
+
+    // 6. Tìm dòng tiêu đề bảng (Header Row)
+    let headerRowIdx = -1;
+    for (let r = 0; r < Math.min(20, rows.length); r++) {
+      const rowStr = rows[r].map(c => norm(c)).join('|');
+      if ((rowStr.includes('lớp môn tín chỉ') || rowStr.includes('lớp học phần') || rowStr.includes('lớp môn')) &&
+        (rowStr.includes('mã học phần') || rowStr.includes('mã môn') || rowStr.includes('stt') || rowStr.includes('thứ'))) {
+        headerRowIdx = r;
+        break;
+      }
+    }
+
+    if (headerRowIdx === -1) {
+      throw new Error('Không nhận diện được dòng tiêu đề bảng trong file Excel. Vui lòng kiểm tra lại cấu trúc file (cần có các cột Mã học phần, Lớp môn tín chỉ, Thời gian, Thứ...).');
+    }
+
+    // Kiểm tra xem tiêu đề bảng là 1 dòng hay 2 dòng (dòng dưới chứa Tiết, Phòng)
+    const nextRowStr = headerRowIdx + 1 < rows.length ? rows[headerRowIdx + 1].map(c => norm(c)).join('|') : '';
+    const isTwoRowHeader = nextRowStr.includes('tiết') || nextRowStr.includes('phòng');
+    const dataStartIdx = isTwoRowHeader ? headerRowIdx + 2 : headerRowIdx + 1;
+
+    // Quét ánh xạ cột
+    let colStt = -1, colMaHocPhan = -1, colSoTC = -1, colLopMon = -1;
+    let colSvDuKien = -1, colSvDangKy = -1, colKieuHoc = -1, colGiangVien = -1;
+    let colThoiGian = -1, colSoTuan = -1, colKhoa = -1;
+
+    const maxCols = Math.max(rows[headerRowIdx].length, isTwoRowHeader && rows[headerRowIdx + 1] ? rows[headerRowIdx + 1].length : 0);
+
+    for (let c = 0; c < maxCols; c++) {
+      const cell1 = norm(rows[headerRowIdx]?.[c]);
+      const cell2 = isTwoRowHeader ? norm(rows[headerRowIdx + 1]?.[c]) : '';
+      const combined = `${cell1} ${cell2}`.trim();
+
+      // Lưu ý: Kiểm tra colLopMon TRƯỚC colSoTC để tránh "Lớp môn tín chỉ" bị nhận nhầm thành Số TC
+      if (colLopMon === -1 && (combined.includes('lớp môn tín chỉ') || combined.includes('lớp học phần') || combined.includes('lớp môn') || (combined.includes('tên lớp') && !combined.includes('sinh viên')))) {
+        colLopMon = c;
+      } else if (colMaHocPhan === -1 && (combined.includes('mã học phần') || combined.includes('mã môn') || combined.includes('mã hp') || combined === 'mhp')) {
+        colMaHocPhan = c;
+      } else if (colSoTC === -1 && (combined === 'số tc' || combined === 'stc' || combined.includes('số tín chỉ') || (combined.includes('tín chỉ') && !combined.includes('lớp') && !combined.includes('môn')))) {
+        colSoTC = c;
+      } else if (colStt === -1 && (combined === 'stt' || combined.startsWith('stt ') || combined.startsWith('stt.'))) {
+        colStt = c;
+      } else if (combined.includes('sv dk') || combined.includes('sv dự kiến') || combined.includes('svdk')) {
+        if (colSvDuKien === -1) colSvDuKien = c;
+        else colSvDangKy = c;
+      } else if (combined.includes('sv đk') || combined.includes('sv đăng ký') || combined.includes('đăng ký')) {
+        colSvDangKy = c;
+      } else if (colKieuHoc === -1 && (combined.includes('kiểu học') || combined.includes('loại học') || combined.includes('hình thức'))) {
+        colKieuHoc = c;
+      } else if (colGiangVien === -1 && (combined.includes('giảng viên') || combined.includes('cán bộ') || combined.includes('gv'))) {
+        colGiangVien = c;
+      } else if (colThoiGian === -1 && (combined.includes('thời gian') || combined.includes('tuần học') || combined.includes('đợt học') || combined.includes('ngày học'))) {
+        colThoiGian = c;
+      } else if (colSoTuan === -1 && (combined.includes('số tuần') || combined === 'tuần')) {
+        colSoTuan = c;
+      } else if (colKhoa === -1 && (combined === 'khóa' || combined.includes('khóa học') || combined === 'k')) {
+        colKhoa = c;
+      }
+    }
+
+    // Nhận diện các cột Thứ (Thứ 2..Thứ 7)
+    const weekdayColumns = [];
+    for (let c = 0; c < maxCols; c++) {
+      const cell1 = norm(rows[headerRowIdx]?.[c]);
+      const cell2 = isTwoRowHeader ? norm(rows[headerRowIdx + 1]?.[c]) : '';
+
+      const m = cell1.match(/thứ\s*([2-7])/i) || cell2.match(/thứ\s*([2-7])/i);
+      if (m) {
+        const thu = parseInt(m[1], 10);
+        let colTiet = c;
+        let colPhong = c + 1;
+
+        if (isTwoRowHeader) {
+          const sub1 = norm(rows[headerRowIdx + 1]?.[c]);
+          const sub2 = norm(rows[headerRowIdx + 1]?.[c + 1]);
+          if (sub1.includes('phòng')) {
+            colPhong = c;
+            colTiet = c + 1;
+          }
+        }
+
+        weekdayColumns.push({ thu, colTiet, colPhong });
+      }
+    }
+
+    // 7. Gom nhóm dữ liệu: Lớp cha và các khung lịch con
+    const parsedClasses = [];
+    let currentClass = null;
+    let lastSeenMaMonHoc = '';
+    let lastSeenKhoaHoc = '';
+    let currentClassThoiGian = '';
+    let currentClassSoTuan = null;
+
+    for (let r = dataStartIdx; r < rows.length; r++) {
+      const row = rows[r];
+      if (!row || row.length === 0) continue;
+
+      const rawStt = colStt !== -1 ? String(row[colStt] || '').trim() : '';
+      const rawMaHocPhan = colMaHocPhan !== -1 ? String(row[colMaHocPhan] || '').replace(/[\r\n\s]+/g, '').trim() : '';
+      const rawLopMon = colLopMon !== -1 ? String(row[colLopMon] || '').trim() : '';
+
+      if (rawMaHocPhan) {
+        lastSeenMaMonHoc = rawMaHocPhan;
+      }
+
+      const rawThoiGian = colThoiGian !== -1 ? String(row[colThoiGian] || '').trim() : '';
+      const parsedSoTuan = colSoTuan !== -1 ? parseInt(row[colSoTuan], 10) : NaN;
+      const rawSoTuan = !isNaN(parsedSoTuan) && parsedSoTuan > 0 ? parsedSoTuan : null;
+
+      // Kiểm tra xem dòng này có tên Lớp môn tín chỉ -> Bắt đầu một lớp học phần mới
+      if (rawLopMon) {
+        currentClassThoiGian = rawThoiGian;
+        currentClassSoTuan = rawSoTuan;
+
+        const maMonToUse = rawMaHocPhan || lastSeenMaMonHoc;
+        const generatedMaLop = this.generateMaLopHocPhan(maMonToUse, rawLopMon);
+
+        const kieuHocRaw = colKieuHoc !== -1 ? String(row[colKieuHoc] || '').trim().toUpperCase() : 'LT';
+        let loaiHoc = 'LT';
+        if (['LT', 'BT', 'TH', 'BTL'].includes(kieuHocRaw)) {
+          loaiHoc = kieuHocRaw;
+        } else if (rawLopMon.includes('.BT') || rawLopMon.includes('(BT')) {
+          loaiHoc = 'BT';
+        } else if (rawLopMon.includes('.TH') || rawLopMon.includes('(TH')) {
+          loaiHoc = 'TH';
+        }
+
+        const svDkNum = colSvDuKien !== -1 ? parseInt(row[colSvDuKien], 10) : 100;
+        const svDangKyNum = colSvDangKy !== -1 ? parseInt(row[colSvDangKy], 10) : svDkNum;
+        const rawKhoa = colKhoa !== -1 ? String(row[colKhoa] || '').trim() : '';
+        if (rawKhoa) lastSeenKhoaHoc = rawKhoa;
+
+        currentClass = {
+          tempId: `cls_${parsedClasses.length + 1}`,
+          stt: rawStt || String(parsedClasses.length + 1),
+          maLopHocPhan: generatedMaLop,
+          tenLopHocPhan: rawLopMon,
+          maMonHoc: maMonToUse,
+          loaiHoc: loaiHoc,
+          siSoDuKien: !isNaN(svDkNum) ? svDkNum : 100,
+          siSoDangKy: !isNaN(svDangKyNum) ? svDangKyNum : (!isNaN(svDkNum) ? svDkNum : 100),
+          khoaHoc: rawKhoa || lastSeenKhoaHoc || '',
+          maBoMon: detectedBoMon,
+          schedules: []
+        };
+        parsedClasses.push(currentClass);
+      } else if (currentClass) {
+        // Dòng phụ của lớp hiện tại: Nếu dòng này có thời gian hoặc số tuần mới thì cập nhật
+        if (rawThoiGian) {
+          currentClassThoiGian = rawThoiGian;
+        }
+        if (rawSoTuan !== null) {
+          currentClassSoTuan = rawSoTuan;
+        }
+      }
+
+      // Trích xuất khung lịch từ dòng hiện tại (dù là dòng đầu lớp hay dòng phụ của lớp)
+      if (currentClass) {
+        // Nếu dòng phụ bị merge ô Thời gian/Số tuần trong Excel, kế thừa giá trị gần nhất của lớp này
+        const thoiGianToUse = rawThoiGian || currentClassThoiGian;
+        const soTuanToUse = rawSoTuan !== null ? rawSoTuan : (currentClassSoTuan !== null ? currentClassSoTuan : 3);
+        const { startDate, endDate } = this.parseDateRange(thoiGianToUse, defaultStart, defaultEnd);
+
+        // Duyệt qua các cột Thứ để lấy tiết và phòng
+        weekdayColumns.forEach(w => {
+          const rawTietVal = String(row[w.colTiet] || '').trim();
+          const rawPhongVal = String(row[w.colPhong] || '').trim();
+
+          if (rawTietVal) {
+            const maTiet = this.mapExcelTietToMaTiet(rawTietVal);
+            const maPhong = this.normalizeRoom(rawPhongVal) || 'ONLINE';
+
+            currentClass.schedules.push({
+              tempId: `sc_${currentClass.tempId}_${currentClass.schedules.length + 1}`,
+              thuTrongTuan: w.thu,
+              rawTiet: rawTietVal,
+              maTiet: maTiet || 1,
+              rawPhong: rawPhongVal || 'ONLINE',
+              maPhong: maPhong,
+              ngayBatDau: startDate,
+              ngayKetThuc: endDate,
+              soTuan: soTuanToUse
+            });
+          }
+        });
+      }
+    }
+
+    if (parsedClasses.length === 0) {
+      throw new Error('Không trích xuất được lớp học phần nào từ file Excel. Vui lòng kiểm tra lại cấu trúc tiêu đề các cột.');
+    }
+
+    // 8. Hậu xử lý & Đối soát CSDL (Validation)
+    let soLopHopLe = 0;
+    let soLopLoi = 0;
+    const seenMaLop = new Set();
+
+    // Thu thập danh sách phẳng tất cả khung lịch trong file Excel để đối soát trùng phòng nội bộ
+    const allFileSchedules = [];
+    parsedClasses.forEach(c => {
+      (c.schedules || []).forEach(sc => {
+        allFileSchedules.push({
+          tempId: sc.tempId,
+          classTempId: c.tempId,
+          maLopHocPhan: c.maLopHocPhan,
+          tenLopHocPhan: c.tenLopHocPhan,
+          thuTrongTuan: sc.thuTrongTuan,
+          maTiet: sc.maTiet,
+          maPhong: sc.maPhong,
+          ngayBatDau: sc.ngayBatDau,
+          ngayKetThuc: sc.ngayKetThuc
+        });
+      });
+    });
+
+    const validatedClasses = parsedClasses.map(cls => {
+      const errors = [];
+      const warnings = [];
+
+      // Tính ngày bắt đầu, ngày kết thúc và số tuần tổng thể của lớp
+      if (cls.schedules.length > 0) {
+        let minStart = cls.schedules[0].ngayBatDau;
+        let maxEnd = cls.schedules[0].ngayKetThuc;
+
+        // Tránh cộng dồn số tuần của các buổi học song song trong cùng một đợt thời gian
+        const distinctPeriodWeeks = new Map();
+
+        cls.schedules.forEach(sc => {
+          if (sc.ngayBatDau < minStart) minStart = sc.ngayBatDau;
+          if (sc.ngayKetThuc > maxEnd) maxEnd = sc.ngayKetThuc;
+
+          const periodKey = `${sc.ngayBatDau}_${sc.ngayKetThuc}`;
+          if (!distinctPeriodWeeks.has(periodKey) || sc.soTuan > distinctPeriodWeeks.get(periodKey)) {
+            distinctPeriodWeeks.set(periodKey, sc.soTuan || 0);
+          }
+        });
+
+        let totalWeeks = 0;
+        distinctPeriodWeeks.forEach(w => { totalWeeks += w; });
+
+        cls.ngayBatDau = minStart;
+        cls.ngayKetThuc = maxEnd;
+        cls.soTuan = totalWeeks > 0 ? totalWeeks : 15;
+      } else {
+        cls.ngayBatDau = defaultStart;
+        cls.ngayKetThuc = defaultEnd;
+        cls.soTuan = 15;
+        warnings.push('Lớp này không có lịch học (Thứ, Tiết, Phòng) nào trong file Excel.');
+      }
+
+      // Kiểm tra môn học trong DB
+      const monHoc = monHocMap.get(cls.maMonHoc);
+      if (monHoc) {
+        cls.tenMonHoc = monHoc.TenMonHoc;
+        cls.soTinChi = monHoc.SoTinChi;
+        if (monHoc.MaBoMon) cls.maBoMon = monHoc.MaBoMon;
+      } else {
+        errors.push(`Mã học phần '${cls.maMonHoc}' chưa tồn tại trong danh mục Môn học.`);
+        cls.tenMonHoc = 'Chưa xác định';
+        cls.soTinChi = 3;
+      }
+
+      // Kiểm tra trùng mã lớp trong file
+      if (seenMaLop.has(cls.maLopHocPhan)) {
+        errors.push(`Trùng lặp Mã lớp '${cls.maLopHocPhan}' với lớp khác trong cùng file.`);
+      }
+      seenMaLop.add(cls.maLopHocPhan);
+
+      // Kiểm tra lớp đã tồn tại trong CSDL
+      if (existingLhpMap.has(cls.maLopHocPhan)) {
+        warnings.push(`Lớp '${cls.maLopHocPhan}' đã tồn tại trong CSDL (sẽ ghi đè/cập nhật lại).`);
+      }
+
+      // Kiểm tra từng khung lịch
+      cls.schedules.forEach(sc => {
+        if (!sc.maTiet) {
+          errors.push(`Tiết học '${sc.rawTiet}' (Thứ ${sc.thuTrongTuan}) không nhận diện được ca học hợp lệ.`);
+        }
+        if (!sc.maPhong) {
+          errors.push(`Chưa có phòng học cho Thứ ${sc.thuTrongTuan}.`);
+        } else if (sc.maPhong !== 'ONLINE' && !phongHocMap.has(sc.maPhong)) {
+          errors.push(`Phòng học '${sc.maPhong}' chưa tồn tại trong danh mục Phòng học.`);
+        }
+
+        // KIỂM TRA TRÙNG LỊCH PHÒNG HỌC (Room Conflict - Miễn trừ phòng ONLINE)
+        if (sc.maPhong && sc.maPhong !== 'ONLINE' && sc.maTiet && sc.thuTrongTuan) {
+          // A. Quét trùng với các lớp khác trong cùng file Excel
+          const conflictInFile = allFileSchedules.find(other =>
+            other.classTempId !== cls.tempId &&
+            other.maPhong === sc.maPhong &&
+            other.thuTrongTuan === sc.thuTrongTuan &&
+            other.maTiet === sc.maTiet &&
+            isDateOverlap(sc.ngayBatDau, sc.ngayKetThuc, other.ngayBatDau, other.ngayKetThuc)
+          );
+
+          if (conflictInFile) {
+            errors.push(
+              `Trùng phòng ${sc.maPhong} (Thứ ${sc.thuTrongTuan}, Ca ${sc.maTiet}) với lớp '${conflictInFile.tenLopHocPhan || conflictInFile.maLopHocPhan}' trong file Excel (${conflictInFile.ngayBatDau} - ${conflictInFile.ngayKetThuc}).`
+            );
+          }
+
+          // B. Quét trùng với các lớp đã có trong CSDL (loại trừ chính bản thân lớp nếu đang cập nhật)
+          const conflictInDB = existingScheduleRows.find(dbSc =>
+            dbSc.MaLopHocPhan !== cls.maLopHocPhan &&
+            dbSc.MaPhong === sc.maPhong &&
+            dbSc.ThuTrongTuan === sc.thuTrongTuan &&
+            dbSc.MaTiet === sc.maTiet &&
+            isDateOverlap(sc.ngayBatDau, sc.ngayKetThuc, dbSc.NgayBatDau, dbSc.NgayKetThuc)
+          );
+
+          if (conflictInDB) {
+            const dbStart = String(dbSc.NgayBatDau).slice(0, 10);
+            const dbEnd = String(dbSc.NgayKetThuc).slice(0, 10);
+            errors.push(
+              `Trùng phòng ${sc.maPhong} (Thứ ${sc.thuTrongTuan}, Ca ${sc.maTiet}) với lớp '${conflictInDB.TenLopHocPhan || conflictInDB.MaLopHocPhan}' đã có trong CSDL (${dbStart} - ${dbEnd}).`
+            );
+          }
+        }
+      });
+
+      const isValid = errors.length === 0;
+      if (isValid) soLopHopLe++;
+      else soLopLoi++;
+
+      return {
+        ...cls,
+        isValid,
+        errors,
+        warnings
+      };
+    });
+
+    return {
+      detectedBoMon,
+      tongSoLop: validatedClasses.length,
+      tongSoKhungLich: validatedClasses.reduce((sum, c) => sum + c.schedules.length, 0),
+      soLopHopLe,
+      soLopLoi,
+      classes: validatedClasses,
+      danhSachMonHoc: monHocRows,
+      danhSachPhongHoc: phongHocRows
+    };
+  };
+
+  /**
+   * Lưu toàn bộ Lớp học phần và các khung Thời khóa biểu vào CSDL trong một Transaction
+   */
+  static saveImportedThoiKhoaBieu = async ({ userId, maHocKy, maBoMon, classes = [] }) => {
+    if (!maHocKy || !maHocKy.trim()) {
+      throw new Error('Vui lòng chọn Học kỳ để lưu.');
+    }
+    if (!Array.isArray(classes) || classes.length === 0) {
+      throw new Error('Không có dữ liệu lớp học phần hợp lệ để lưu.');
+    }
+
+    const conn = await db.getConnection();
+    try {
+      await conn.beginTransaction();
+
+      // Đảm bảo có phòng ONLINE trong CSDL trước khi lưu các bản ghi ThoiKhoaBieu
+      await conn.query(`
+        INSERT IGNORE INTO ToaNha (MaToaNha, TenToaNha, CoSo) 
+        VALUES ('ONLINE', 'Trực tuyến', 'Hà Nội')
+      `);
+      await conn.query(`
+        INSERT IGNORE INTO PhongHoc (MaPhong, TenPhong, MaToaNha, SucChua, LoaiPhong, TrangThai) 
+        VALUES ('ONLINE', 'Phòng học trực tuyến (Zoom/Teams)', 'ONLINE', 9999, 'LT', 'Available')
+      `);
+
+      // Kiểm tra xung đột trùng phòng học với các lớp KHÁC đã lưu trong CSDL
+      const targetClassCodes = classes.map(c => c.maLopHocPhan).filter(Boolean);
+      let queryOtherSql = `
+        SELECT tkb.MaPhong, tkb.ThuTrongTuan, tkb.MaTiet, tkb.NgayBatDau, tkb.NgayKetThuc, lhp.TenLopHocPhan, tkb.MaLopHocPhan
+        FROM ThoiKhoaBieu tkb
+        JOIN LopHocPhan lhp ON tkb.MaLopHocPhan = lhp.MaLopHocPhan
+        WHERE lhp.MaHocKy = ? AND tkb.MaPhong != 'ONLINE'
+      `;
+      const queryParams = [maHocKy];
+      if (targetClassCodes.length > 0) {
+        queryOtherSql += ` AND tkb.MaLopHocPhan NOT IN (?)`;
+        queryParams.push(targetClassCodes);
+      }
+      const [existingOtherSchedules] = await conn.query(queryOtherSql, queryParams);
+
+      const allSchedulesToSave = [];
+      classes.forEach(c => {
+        (c.schedules || []).forEach(sc => {
+          if (sc.maPhong && sc.maPhong !== 'ONLINE' && sc.maTiet && sc.thuTrongTuan) {
+            allSchedulesToSave.push({
+              maLopHocPhan: c.maLopHocPhan,
+              tenLopHocPhan: c.tenLopHocPhan,
+              thuTrongTuan: sc.thuTrongTuan,
+              maTiet: sc.maTiet,
+              maPhong: sc.maPhong,
+              ngayBatDau: sc.ngayBatDau || c.ngayBatDau,
+              ngayKetThuc: sc.ngayKetThuc || c.ngayKetThuc
+            });
+          }
+        });
+      });
+
+      for (const sc of allSchedulesToSave) {
+        const conflict = existingOtherSchedules.find(dbSc =>
+          dbSc.MaPhong === sc.maPhong &&
+          dbSc.ThuTrongTuan === sc.thuTrongTuan &&
+          dbSc.MaTiet === sc.maTiet &&
+          !(new Date(sc.ngayKetThuc) < new Date(dbSc.NgayBatDau) || new Date(sc.ngayBatDau) > new Date(dbSc.NgayKetThuc))
+        );
+        if (conflict) {
+          throw new Error(
+            `Xung đột trùng phòng: Phòng '${sc.maPhong}' đã có lớp '${conflict.TenLopHocPhan || conflict.MaLopHocPhan}' học vào Thứ ${sc.thuTrongTuan}, Ca ${sc.maTiet} trong CSDL. Vui lòng kiểm tra lại.`
+          );
+        }
+      }
+
+      let createdClassesCount = 0;
+      let createdSchedulesCount = 0;
+
+      for (const cls of classes) {
+        if (!cls.maLopHocPhan || !cls.maMonHoc) continue;
+
+        const maBoMonVal = cls.maBoMon || maBoMon || 'MHT';
+
+        // 1. Lưu hoặc Cập nhật Lớp học phần
+        const [existing] = await conn.query(
+          `SELECT MaLopHocPhan FROM LopHocPhan WHERE MaLopHocPhan = ? LIMIT 1`,
+          [cls.maLopHocPhan]
+        );
+
+        if (existing.length > 0) {
+          await conn.query(`
+            UPDATE LopHocPhan SET
+              TenLopHocPhan = ?,
+              MaMonHoc = ?,
+              LoaiHoc = ?,
+              SiSoDuKien = ?,
+              SiSoDangKy = ?,
+              KhoaHoc = ?,
+              NgayBatDau = ?,
+              NgayKetThuc = ?,
+              SoTuan = ?,
+              MaBoMon = ?
+            WHERE MaLopHocPhan = ?
+          `, [
+            cls.tenLopHocPhan,
+            cls.maMonHoc,
+            cls.loaiHoc || 'LT',
+            cls.siSoDuKien || 100,
+            cls.siSoDangKy || 100,
+            cls.khoaHoc || null,
+            cls.ngayBatDau,
+            cls.ngayKetThuc,
+            cls.soTuan || 15,
+            maBoMonVal,
+            cls.maLopHocPhan
+          ]);
+        } else {
+          await conn.query(`
+            INSERT INTO LopHocPhan (
+              MaLopHocPhan, TenLopHocPhan, MaMonHoc, MaHocKy, LoaiHoc,
+              SiSoDuKien, SiSoDangKy, NgayBatDau, NgayKetThuc, SoTuan,
+              MaBoMon, KhoaHoc, TrangThaiPhanCong
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Unassigned')
+          `, [
+            cls.maLopHocPhan,
+            cls.tenLopHocPhan,
+            cls.maMonHoc,
+            maHocKy,
+            cls.loaiHoc || 'LT',
+            cls.siSoDuKien || 100,
+            cls.siSoDangKy || 100,
+            cls.ngayBatDau,
+            cls.ngayKetThuc,
+            cls.soTuan || 15,
+            maBoMonVal,
+            cls.khoaHoc || null
+          ]);
+          createdClassesCount++;
+        }
+
+        // 2. Xóa các khung TKB cũ của lớp này để ghi đè khung mới
+        await conn.query(`DELETE FROM ThoiKhoaBieu WHERE MaLopHocPhan = ?`, [cls.maLopHocPhan]);
+
+        // 3. Lưu từng khung Thời khóa biểu
+        if (Array.isArray(cls.schedules)) {
+          for (const sc of cls.schedules) {
+            if (!sc.thuTrongTuan || !sc.maTiet || !sc.maPhong) continue;
+
+            const randHex = Math.random().toString(36).substring(2, 6).toUpperCase();
+            const cleanCode = cls.maLopHocPhan.replace(/[^a-zA-Z0-9]/g, '_');
+            const maTkb = `TKB_${cleanCode}_T${sc.thuTrongTuan}_C${sc.maTiet}_${randHex}`;
+
+            await conn.query(`
+              INSERT INTO ThoiKhoaBieu (
+                MaThoiKhoaBieu, MaLopHocPhan, ThuTrongTuan, MaTiet,
+                MaPhong, NgayBatDau, NgayKetThuc, TrangThai
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, 'Scheduled')
+            `, [
+              maTkb,
+              cls.maLopHocPhan,
+              sc.thuTrongTuan,
+              sc.maTiet,
+              sc.maPhong,
+              sc.ngayBatDau || cls.ngayBatDau,
+              sc.ngayKetThuc || cls.ngayKetThuc
+            ]);
+            createdSchedulesCount++;
+          }
+        }
+      }
+
+      await conn.commit();
+
+      return {
+        success: true,
+        soLopDaLuu: classes.length,
+        soLopMoi: createdClassesCount,
+        soKhungLichDaLuu: createdSchedulesCount,
+        message: `Đã import và lưu thành công ${classes.length} Lớp học phần và ${createdSchedulesCount} khung Thời khóa biểu vào CSDL!`
+      };
+    } catch (err) {
+      await conn.rollback();
+      throw err;
+    } finally {
+      conn.release();
+    }
+  };
+
+  // ================================================================
+  // 19. [BOMON] PHÂN CÔNG GIẢNG VIÊN TỰ ĐỘNG - XEM TRƯỚC (PREVIEW)
+  //     - Gom cụm Lớp gia đình (LT, BT, TH) cùng 1 giảng viên
+  //     - Ràng buộc chuyên môn theo GiangVien_MonHoc
+  //     - Quét tuyệt đối không trùng Thứ, Tiết, Ngày
+  //     - Cân bằng tải đều giờ dạy giữa các giảng viên
+  // ================================================================
+  static autoAssignLecturersPreview = async ({ maHocKy, maBoMon, scope = 'ONLY_UNASSIGNED' } = {}) => {
+    if (!maHocKy || !maHocKy.trim()) {
+      throw new Error('Vui lòng chọn Học kỳ.');
+    }
+    if (!maBoMon || !maBoMon.trim()) {
+      throw new Error('Không xác định được Bộ môn cần phân công.');
+    }
+
+    const cleanMaHocKy = maHocKy.trim();
+    const cleanMaBoMon = maBoMon.trim();
+
+    // 1. Lấy danh sách Giảng viên đang Active của Bộ môn
+    const [lecturers] = await db.query(`
+      SELECT gv.MaGiangVien, gv.HoTen, gv.Email, gv.SoDienThoai
+      FROM GiangVien gv
+      WHERE gv.MaBoMon = ? AND gv.TrangThai = 'Active'
+      ORDER BY gv.HoTen ASC
+    `, [cleanMaBoMon]);
+
+    if (lecturers.length === 0) {
+      throw new Error(`Bộ môn '${cleanMaBoMon}' hiện không có giảng viên nào ở trạng thái Hoạt động (Active).`);
+    }
+
+    // 2. Lấy danh sách Môn học từng Giảng viên có thể dạy (từ GiangVien_MonHoc)
+    const [qualifications] = await db.query(`
+      SELECT gvm.MaGiangVien, gvm.MaMonHoc, mh.TenMonHoc
+      FROM GiangVien_MonHoc gvm
+      JOIN GiangVien gv ON gvm.MaGiangVien = gv.MaGiangVien
+      JOIN MonHoc mh ON gvm.MaMonHoc = mh.MaMonHoc
+      WHERE gv.MaBoMon = ?
+    `, [cleanMaBoMon]);
+
+    const qualifiedGvsByMon = {};
+    const gvSubjectsMap = {};
+    for (const q of qualifications) {
+      if (!qualifiedGvsByMon[q.MaMonHoc]) qualifiedGvsByMon[q.MaMonHoc] = [];
+      qualifiedGvsByMon[q.MaMonHoc].push(q.MaGiangVien);
+
+      if (!gvSubjectsMap[q.MaGiangVien]) gvSubjectsMap[q.MaGiangVien] = [];
+      gvSubjectsMap[q.MaGiangVien].push({ maMonHoc: q.MaMonHoc, tenMonHoc: q.TenMonHoc });
+    }
+
+    // 3. Lấy tất cả Lớp học phần của Bộ môn trong học kỳ
+    const [classes] = await db.query(`
+      SELECT
+        lhp.MaLopHocPhan,
+        lhp.TenLopHocPhan,
+        lhp.MaMonHoc,
+        mh.TenMonHoc,
+        mh.SoTinChi,
+        lhp.LoaiHoc,
+        lhp.SiSoDuKien,
+        lhp.SiSoDangKy,
+        lhp.TrangThaiPhanCong,
+        lhp.MaGiangVien,
+        gv.HoTen AS TenGiangVienHienTai
+      FROM LopHocPhan lhp
+      LEFT JOIN MonHoc mh ON lhp.MaMonHoc = mh.MaMonHoc
+      LEFT JOIN GiangVien gv ON lhp.MaGiangVien = gv.MaGiangVien
+      WHERE lhp.MaHocKy = ? AND lhp.MaBoMon = ?
+      ORDER BY lhp.MaLopHocPhan ASC
+    `, [cleanMaHocKy, cleanMaBoMon]);
+
+    if (classes.length === 0) {
+      throw new Error(`Không tìm thấy lớp học phần nào của Bộ môn '${cleanMaBoMon}' trong học kỳ '${cleanMaHocKy}'.`);
+    }
+
+    // 4. Lấy toàn bộ lịch TKB của các lớp này
+    const [schedules] = await db.query(`
+      SELECT
+        tkb.MaThoiKhoaBieu,
+        tkb.MaLopHocPhan,
+        tkb.ThuTrongTuan,
+        tkb.MaTiet,
+        tt.TenTiet,
+        ph.TenPhong,
+        tkb.NgayBatDau,
+        tkb.NgayKetThuc
+      FROM ThoiKhoaBieu tkb
+      JOIN LopHocPhan lhp ON tkb.MaLopHocPhan = lhp.MaLopHocPhan
+      JOIN TietHoc tt ON tkb.MaTiet = tt.MaTiet
+      LEFT JOIN PhongHoc ph ON tkb.MaPhong = ph.MaPhong
+      WHERE lhp.MaHocKy = ? AND lhp.MaBoMon = ?
+      ORDER BY tkb.ThuTrongTuan ASC, tkb.MaTiet ASC
+    `, [cleanMaHocKy, cleanMaBoMon]);
+
+    const schedulesByClass = {};
+    for (const s of schedules) {
+      if (!schedulesByClass[s.MaLopHocPhan]) schedulesByClass[s.MaLopHocPhan] = [];
+      schedulesByClass[s.MaLopHocPhan].push(s);
+    }
+
+    // 5. Gom cụm Lớp Gia Đình (Class Family)
+    // Quy tắc: Mã như IT0.016.2-1-1-25(N01.BT1) -> IT0.016.2-1-1-25(N01)
+    const getFamilyKey = (code) => {
+      if (!code) return '';
+      return code.replace(/\.([a-zA-Z0-9_]+)\)$/, ')');
+    };
+
+    const familiesMap = {};
+    for (const c of classes) {
+      const clsSchedules = schedulesByClass[c.MaLopHocPhan] || [];
+      const fKey = getFamilyKey(c.MaLopHocPhan);
+
+      if (!familiesMap[fKey]) {
+        familiesMap[fKey] = {
+          familyKey: fKey,
+          maMonHoc: c.MaMonHoc,
+          tenMonHoc: c.TenMonHoc,
+          soTinChi: c.SoTinChi || 3,
+          classes: [],
+          schedules: [],
+          isLocked: false,
+          existingLecturerId: null,
+          existingLecturerName: null
+        };
+      }
+
+      const fam = familiesMap[fKey];
+      fam.classes.push({
+        ...c,
+        schedules: clsSchedules,
+        hasSchedule: clsSchedules.length > 0
+      });
+
+      if (c.TrangThaiPhanCong === 'Locked') {
+        fam.isLocked = true;
+      }
+      if (c.MaGiangVien) {
+        fam.existingLecturerId = c.MaGiangVien;
+        fam.existingLecturerName = c.TenGiangVienHienTai;
+      }
+
+      fam.schedules.push(...clsSchedules);
+    }
+
+    const families = Object.values(familiesMap);
+
+    // 6. Khởi tạo đối tượng theo dõi trạng thái tải và slot bận của từng Giảng viên
+    const gvState = {};
+    for (const gv of lecturers) {
+      gvState[gv.MaGiangVien] = {
+        maGiangVien: gv.MaGiangVien,
+        hoTen: gv.HoTen,
+        email: gv.Email,
+        assignedClasses: [],
+        assignedFamilies: [],
+        totalPeriodsPerWeek: 0,
+        busySlots: [],
+        qualifiedSubjects: gvSubjectsMap[gv.MaGiangVien] || []
+      };
+    }
+
+    // Helper kiểm tra giao nhau giữa 2 khoảng thời gian Date
+    const isDateOverlap = (startA, endA, startB, endB) => {
+      if (!startA || !endA || !startB || !endB) return true;
+      const sA = new Date(startA);
+      const eA = new Date(endA);
+      const sB = new Date(startB);
+      const eB = new Date(endB);
+      return (sA <= eB && eA >= sB);
+    };
+
+    // Helper kiểm tra xung đột trùng lịch giữa tập slot mới và danh sách slot bận
+    const checkScheduleConflict = (newSlots, busySlots) => {
+      for (const nSlot of newSlots) {
+        for (const bSlot of busySlots) {
+          if (nSlot.ThuTrongTuan === bSlot.ThuTrongTuan && nSlot.MaTiet === bSlot.MaTiet) {
+            if (isDateOverlap(nSlot.NgayBatDau, nSlot.NgayKetThuc, bSlot.NgayBatDau, bSlot.NgayKetThuc)) {
+              return {
+                conflict: true,
+                newSlot: nSlot,
+                busySlot: bSlot
+              };
+            }
+          }
+        }
+      }
+      return { conflict: false };
+    };
+
+    const assignments = [];
+    const unassignedDetails = [];
+    const familiesToAssign = [];
+
+    // 7. Xử lý các lớp theo chế độ Scope
+    for (const fam of families) {
+      const famPeriods = fam.schedules.length * 3;
+
+      // TH1: Cụm lớp không có lịch TKB nào -> Không thể phân công
+      if (fam.schedules.length === 0) {
+        unassignedDetails.push({
+          familyKey: fam.familyKey,
+          maMonHoc: fam.maMonHoc,
+          tenMonHoc: fam.tenMonHoc,
+          classCodes: fam.classes.map(c => c.MaLopHocPhan),
+          reason: 'Cụm lớp chưa được xếp lịch Thời khóa biểu (TKB trống).'
+        });
+        continue;
+      }
+
+      // TH2: Cụm lớp đã bị Khóa lịch (Locked) -> Luôn bảo lưu GV hiện tại
+      if (fam.isLocked) {
+        if (fam.existingLecturerId && gvState[fam.existingLecturerId]) {
+          const gv = gvState[fam.existingLecturerId];
+          gv.totalPeriodsPerWeek += famPeriods;
+          gv.assignedFamilies.push(fam.familyKey);
+          gv.busySlots.push(...fam.schedules);
+          for (const c of fam.classes) {
+            if (!c.hasSchedule) continue; // Chỉ gán cho các lớp ĐÃ CÓ TKB
+            gv.assignedClasses.push(c.MaLopHocPhan);
+            assignments.push({
+              maLopHocPhan: c.MaLopHocPhan,
+              tenLopHocPhan: c.TenLopHocPhan,
+              maMonHoc: c.MaMonHoc,
+              tenMonHoc: c.TenMonHoc,
+              maGiangVien: gv.maGiangVien,
+              tenGiangVien: gv.hoTen,
+              familyKey: fam.familyKey,
+              isPreserved: true,
+              preserveReason: 'Đã khóa lịch (Locked)'
+            });
+          }
+        } else {
+          unassignedDetails.push({
+            familyKey: fam.familyKey,
+            maMonHoc: fam.maMonHoc,
+            tenMonHoc: fam.tenMonHoc,
+            classCodes: fam.classes.map(c => c.MaLopHocPhan),
+            reason: 'Lớp đã bị khóa lịch nhưng chưa có giảng viên hợp lệ.'
+          });
+        }
+        continue;
+      }
+
+      // TH3: Chế độ ONLY_UNASSIGNED và cụm này đã có GV được gán
+      if (scope === 'ONLY_UNASSIGNED' && fam.existingLecturerId && gvState[fam.existingLecturerId]) {
+        const gv = gvState[fam.existingLecturerId];
+        gv.totalPeriodsPerWeek += famPeriods;
+        gv.assignedFamilies.push(fam.familyKey);
+        gv.busySlots.push(...fam.schedules);
+        for (const c of fam.classes) {
+          if (!c.hasSchedule) continue; // Chỉ gán cho các lớp ĐÃ CÓ TKB
+          gv.assignedClasses.push(c.MaLopHocPhan);
+          assignments.push({
+            maLopHocPhan: c.MaLopHocPhan,
+            tenLopHocPhan: c.TenLopHocPhan,
+            maMonHoc: c.MaMonHoc,
+            tenMonHoc: c.TenMonHoc,
+            maGiangVien: gv.maGiangVien,
+            tenGiangVien: gv.hoTen,
+            familyKey: fam.familyKey,
+            isPreserved: true,
+            preserveReason: 'Đã phân công trước đó'
+          });
+        }
+        continue;
+      }
+
+      // Còn lại: Cụm lớp cần chạy thuật toán tự động gán
+      familiesToAssign.push(fam);
+    }
+
+    // 8. Sắp xếp thứ tự ưu tiên gán các Family (Heuristic)
+    // - Ít GV đủ chuyên môn gán trước
+    // - Nhiều slot / tiết TKB gán trước
+    // - Nhiều lớp con trong cụm gán trước
+    familiesToAssign.sort((a, b) => {
+      const candA = (qualifiedGvsByMon[a.maMonHoc] || []).length;
+      const candB = (qualifiedGvsByMon[b.maMonHoc] || []).length;
+      if (candA !== candB) return candA - candB;
+      if (b.schedules.length !== a.schedules.length) {
+        return b.schedules.length - a.schedules.length;
+      }
+      return b.classes.length - a.classes.length;
+    });
+
+    // 9. Vòng lặp phân công từng Family
+    const thuLabels = { 2: 'Thứ 2', 3: 'Thứ 3', 4: 'Thứ 4', 5: 'Thứ 5', 6: 'Thứ 6', 7: 'Thứ 7', 8: 'Chủ nhật' };
+
+    for (const fam of familiesToAssign) {
+      const candidateGvIds = qualifiedGvsByMon[fam.maMonHoc] || [];
+
+      // Kiểm tra xem có GV nào được phân công dạy môn này không
+      if (candidateGvIds.length === 0) {
+        unassignedDetails.push({
+          familyKey: fam.familyKey,
+          maMonHoc: fam.maMonHoc,
+          tenMonHoc: fam.tenMonHoc,
+          classCodes: fam.classes.map(c => c.MaLopHocPhan),
+          reason: `Chưa có giảng viên nào trong bộ môn đăng ký dạy môn "${fam.tenMonHoc || fam.maMonHoc}" (Quản lý môn học giảng viên).`
+        });
+        continue;
+      }
+
+      // Lọc các GV không bị trùng lịch ở BẤT KỲ slot nào của cả gia đình lớp
+      const eligibleCandidates = [];
+      const conflictDescriptions = [];
+
+      for (const gvId of candidateGvIds) {
+        const gv = gvState[gvId];
+        if (!gv) continue;
+
+        const conflictCheck = checkScheduleConflict(fam.schedules, gv.busySlots);
+        if (conflictCheck.conflict) {
+          const bs = conflictCheck.busySlot;
+          conflictDescriptions.push(
+            `${gv.hoTen} trùng slot ${thuLabels[bs.ThuTrongTuan] || 'Thứ ' + bs.ThuTrongTuan} (${bs.TenTiet || bs.MaTiet})`
+          );
+        } else {
+          eligibleCandidates.push(gv);
+        }
+      }
+
+      // Nếu tất cả GV dạy môn này đều bị trùng lịch
+      if (eligibleCandidates.length === 0) {
+        unassignedDetails.push({
+          familyKey: fam.familyKey,
+          maMonHoc: fam.maMonHoc,
+          tenMonHoc: fam.tenMonHoc,
+          classCodes: fam.classes.map(c => c.MaLopHocPhan),
+          reason: `Toàn bộ ${candidateGvIds.length} GV chuyên môn đều bị trùng lịch dạy ở các slot của cụm lớp này (${conflictDescriptions.slice(0, 2).join('; ')}).`
+        });
+        continue;
+      }
+
+      // Chọn ứng viên tối ưu nhất: Min-Workload Greedy
+      // 1. Tải tiết/tuần thấp nhất
+      // 2. Số lớp đã nhận ít nhất
+      // 3. Tên theo bảng chữ cái
+      eligibleCandidates.sort((a, b) => {
+        if (a.totalPeriodsPerWeek !== b.totalPeriodsPerWeek) {
+          return a.totalPeriodsPerWeek - b.totalPeriodsPerWeek;
+        }
+        if (a.assignedClasses.length !== b.assignedClasses.length) {
+          return a.assignedClasses.length - b.assignedClasses.length;
+        }
+        return a.hoTen.localeCompare(b.hoTen);
+      });
+
+      const chosenGv = eligibleCandidates[0];
+      const famPeriods = fam.schedules.length * 3;
+
+      // Cập nhật tải & slot bận của GV
+      chosenGv.totalPeriodsPerWeek += famPeriods;
+      chosenGv.assignedFamilies.push(fam.familyKey);
+      chosenGv.busySlots.push(...fam.schedules);
+
+      // Gán các lớp con trong gia đình lớp ĐÃ CÓ LỊCH TKB cho Giảng viên này
+      // (Loại bỏ các lớp con chưa có TKB, tuân thủ đúng trình tự phải có lịch mới phân công)
+      for (const c of fam.classes) {
+        if (!c.hasSchedule) continue; // Bỏ qua lớp chưa có TKB
+        chosenGv.assignedClasses.push(c.MaLopHocPhan);
+        assignments.push({
+          maLopHocPhan: c.MaLopHocPhan,
+          tenLopHocPhan: c.TenLopHocPhan,
+          maMonHoc: c.MaMonHoc,
+          tenMonHoc: c.TenMonHoc,
+          maGiangVien: chosenGv.maGiangVien,
+          tenGiangVien: chosenGv.hoTen,
+          familyKey: fam.familyKey,
+          isPreserved: false
+        });
+      }
+    }
+
+    // 10. Tổng hợp thống kê giảng viên
+    const lecturerStats = Object.values(gvState).map(gv => {
+      // Tập môn học thực tế được gán trong đợt này
+      const assignedSubjSet = new Set();
+      assignments
+        .filter(a => a.maGiangVien === gv.maGiangVien)
+        .forEach(a => assignedSubjSet.add(a.tenMonHoc || a.maMonHoc));
+
+      return {
+        maGiangVien: gv.maGiangVien,
+        hoTen: gv.hoTen,
+        email: gv.email,
+        assignedClassesCount: gv.assignedClasses.length,
+        totalPeriodsPerWeek: gv.totalPeriodsPerWeek,
+        assignedFamiliesCount: gv.assignedFamilies.length,
+        qualifiedSubjectsCount: gv.qualifiedSubjects.length,
+        assignedSubjects: Array.from(assignedSubjSet)
+      };
+    });
+
+    // Sắp xếp thống kê theo số tiết/tuần giảm dần để tiện theo dõi
+    lecturerStats.sort((a, b) => b.totalPeriodsPerWeek - a.totalPeriodsPerWeek);
+
+    const totalClasses = classes.length;
+    const scheduledClassesCount = classes.filter(c => schedulesByClass[c.MaLopHocPhan]?.length > 0).length;
+    const unscheduledClassesCount = totalClasses - scheduledClassesCount;
+    const assignedClassesCount = assignments.length;
+    const unassignedScheduledClassesCount = scheduledClassesCount - assignedClassesCount;
+    const completionRate = scheduledClassesCount > 0 ? Math.round((assignedClassesCount / scheduledClassesCount) * 100) : 0;
+
+    return {
+      maHocKy: cleanMaHocKy,
+      maBoMon: cleanMaBoMon,
+      scope,
+      summary: {
+        totalClasses,
+        scheduledClassesCount,
+        unscheduledClassesCount,
+        totalFamilies: families.length,
+        assignedClassesCount,
+        unassignedScheduledClassesCount,
+        unassignedFamiliesCount: unassignedDetails.length,
+        completionRate
+      },
+      lecturerStats,
+      assignments,
+      unassignedDetails
+    };
+  };
+
+  // ================================================================
+  // 20. [BOMON] ÁP DỤNG KẾT QUẢ PHÂN CÔNG TỰ ĐỘNG VÀO DATABASE
+  // ================================================================
+  static applyAutoAssign = async ({ maHocKy, maBoMon, assignments = [] } = {}) => {
+    if (!maHocKy || !maHocKy.trim()) {
+      throw new Error('Vui lòng chọn Học kỳ.');
+    }
+    if (!maBoMon || !maBoMon.trim()) {
+      throw new Error('Không xác định được Bộ môn.');
+    }
+    if (!Array.isArray(assignments) || assignments.length === 0) {
+      throw new Error('Danh sách phân công trống, không có dữ liệu để áp dụng.');
+    }
+
+    const cleanMaHocKy = maHocKy.trim();
+    const cleanMaBoMon = maBoMon.trim();
+
+    const conn = await db.getConnection();
+    await conn.beginTransaction();
+
+    try {
+      let updatedCount = 0;
+
+      for (const item of assignments) {
+        if (!item.maLopHocPhan || !item.maGiangVien) continue;
+
+        // Cập nhật LopHocPhan (chỉ cập nhật nếu lớp thuộc bộ môn, KHÔNG bị Locked và ĐÃ CÓ TKB)
+        const [resultLhp] = await conn.query(`
+          UPDATE LopHocPhan
+          SET MaGiangVien = ?, TrangThaiPhanCong = 'Assigned'
+          WHERE MaLopHocPhan = ? AND MaBoMon = ? AND MaHocKy = ? AND TrangThaiPhanCong != 'Locked'
+            AND EXISTS (SELECT 1 FROM ThoiKhoaBieu tkb WHERE tkb.MaLopHocPhan = LopHocPhan.MaLopHocPhan)
+        `, [item.maGiangVien.trim(), item.maLopHocPhan.trim(), cleanMaBoMon, cleanMaHocKy]);
+
+        if (resultLhp.affectedRows > 0) {
+          updatedCount++;
+          // Cập nhật đồng bộ BuoiHoc
+          await conn.query(`
+            UPDATE BuoiHoc
+            SET MaGiangVien = ?
+            WHERE MaLopHocPhan = ?
+          `, [item.maGiangVien.trim(), item.maLopHocPhan.trim()]);
+        }
+      }
+
+      await conn.commit();
+
+      return {
+        success: true,
+        updatedCount,
+        totalRequested: assignments.length,
+        message: `Đã áp dụng thành công phân công cho ${updatedCount} lớp học phần!`
+      };
+    } catch (err) {
+      await conn.rollback();
+      throw err;
+    } finally {
+      conn.release();
+    }
   };
 }
 

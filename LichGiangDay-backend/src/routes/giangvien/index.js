@@ -25,6 +25,15 @@ router.get('/dong-nghiep-trong', checkPermission('GiangVien', 'CanRead'), requir
 // GET /v1/api/giangvien/:maGiangVien/chitiet
 router.get('/:maGiangVien/chitiet', checkPermission('GiangVien', 'CanRead'), giangVienController.getChiTiet);
 
+// --- Danh sách Môn học giảng viên có thể dạy ---
+// GET /v1/api/giangvien/:maGiangVien/monhoc
+router.get('/:maGiangVien/monhoc', checkPermission('GiangVien', 'CanRead'), giangVienController.getMonHocList);
+
+// --- Đồng bộ danh sách Môn học giảng viên có thể dạy (Sync checkbox) ---
+// PUT /v1/api/giangvien/:maGiangVien/monhoc
+// Body: { maMonHocList: ['IT1.108.3', 'IT1.221.3'] }
+router.put('/:maGiangVien/monhoc', checkPermission('GiangVien', 'CanUpdate'), giangVienController.updateMonHocList);
+
 // --- Thông tin cơ bản 1 Giảng viên ---
 // GET /v1/api/giangvien/:maGiangVien
 router.get('/:maGiangVien', checkPermission('GiangVien', 'CanRead'), giangVienController.getById);

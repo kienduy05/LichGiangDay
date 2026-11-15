@@ -24,6 +24,25 @@ const THU_OPTIONS = [
   { value: 8, label: 'Chủ nhật' },
 ];
 
+// Helper: Định dạng khoảng ngày hiển thị dạng DD/MM - DD/MM/YYYY
+const formatScheduleDateRange = (startDate, endDate) => {
+  if (!startDate && !endDate) return null;
+  const sStr = String(startDate || '').slice(0, 10);
+  const eStr = String(endDate || '').slice(0, 10);
+  if (!sStr && !eStr) return null;
+
+  const sParts = sStr.split('-');
+  const eParts = eStr.split('-');
+
+  if (sParts.length === 3 && eParts.length === 3) {
+    if (sParts[0] === eParts[0]) {
+      return `${sParts[2]}/${sParts[1]} - ${eParts[2]}/${eParts[1]}/${eParts[0]}`;
+    }
+    return `${sParts[2]}/${sParts[1]}/${sParts[0]} - ${eParts[2]}/${eParts[1]}/${eParts[0]}`;
+  }
+  return `${sStr} - ${eStr}`;
+};
+
 export default function ThoiKhoaBieuScheduleModal({
   isOpen,
   onClose,
@@ -345,6 +364,11 @@ export default function ThoiKhoaBieuScheduleModal({
                           <span className="session-room-tag">
                             {s.tenPhong || s.maPhong || 'Chưa chọn phòng'}
                           </span>
+                          {(s.ngayBatDau || lopHocPhan?.NgayBatDau) && (
+                            <span style={{ fontSize: '0.7rem', color: '#64748b', background: '#f8fafc', padding: '1px 5px', borderRadius: '4px', border: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
+                              {formatScheduleDateRange(s.ngayBatDau || lopHocPhan?.NgayBatDau, s.ngayKetThuc || lopHocPhan?.NgayKetThuc)}
+                            </span>
+                          )}
                         </div>
                         {schedules.length > 1 && (
                           <button
@@ -438,6 +462,28 @@ export default function ThoiKhoaBieuScheduleModal({
                           <span className="text-muted">👉 Hãy chọn phòng từ lưới bên dưới</span>
                         )}
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Row 1b: Khoảng thời gian của đợt học này */}
+                  <div className="session-config-row" style={{ marginTop: '10px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div className="config-form-group">
+                      <label><Calendar size={14} /> Ngày bắt đầu đợt học:</label>
+                      <input
+                        type="date"
+                        className="form-select-custom"
+                        value={currentSession.ngayBatDau || (lopHocPhan?.NgayBatDau ? String(lopHocPhan.NgayBatDau).slice(0, 10) : '')}
+                        onChange={(e) => handleUpdateCurrentSession('ngayBatDau', e.target.value)}
+                      />
+                    </div>
+                    <div className="config-form-group">
+                      <label><Calendar size={14} /> Ngày kết thúc đợt học:</label>
+                      <input
+                        type="date"
+                        className="form-select-custom"
+                        value={currentSession.ngayKetThuc || (lopHocPhan?.NgayKetThuc ? String(lopHocPhan.NgayKetThuc).slice(0, 10) : '')}
+                        onChange={(e) => handleUpdateCurrentSession('ngayKetThuc', e.target.value)}
+                      />
                     </div>
                   </div>
 
