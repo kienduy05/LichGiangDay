@@ -629,7 +629,8 @@
 
 .schedule-badges-list {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 6px;
 }
 
@@ -666,6 +667,25 @@
   gap: 3px;
   color: #0284c7;
   font-weight: 700;
+}
+
+.chip-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #334155;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  padding: 1px 7px;
+  border-radius: 5px;
+  font-size: 0.73rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.chip-date svg {
+  color: #0284c7;
+  flex-shrink: 0;
 }
 
 .unscheduled-warning-chip {

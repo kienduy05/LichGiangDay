@@ -1,8 +1,15 @@
 const express = require('express');
+const multer = require('multer');
 const thoiKhoaBieuController = require('../../controllers/thoikhoabieu.controller');
 const { authentication } = require('../../auth/authUtils');
 const { checkPermission } = require('../../auth/checkPermission');
 const router = express.Router();
+
+// Multer memory storage để đọc buffer Excel
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 15 * 1024 * 1024 } // 15 MB
+});
 
 // Áp dụng middleware xác thực JWT
 router.use(authentication);
@@ -71,6 +78,14 @@ router.post('/bomon/assign-lecturer', thoiKhoaBieuController.assignLecturerToCla
 // POST /v1/api/thoikhoabieu/bomon/unassign-lecturer
 router.post('/bomon/unassign-lecturer', thoiKhoaBieuController.unassignLecturerFromClass);
 
+// 15b. Phân công Giảng viên tự động - Xem trước (Preview)
+// POST /v1/api/thoikhoabieu/bomon/auto-assign/preview
+router.post('/bomon/auto-assign/preview', thoiKhoaBieuController.autoAssignPreview);
+
+// 15c. Áp dụng kết quả Phân công Giảng viên tự động (Apply)
+// POST /v1/api/thoikhoabieu/bomon/auto-assign/apply
+router.post('/bomon/auto-assign/apply', thoiKhoaBieuController.applyAutoAssign);
+
 // ================================================================
 // ADMIN & PHONGDAOTAO: CÁC ROUTE KHÓA / MỞ KHÓA THỜI KHÓA BIỂU
 // ================================================================
@@ -86,6 +101,18 @@ router.post('/unlock-class', checkPermission('ThoiKhoaBieu', 'CanUpdate'), thoiK
 // 18. Khóa đồng loạt tất cả các lớp đã phân công trong học kỳ
 // POST /v1/api/thoikhoabieu/lock-all
 router.post('/lock-all', checkPermission('ThoiKhoaBieu', 'CanUpdate'), thoiKhoaBieuController.lockAllSemesterSchedules);
+
+// ================================================================
+// IMPORT THỜI KHÓA BIỂU TOÀN DIỆN (LỚP HỌC PHẦN + LỊCH HỌC)
+// ================================================================
+
+// 19. Xem trước Import Thời khóa biểu từ Excel
+// POST /v1/api/thoikhoabieu/preview-import
+router.post('/preview-import', checkPermission('ThoiKhoaBieu', 'CanCreate'), upload.single('file'), thoiKhoaBieuController.previewImport);
+
+// 20. Lưu kết quả Thời khóa biểu vào CSDL
+// POST /v1/api/thoikhoabieu/save-imported
+router.post('/save-imported', checkPermission('ThoiKhoaBieu', 'CanCreate'), thoiKhoaBieuController.saveImported);
 
 module.exports = router;
 

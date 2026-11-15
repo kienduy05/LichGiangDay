@@ -18,7 +18,7 @@ import ThoiKhoaBieuScheduleModal from './ThoiKhoaBieuScheduleModal';
 import {
   Calendar, LayoutGrid, List, RefreshCw, CheckCircle2,
   AlertCircle, School, Network, Search,
-  PanelLeftClose, PanelLeftOpen, Lock
+  PanelLeftClose, PanelLeftOpen, Lock, Loader2
 } from 'lucide-react';
 import './ThoiKhoaBieuManagement.css';
 
@@ -55,8 +55,10 @@ export default function ThoiKhoaBieuManagement() {
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [selectedLhpForModal, setSelectedLhpForModal] = useState(null);
 
-  // 6. Toast message
+  // 6. Toast message & Locking states
   const [toastMessage, setToastMessage] = useState(null);
+  const [lockingLhpId, setLockingLhpId] = useState(null);
+  const [lockingAll, setLockingAll] = useState(false);
 
   const showToast = (text, type = 'success') => {
     setToastMessage({ text, type });
@@ -173,13 +175,15 @@ export default function ThoiKhoaBieuManagement() {
       return;
     }
 
+    setLockingLhpId(lhp.MaLopHocPhan);
     try {
       const res = await apiLockClassSchedule(lhp.MaLopHocPhan);
-      showToast(res.message || `Đã khóa lịch lớp ${lhp.MaLopHocPhan} thành công!`);
-      fetchTreeView();
-      fetchTableData();
+      showToast(res.message || `Đã khóa lịch lớp ${lhp.MaLopHocPhan} thành công!`, 'success');
+      await Promise.all([fetchTreeView(), fetchTableData()]);
     } catch (err) {
       showToast(err.message || 'Khóa lịch thất bại.', 'error');
+    } finally {
+      setLockingLhpId(null);
     }
   };
 
@@ -189,13 +193,15 @@ export default function ThoiKhoaBieuManagement() {
       return;
     }
 
+    setLockingLhpId(lhp.MaLopHocPhan);
     try {
       const res = await apiUnlockClassSchedule(lhp.MaLopHocPhan);
-      showToast(res.message || `Đã mở khóa lịch lớp ${lhp.MaLopHocPhan}.`);
-      fetchTreeView();
-      fetchTableData();
+      showToast(res.message || `Đã mở khóa lịch lớp ${lhp.MaLopHocPhan} thành công.`, 'success');
+      await Promise.all([fetchTreeView(), fetchTableData()]);
     } catch (err) {
       showToast(err.message || 'Mở khóa lịch thất bại.', 'error');
+    } finally {
+      setLockingLhpId(null);
     }
   };
 
@@ -211,17 +217,19 @@ export default function ThoiKhoaBieuManagement() {
       return;
     }
 
+    setLockingAll(true);
     try {
       const res = await apiLockAllSemesterSchedules({
         maHocKy: selectedHocKy,
         maKhoa: selectedKhoaId !== 'ALL' ? selectedKhoaId : '',
         maBoMon: selectedBoMonId !== 'ALL' ? selectedBoMonId : ''
       });
-      showToast(res.message || 'Đã khóa toàn bộ lịch các lớp đã phân công!');
-      fetchTreeView();
-      fetchTableData();
+      showToast(res.message || `Đã khóa toàn bộ lịch ${assignedUnconfirmed.length} lớp học phần thành công!`, 'success');
+      await Promise.all([fetchTreeView(), fetchTableData()]);
     } catch (err) {
       showToast(err.message || 'Lỗi khi khóa lịch.', 'error');
+    } finally {
+      setLockingAll(false);
     }
   };
 
@@ -307,8 +315,13 @@ export default function ThoiKhoaBieuManagement() {
         </div>
       </div>
 
-      {/* TOAST MESSAGE */}
-      {toastMessage && (
+      {/* FLOATING TOAST & LOADING INDICATOR */}
+      {(lockingAll || lockingLhpId) ? (
+        <div className="tkb-toast-banner loading">
+          <Loader2 size={18} className="animate-spin" />
+          <span>{lockingAll ? 'Đang tiến hành khóa toàn bộ lịch các lớp học phần...' : 'Đang xử lý khóa lịch lớp học phần...'}</span>
+        </div>
+      ) : toastMessage && (
         <div className={`tkb-toast-banner ${toastMessage.type}`}>
           {toastMessage.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
           <span>{toastMessage.text}</span>
@@ -402,14 +415,26 @@ export default function ThoiKhoaBieuManagement() {
                     color: '#fff',
                     border: 'none',
                     fontWeight: 700,
-                    boxShadow: '0 2px 6px rgba(124, 58, 237, 0.25)'
+                    boxShadow: '0 2px 6px rgba(124, 58, 237, 0.25)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.45rem'
                   }}
                   onClick={handleLockAllSemester}
-                  disabled={loadingTable}
+                  disabled={loadingTable || lockingAll}
                   title="Chốt và khóa toàn bộ các lớp đã được Bộ môn phân công trong học kỳ này"
                 >
-                  <Lock size={14} />
-                  <span>Khóa Lịch Đã Phân</span>
+                  {lockingAll ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" />
+                      <span>Đang khóa lịch...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Lock size={14} />
+                      <span>Khóa Lịch Đã Phân</span>
+                    </>
+                  )}
                 </button>
               )}
 
@@ -431,6 +456,7 @@ export default function ThoiKhoaBieuManagement() {
             <ThoiKhoaBieuTable
               lopHocPhans={lopHocPhans}
               loading={loadingTable}
+              lockingLhpId={lockingLhpId}
               onScheduleClick={handleOpenScheduleModal}
               onDeleteSchedule={handleDeleteSchedule}
               onLockSchedule={handleLockSchedule}

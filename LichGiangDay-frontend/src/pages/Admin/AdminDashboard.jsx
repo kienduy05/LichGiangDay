@@ -24,6 +24,7 @@ import HocKyManagement from './components/HocKyManagement/HocKyManagement';
 import TietHocManagement from './components/TietHocManagement/TietHocManagement';
 import LopHocPhanManagement from './components/LopHocPhanManagement/LopHocPhanManagement';
 import ThoiKhoaBieuManagement from './components/ThoiKhoaBieuManagement/ThoiKhoaBieuManagement';
+import ImportThoiKhoaBieuManagement from './components/ImportThoiKhoaBieuManagement/ImportThoiKhoaBieuManagement';
 import LichGiangDayManagement from './components/LichGiangDayManagement/LichGiangDayManagement';
 import PhanCongGiangVienManagement from './components/PhanCongGiangVienManagement/PhanCongGiangVienManagement';
 import DuyetYeuCauManagement from './components/DuyetYeuCauManagement/DuyetYeuCauManagement';
@@ -213,6 +214,9 @@ export default function AdminDashboard() {
           {activeTab === 'lophocphan' && <LopHocPhanManagement />}
           {activeTab === 'lichgiangday' && <LichGiangDayManagement />}
           {activeTab === 'thoikhoabieu' && user?.role !== 'BOMON' && <ThoiKhoaBieuManagement />}
+          {activeTab === 'importthoikhoabieu' && user?.role !== 'BOMON' && (
+            <ImportThoiKhoaBieuManagement onNavigateTab={setActiveTab} />
+          )}
           {activeTab === 'phanconggiangvien' && <PhanCongGiangVienManagement />}
           {activeTab === 'duyetyeucau' && <DuyetYeuCauManagement />}
           {activeTab === 'biendonglich' && <LichBienDongMonitor />}

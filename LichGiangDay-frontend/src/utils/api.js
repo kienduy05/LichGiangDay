@@ -696,6 +696,27 @@ export const apiDeleteGiangVien = async (maGiangVien) => {
   return data.metadata;
 };
 
+export const apiGetGiangVienMonHoc = async (maGiangVien) => {
+  const response = await fetch(`${API_BASE_URL}/giangvien/${encodeURIComponent(maGiangVien)}/monhoc`, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Lấy danh sách môn học của giảng viên thất bại.');
+  return data.metadata;
+};
+
+export const apiUpdateGiangVienMonHoc = async (maGiangVien, maMonHocList = []) => {
+  const response = await fetch(`${API_BASE_URL}/giangvien/${encodeURIComponent(maGiangVien)}/monhoc`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ maMonHocList })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Cập nhật danh sách môn học cho giảng viên thất bại.');
+  return data.metadata;
+};
+
 
 
 // ==========================================

@@ -401,7 +401,8 @@ class GiangVienService {
       [lopHocPhanList],
       [yeuCauNghiList],
       [dayThayList],
-      [dayBuList]
+      [dayBuList],
+      [monHocList]
     ] = await Promise.all([
       // Lớp học phần đang phụ trách
       db.query(`
@@ -464,10 +465,30 @@ class GiangVienService {
         WHERE dkdb.MaGiangVien = ?
         ORDER BY dkdb.ThoiGianDangKy DESC
         LIMIT 50
+      `, [maGiangVien]),
+
+      // Môn học có thể giảng dạy
+      db.query(`
+        SELECT
+          gvmh.MaMonHoc,
+          mh.TenMonHoc,
+          mh.SoTinChi,
+          mh.LoaiMonHoc,
+          mh.MaBoMon,
+          bm.TenBoMon,
+          bm.MaKhoa,
+          k.TenKhoa,
+          gvmh.NgayTao
+        FROM GiangVien_MonHoc gvmh
+        JOIN MonHoc mh ON gvmh.MaMonHoc = mh.MaMonHoc
+        LEFT JOIN BoMon bm ON mh.MaBoMon = bm.MaBoMon
+        LEFT JOIN Khoa k ON bm.MaKhoa = k.MaKhoa
+        WHERE gvmh.MaGiangVien = ?
+        ORDER BY bm.MaKhoa ASC, mh.MaBoMon ASC, mh.TenMonHoc ASC
       `, [maGiangVien])
     ]);
 
-    return { giangVien, lopHocPhanList, yeuCauNghiList, dayThayList, dayBuList };
+    return { giangVien, lopHocPhanList, yeuCauNghiList, dayThayList, dayBuList, monHocList };
   };
 
   /**
@@ -563,6 +584,70 @@ class GiangVienService {
 
     await db.query(`DELETE FROM GiangVien WHERE MaGiangVien = ?`, [maGiangVien]);
     return { success: true, maGiangVien };
+  };
+
+  /**
+   * 7. Lấy danh sách môn học giảng viên có thể dạy
+   */
+  static getMonHocList = async (maGiangVien) => {
+    const [rows] = await db.query(`
+      SELECT
+        gvmh.MaMonHoc,
+        mh.TenMonHoc,
+        mh.SoTinChi,
+        mh.LoaiMonHoc,
+        mh.MaBoMon,
+        bm.TenBoMon,
+        bm.MaKhoa,
+        k.TenKhoa,
+        gvmh.NgayTao
+      FROM GiangVien_MonHoc gvmh
+      JOIN MonHoc mh ON gvmh.MaMonHoc = mh.MaMonHoc
+      LEFT JOIN BoMon bm ON mh.MaBoMon = bm.MaBoMon
+      LEFT JOIN Khoa k ON bm.MaKhoa = k.MaKhoa
+      WHERE gvmh.MaGiangVien = ?
+      ORDER BY bm.MaKhoa ASC, mh.MaBoMon ASC, mh.TenMonHoc ASC
+    `, [maGiangVien]);
+    return rows;
+  };
+
+  /**
+   * 8. Cập nhật/Đồng bộ danh sách môn học giảng viên có thể dạy (Sync checkbox list)
+   */
+  static updateMonHocList = async (maGiangVien, maMonHocList = []) => {
+    const existing = await this.getById(maGiangVien);
+    if (!existing) {
+      throw new Error(`Không tìm thấy giảng viên có mã '${maGiangVien}'.`);
+    }
+
+    const conn = await db.getConnection();
+    try {
+      await conn.beginTransaction();
+
+      // Xóa tất cả các môn đã gán trước đó
+      await conn.query(`DELETE FROM GiangVien_MonHoc WHERE MaGiangVien = ?`, [maGiangVien]);
+
+      // Thêm các môn mới được tick
+      const cleanList = Array.isArray(maMonHocList)
+        ? [...new Set(maMonHocList.map(m => String(m).trim()).filter(Boolean))]
+        : [];
+
+      if (cleanList.length > 0) {
+        const values = cleanList.map(maMonHoc => [maGiangVien, maMonHoc]);
+        await conn.query(
+          `INSERT INTO GiangVien_MonHoc (MaGiangVien, MaMonHoc) VALUES ?`,
+          [values]
+        );
+      }
+
+      await conn.commit();
+      return await this.getMonHocList(maGiangVien);
+    } catch (err) {
+      await conn.rollback();
+      throw err;
+    } finally {
+      conn.release();
+    }
   };
 }
 

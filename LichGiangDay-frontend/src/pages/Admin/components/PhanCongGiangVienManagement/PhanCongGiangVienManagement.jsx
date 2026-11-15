@@ -17,6 +17,7 @@ import PhanCongClassList from './PhanCongClassList';
 import PhanCongInspector from './PhanCongInspector';
 import PhanCongWorkloadMatrix from './PhanCongWorkloadMatrix';
 import PhanCongLecturerScheduleModal from './PhanCongLecturerScheduleModal';
+import PhanCongAutoModal from './PhanCongAutoModal';
 
 import './PhanCongGiangVien.css';
 
@@ -50,6 +51,9 @@ export default function PhanCongGiangVienManagement() {
 
   // Preview schedule modal
   const [previewModal, setPreviewModal] = useState({ isOpen: false, maGiangVien: '', lecturerName: '' });
+
+  // Auto assign modal state
+  const [isAutoModalOpen, setIsAutoModalOpen] = useState(false);
 
   // Notifications
   const [successMsg, setSuccessMsg] = useState('');
@@ -269,6 +273,16 @@ export default function PhanCongGiangVienManagement() {
               <RefreshCw size={14} className={loadingClasses ? 'animate-spin' : ''} />
               <span>Làm mới</span>
             </button>
+
+            {/* Nút Phân công tự động */}
+            <button
+              className="pcgv-btn-auto-assign"
+              onClick={() => setIsAutoModalOpen(true)}
+              title="Phân công giảng viên tự động bằng thuật toán thông minh"
+            >
+              <Sparkles size={15} />
+              <span>Phân công tự động</span>
+            </button>
           </div>
         </div>
 
@@ -413,6 +427,23 @@ export default function PhanCongGiangVienManagement() {
         maGiangVien={previewModal.maGiangVien}
         lecturerName={previewModal.lecturerName}
         maHocKy={selectedHocKy}
+      />
+
+      {/* ─── 6. AUTO ASSIGN MODAL ─── */}
+      <PhanCongAutoModal
+        isOpen={isAutoModalOpen}
+        onClose={() => setIsAutoModalOpen(false)}
+        maHocKy={selectedHocKy}
+        boMonInfo={boMonInfo}
+        currentStats={stats}
+        onApplied={async (count) => {
+          setSuccessMsg(`Đã phân công tự động thành công cho ${count} lớp học phần!`);
+          setTimeout(() => setSuccessMsg(''), 5000);
+          await fetchClasses();
+          if (activeTab === 'WORKLOAD') {
+            await fetchWorkload();
+          }
+        }}
       />
     </div>
   );

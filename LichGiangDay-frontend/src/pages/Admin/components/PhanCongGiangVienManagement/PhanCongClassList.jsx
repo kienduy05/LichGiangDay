@@ -1,6 +1,22 @@
 import React from 'react';
-import { Search, Clock, Building, User, AlertCircle, CheckCircle2, AlertTriangle, Layers, BookOpen } from 'lucide-react';
+import { Search, Clock, Building, User, AlertCircle, CheckCircle2, AlertTriangle, Layers, BookOpen, Calendar } from 'lucide-react';
 import './PhanCongGiangVien.css';
+
+// Helper: Định dạng khoảng ngày hiển thị dạng DD/MM - DD/MM/YYYY
+const formatScheduleDateRange = (startDate, endDate) => {
+  if (!startDate && !endDate) return null;
+  const sStr = String(startDate || '').slice(0, 10);
+  const eStr = String(endDate || '').slice(0, 10);
+  if (!sStr && !eStr) return null;
+
+  const sParts = sStr.split('-');
+  const eParts = eStr.split('-');
+
+  if (sParts.length === 3 && eParts.length === 3) {
+    return `${sParts[2]}/${sParts[1]} - ${eParts[2]}/${eParts[1]}/${eParts[0]}`;
+  }
+  return sStr && eStr ? `${sStr} - ${eStr}` : (sStr || eStr);
+};
 
 export default function PhanCongClassList({
   classes = [],
@@ -102,16 +118,38 @@ export default function PhanCongClassList({
               {/* Schedules Info */}
               {item.schedules && item.schedules.length > 0 ? (
                 <div className="pcgv-item-schedules">
-                  {item.schedules.map((sc, idx) => (
-                    <div key={idx} className="pcgv-item-sched-row">
-                      <Clock size={12} color="#4f46e5" />
-                      <span><strong>{thuLabels[sc.ThuTrongTuan] || `T${sc.ThuTrongTuan}`}</strong> • {sc.TenTiet} ({sc.GioBatDau?.slice(0, 5)}-{sc.GioKetThuc?.slice(0, 5)})</span>
-                      <span style={{ marginLeft: 'auto', color: '#0284c7', display: 'flex', alignItems: 'center', gap: '2px' }}>
-                        <Building size={11} />
-                        P.{sc.TenPhong}
-                      </span>
-                    </div>
-                  ))}
+                  {item.schedules.map((sc, idx) => {
+                    const dateRangeStr = formatScheduleDateRange(sc.NgayBatDau || item.NgayBatDau, sc.NgayKetThuc || item.NgayKetThuc);
+                    return (
+                      <div key={idx} className="pcgv-item-sched-row" style={{ flexWrap: 'wrap', gap: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Clock size={12} color="#4f46e5" />
+                          <span><strong>{thuLabels[sc.ThuTrongTuan] || `T${sc.ThuTrongTuan}`}</strong> • {sc.TenTiet} ({sc.GioBatDau?.slice(0, 5)}-{sc.GioKetThuc?.slice(0, 5)})</span>
+                        </div>
+                        {dateRangeStr && (
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '3px',
+                            padding: '1px 5px',
+                            background: '#f0fdfa',
+                            border: '1px solid #ccfbf1',
+                            borderRadius: '4px',
+                            color: '#0f766e',
+                            fontSize: '0.68rem',
+                            fontWeight: 600
+                          }}>
+                            <Calendar size={10} color="#0d9488" />
+                            <span>{dateRangeStr}</span>
+                          </span>
+                        )}
+                        <span style={{ marginLeft: 'auto', color: '#0284c7', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                          <Building size={11} />
+                          P.{sc.TenPhong}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <div style={{ fontSize: '0.71875rem', color: '#94a3b8', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>

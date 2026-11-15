@@ -217,10 +217,22 @@ export default function GiangVienManagement() {
         lopHocPhanList: [],
         yeuCauNghiList: [],
         dayThayList: [],
-        dayBuList: []
+        dayBuList: [],
+        monHocList: []
       });
     } finally {
       setDetailLoading(false);
+    }
+  };
+
+  const handleRefreshDetail = async () => {
+    if (detailData?.giangVien?.MaGiangVien) {
+      try {
+        const updated = await apiGetGiangVienChiTiet(detailData.giangVien.MaGiangVien);
+        setDetailData(updated);
+      } catch (err) {
+        console.error('Lỗi khi làm mới chi tiết giảng viên:', err);
+      }
     }
   };
 
@@ -497,6 +509,7 @@ export default function GiangVienManagement() {
               onBack={handleBackToList}
               onEdit={handleOpenEdit}
               hasPermission={hasPermission}
+              onRefreshDetail={handleRefreshDetail}
             />
           ) : (
             <div className="admin-card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

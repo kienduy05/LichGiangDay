@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   ArrowLeft, Edit2, Network, School, BookMarked, CalendarDays,
-  Clock, Link, Unlink, Mail, Phone, Loader2, BookOpen
+  Clock, Link, Unlink, Mail, Phone, Loader2, BookOpen, Plus, Trash2, Search
 } from 'lucide-react';
+import GiangVienAssignMonHocModal from './GiangVienAssignMonHocModal';
+import { apiUpdateGiangVienMonHoc } from '../../../../utils/api';
 import './GiangVienComponents.css';
 
 export default function GiangVienDetailView({
@@ -12,15 +14,46 @@ export default function GiangVienDetailView({
   setActiveTab,
   onBack,
   onEdit,
-  hasPermission = () => true
+  hasPermission = () => true,
+  onRefreshDetail
 }) {
   const {
     giangVien,
     lopHocPhanList = [],
     yeuCauNghiList = [],
     dayThayList = [],
-    dayBuList = []
+    dayBuList = [],
+    monHocList = []
   } = detailData || {};
+
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [monHocSearch, setMonHocSearch] = useState('');
+
+  // Lọc môn học trong tab Môn học giảng dạy
+  const filteredMonHocs = useMemo(() => {
+    if (!monHocSearch.trim()) return monHocList;
+    const kw = monHocSearch.trim().toLowerCase();
+    return monHocList.filter(mh =>
+      (mh.MaMonHoc || '').toLowerCase().includes(kw) ||
+      (mh.TenMonHoc || '').toLowerCase().includes(kw) ||
+      (mh.TenBoMon || '').toLowerCase().includes(kw)
+    );
+  }, [monHocList, monHocSearch]);
+
+  const handleRemoveSingleMonHoc = async (maMonHoc, tenMonHoc) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn gỡ môn '${tenMonHoc}' (${maMonHoc}) khỏi danh sách môn dạy của giảng viên này không?`)) {
+      return;
+    }
+    try {
+      const nextCodes = monHocList.filter(m => m.MaMonHoc !== maMonHoc).map(m => m.MaMonHoc);
+      await apiUpdateGiangVienMonHoc(giangVien.MaGiangVien, nextCodes);
+      if (onRefreshDetail) {
+        await onRefreshDetail();
+      }
+    } catch (err) {
+      alert(err.message || 'Gỡ môn học thất bại.');
+    }
+  };
 
   const initials = giangVien?.HoTen
     ? giangVien.HoTen.split(' ').filter(Boolean).slice(-2).map(w => w[0]).join('').toUpperCase()
@@ -176,6 +209,15 @@ export default function GiangVienDetailView({
 
         <button
           type="button"
+          className={`gv-tab-btn ${activeTab === 'monhoc' ? 'active' : ''}`}
+          onClick={() => setActiveTab('monhoc')}
+        >
+          <BookOpen size={15} style={{ marginRight: 6, verticalAlign: '-2px' }} />
+          Môn học giảng dạy ({monHocList.length})
+        </button>
+
+        <button
+          type="button"
           className={`gv-tab-btn ${activeTab === 'yeucaunghi' ? 'active' : ''}`}
           onClick={() => setActiveTab('yeucaunghi')}
         >
@@ -253,6 +295,142 @@ export default function GiangVienDetailView({
                 )}
               </tbody>
             </table>
+          )}
+
+          {/* TAB 2: MÔN HỌC GIẢNG DẠY */}
+          {activeTab === 'monhoc' && (
+            <div>
+              {/* Header Action Bar */}
+              <div style={{
+                padding: '12px 20px',
+                borderBottom: '1px solid #e2e8f0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '12px',
+                background: '#f8fafc'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: '240px' }}>
+                  <div style={{ position: 'relative', width: '280px' }}>
+                    <Search size={15} color="#94a3b8" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
+                    <input
+                      type="text"
+                      className="admin-form-input"
+                      placeholder="Tìm kiếm môn học đã gán..."
+                      value={monHocSearch}
+                      onChange={(e) => setMonHocSearch(e.target.value)}
+                      style={{ paddingLeft: '32px', height: '34px', fontSize: '0.84rem', borderRadius: '6px' }}
+                    />
+                  </div>
+                  <span style={{ fontSize: '0.84rem', color: '#64748b' }}>
+                    Tổng số: <strong style={{ color: '#2563eb' }}>{monHocList.length}</strong> môn học có thể dạy
+                  </span>
+                </div>
+
+                {hasPermission('GiangVien', 'CanUpdate') && (
+                  <button
+                    type="button"
+                    className="admin-btn-primary"
+                    onClick={() => setIsAssignModalOpen(true)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '7px 14px',
+                      fontSize: '0.84rem',
+                      borderRadius: '8px'
+                    }}
+                  >
+                    <Plus size={15} /> Phân công môn dạy
+                  </button>
+                )}
+              </div>
+
+              {/* Table or Empty */}
+              {filteredMonHocs.length === 0 ? (
+                <div className="table-empty-cell" style={{ padding: '48px 20px', textAlign: 'center' }}>
+                  <BookOpen size={40} style={{ margin: '0 auto 10px', color: '#cbd5e1' }} />
+                  <div style={{ fontWeight: 600, color: '#475569', fontSize: '0.95rem' }}>
+                    {monHocSearch ? 'Không tìm thấy môn học phù hợp từ khóa tìm kiếm.' : 'Giảng viên chưa được thiết lập danh mục môn học có thể giảng dạy.'}
+                  </div>
+                  <p style={{ fontSize: '0.82rem', color: '#64748b', margin: '6px 0 16px' }}>
+                    {monHocSearch ? 'Vui lòng thử từ khóa tìm kiếm khác.' : 'Thiết lập danh sách môn học giảng viên có thể dạy để hệ thống phục vụ phân công tự động.'}
+                  </p>
+                  {!monHocSearch && hasPermission('GiangVien', 'CanUpdate') && (
+                    <button
+                      type="button"
+                      className="admin-btn-primary"
+                      onClick={() => setIsAssignModalOpen(true)}
+                      style={{ margin: '0 auto', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <Plus size={15} /> Phân công môn học ngay
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <table className="custom-data-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: '140px' }}>Mã Môn Học</th>
+                      <th>Tên Môn Học</th>
+                      <th style={{ width: '110px', textAlign: 'center' }}>Số Tín Chỉ</th>
+                      <th style={{ width: '130px', textAlign: 'center' }}>Loại Môn</th>
+                      <th>Bộ Môn Quản Lý</th>
+                      <th style={{ width: '100px', textAlign: 'center' }}>Thao Tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredMonHocs.map((mh) => (
+                      <tr key={mh.MaMonHoc}>
+                        <td>
+                          <span className="gv-code-pill" style={{ fontWeight: 600 }}>
+                            {mh.MaMonHoc}
+                          </span>
+                        </td>
+                        <td>
+                          <div style={{ fontWeight: 600, color: 'var(--admin-text-main)', fontSize: '0.88rem' }}>
+                            {mh.TenMonHoc}
+                          </div>
+                        </td>
+                        <td style={{ textAlign: 'center', fontWeight: 600, color: '#334155' }}>
+                          {mh.SoTinChi} TC
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                          <span className="role-badge">
+                            {mh.LoaiMonHoc === 'Regular' ? 'Bắt buộc' : mh.LoaiMonHoc || 'Chính khóa'}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="gv-bomon-badge" style={{ fontSize: '0.78rem' }}>
+                            <Network size={12} />
+                            {mh.TenBoMon || mh.MaBoMon || '—'}
+                          </span>
+                          {mh.TenKhoa && (
+                            <span style={{ fontSize: '0.76rem', color: '#94a3b8', marginLeft: '6px' }}>
+                              ({mh.TenKhoa})
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                          {hasPermission('GiangVien', 'CanUpdate') && (
+                            <button
+                              type="button"
+                              className="action-btn delete"
+                              title="Gỡ môn học này"
+                              onClick={() => handleRemoveSingleMonHoc(mh.MaMonHoc, mh.TenMonHoc)}
+                              style={{ width: '28px', height: '28px', margin: '0 auto' }}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
           )}
 
           {/* TAB 2: YÊU CẦU NGHỈ */}
@@ -395,6 +573,21 @@ export default function GiangVienDetailView({
             </div>
           )}
         </div>
+      )}
+
+      {/* Modal Phân Công Môn Học */}
+      {isAssignModalOpen && (
+        <GiangVienAssignMonHocModal
+          isOpen={isAssignModalOpen}
+          giangVien={giangVien}
+          currentMonHocList={monHocList}
+          onClose={() => setIsAssignModalOpen(false)}
+          onSuccess={async () => {
+            if (onRefreshDetail) {
+              await onRefreshDetail();
+            }
+          }}
+        />
       )}
     </div>
   );

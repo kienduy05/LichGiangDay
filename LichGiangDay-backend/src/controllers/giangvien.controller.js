@@ -372,6 +372,86 @@ class GiangVienController {
       });
     }
   };
+
+  // 10. Lấy danh sách môn học giảng viên có thể dạy
+  getMonHocList = async (req, res, next) => {
+    try {
+      const { maGiangVien } = req.params;
+      const existing = await GiangVienService.getById(maGiangVien);
+      if (!existing) {
+        return res.status(404).json({
+          status: 'error', code: 404,
+          message: `Không tìm thấy giảng viên '${maGiangVien}'.`
+        });
+      }
+
+      if (req.user?.role === 'BOMON' && existing.MaBoMon !== req.user.username) {
+        return res.status(403).json({
+          status: 'error', code: 403,
+          message: `Từ chối truy cập: Giảng viên '${maGiangVien}' không thuộc bộ môn của bạn.`
+        });
+      }
+
+      const list = await GiangVienService.getMonHocList(maGiangVien);
+      return res.status(200).json({
+        status: 'success',
+        code: 200,
+        message: 'Lấy danh sách môn học giảng dạy thành công.',
+        metadata: list
+      });
+    } catch (error) {
+      return res.status(500).json({
+        status: 'error',
+        code: 500,
+        message: error.message || 'Lỗi server khi lấy danh sách môn học của giảng viên.'
+      });
+    }
+  };
+
+  // 11. Đồng bộ (lưu) danh sách môn học giảng viên có thể dạy (Checkbox sync)
+  updateMonHocList = async (req, res, next) => {
+    try {
+      const { maGiangVien } = req.params;
+      const { maMonHocList } = req.body;
+
+      if (!Array.isArray(maMonHocList)) {
+        return res.status(400).json({
+          status: 'error', code: 400,
+          message: 'Dữ liệu maMonHocList phải là một mảng.'
+        });
+      }
+
+      if (req.user?.role === 'BOMON') {
+        const existing = await GiangVienService.getById(maGiangVien);
+        if (!existing) {
+          return res.status(404).json({
+            status: 'error', code: 404,
+            message: `Không tìm thấy giảng viên '${maGiangVien}'.`
+          });
+        }
+        if (existing.MaBoMon !== req.user.username) {
+          return res.status(403).json({
+            status: 'error', code: 403,
+            message: `Từ chối truy cập: Bạn không có quyền thao tác cho giảng viên của bộ môn khác.`
+          });
+        }
+      }
+
+      const updatedList = await GiangVienService.updateMonHocList(maGiangVien, maMonHocList);
+      return res.status(200).json({
+        status: 'success',
+        code: 200,
+        message: 'Cập nhật danh sách môn học giảng dạy thành công.',
+        metadata: updatedList
+      });
+    } catch (error) {
+      return res.status(400).json({
+        status: 'error',
+        code: 400,
+        message: error.message || 'Cập nhật danh sách môn học giảng dạy thất bại.'
+      });
+    }
+  };
 }
 
 module.exports = new GiangVienController();

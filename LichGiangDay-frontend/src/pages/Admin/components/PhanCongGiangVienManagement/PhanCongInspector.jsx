@@ -6,6 +6,22 @@ import {
 } from 'lucide-react';
 import './PhanCongGiangVien.css';
 
+// Helper: Định dạng khoảng ngày hiển thị dạng DD/MM - DD/MM/YYYY
+const formatScheduleDateRange = (startDate, endDate) => {
+  if (!startDate && !endDate) return null;
+  const sStr = String(startDate || '').slice(0, 10);
+  const eStr = String(endDate || '').slice(0, 10);
+  if (!sStr && !eStr) return null;
+
+  const sParts = sStr.split('-');
+  const eParts = eStr.split('-');
+
+  if (sParts.length === 3 && eParts.length === 3) {
+    return `${sParts[2]}/${sParts[1]} - ${eParts[2]}/${eParts[1]}/${eParts[0]}`;
+  }
+  return sStr && eStr ? `${sStr} - ${eStr}` : (sStr || eStr);
+};
+
 export default function PhanCongInspector({
   selectedClass = null,
   availabilityData = null,
@@ -71,6 +87,12 @@ export default function PhanCongInspector({
           <span className="pcgv-meta-badge">
             Sĩ số: <strong>{selectedClass.SiSoDangKy || selectedClass.SiSoDuKien || 0} SV</strong>
           </span>
+          {formatScheduleDateRange(selectedClass.NgayBatDau, selectedClass.NgayKetThuc) && (
+            <span className="pcgv-meta-badge" style={{ background: '#f0fdf4', color: '#166534', borderColor: '#bbf7d0' }}>
+              <Calendar size={13} color="#15803d" />
+              Thời gian học: <strong>{formatScheduleDateRange(selectedClass.NgayBatDau, selectedClass.NgayKetThuc)}</strong>
+            </span>
+          )}
           {isLocked && (
             <span className="pcgv-meta-badge" style={{ background: '#f5f3ff', color: '#7c3aed', borderColor: '#ddd6fe', fontWeight: 700 }}>
               <Lock size={13} />
@@ -81,20 +103,40 @@ export default function PhanCongInspector({
 
         {/* Detailed Schedules */}
         {selectedClass.schedules && selectedClass.schedules.length > 0 && (
-          <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.65rem 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+          <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.65rem 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
             <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#334155' }}>
               Lịch học đã xếp bởi Phòng Đào Tạo:
             </div>
-            {selectedClass.schedules.map((sc, idx) => (
-              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8125rem', color: '#1e293b' }}>
-                <Clock size={13} color="#4f46e5" />
-                <span><strong>{thuLabels[sc.ThuTrongTuan] || `Thứ ${sc.ThuTrongTuan}`}</strong>, {sc.TenTiet} ({sc.GioBatDau?.slice(0, 5)} - {sc.GioKetThuc?.slice(0, 5)})</span>
-                <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#0284c7', fontWeight: 600 }}>
-                  <Building size={13} />
-                  Phòng {sc.TenPhong} ({sc.TenToaNha || 'Khu A'})
-                </span>
-              </div>
-            ))}
+            {selectedClass.schedules.map((sc, idx) => {
+              const dateRangeStr = formatScheduleDateRange(sc.NgayBatDau || selectedClass.NgayBatDau, sc.NgayKetThuc || selectedClass.NgayKetThuc);
+              return (
+                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8125rem', color: '#1e293b', flexWrap: 'wrap' }}>
+                  <Clock size={13} color="#4f46e5" />
+                  <span><strong>{thuLabels[sc.ThuTrongTuan] || `Thứ ${sc.ThuTrongTuan}`}</strong>, {sc.TenTiet} ({sc.GioBatDau?.slice(0, 5)} - {sc.GioKetThuc?.slice(0, 5)})</span>
+                  {dateRangeStr && (
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '2px 8px',
+                      borderRadius: '6px',
+                      background: '#f0fdfa',
+                      border: '1px solid #ccfbf1',
+                      color: '#0f766e',
+                      fontSize: '0.75rem',
+                      fontWeight: 600
+                    }}>
+                      <Calendar size={12} color="#0d9488" />
+                      <span>{dateRangeStr}</span>
+                    </span>
+                  )}
+                  <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#0284c7', fontWeight: 600 }}>
+                    <Building size={13} />
+                    Phòng {sc.TenPhong} ({sc.TenToaNha || 'Khu A'})
+                  </span>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

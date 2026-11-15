@@ -433,6 +433,78 @@ class ThoiKhoaBieuController {
   };
 
   // ================================================================
+  // 15b. [BOMON] Phân công Giảng viên Tự Động - Xem trước (Preview)
+  // ================================================================
+  autoAssignPreview = async (req, res) => {
+    try {
+      if (req.user?.role !== 'BOMON' && req.user?.role !== 'ADMIN') {
+        return res.status(403).json({
+          status: 'error', code: 403,
+          message: 'Quyền hạn bị từ chối: Chức năng phân công tự động chỉ dành cho Bộ Môn hoặc Quản trị viên.'
+        });
+      }
+
+      const { maHocKy, scope } = req.body;
+      const maBoMon = (req.user?.role === 'ADMIN' && req.body.maBoMon)
+        ? req.body.maBoMon
+        : req.user.username;
+
+      const result = await ThoiKhoaBieuService.autoAssignLecturersPreview({
+        maHocKy,
+        maBoMon,
+        scope: scope || 'ONLY_UNASSIGNED'
+      });
+
+      return res.status(200).json({
+        status: 'success', code: 200,
+        message: 'Mô phỏng phân công tự động hoàn tất.',
+        metadata: result
+      });
+    } catch (error) {
+      return res.status(500).json({
+        status: 'error', code: 500,
+        message: error.message || 'Lỗi khi chạy thuật toán phân công tự động.'
+      });
+    }
+  };
+
+  // ================================================================
+  // 15c. [BOMON] Áp dụng kết quả Phân công Tự Động (Apply)
+  // ================================================================
+  applyAutoAssign = async (req, res) => {
+    try {
+      if (req.user?.role !== 'BOMON' && req.user?.role !== 'ADMIN') {
+        return res.status(403).json({
+          status: 'error', code: 403,
+          message: 'Quyền hạn bị từ chối: Chức năng áp dụng phân công tự động chỉ dành cho Bộ Môn hoặc Quản trị viên.'
+        });
+      }
+
+      const { maHocKy, assignments } = req.body;
+      const maBoMon = (req.user?.role === 'ADMIN' && req.body.maBoMon)
+        ? req.body.maBoMon
+        : req.user.username;
+
+      const result = await ThoiKhoaBieuService.applyAutoAssign({
+        maHocKy,
+        maBoMon,
+        assignments
+      });
+
+      return res.status(200).json({
+        status: 'success', code: 200,
+        message: result.message || 'Áp dụng phân công tự động thành công.',
+        metadata: result
+      });
+    } catch (error) {
+      return res.status(500).json({
+        status: 'error', code: 500,
+        message: error.message || 'Lỗi khi lưu kết quả phân công tự động vào cơ sở dữ liệu.'
+      });
+    }
+  };
+
+  // ================================================================
   // 16. [ADMIN / PHONGDAOTAO] Khóa lịch Lớp học phần
   // ================================================================
   lockSchedule = async (req, res) => {
@@ -512,6 +584,98 @@ class ThoiKhoaBieuController {
       return res.status(400).json({
         status: 'error', code: 400,
         message: error.message || 'Lỗi khi khóa lịch học kỳ.'
+      });
+    }
+  };
+
+  // ================================================================
+  // 19. Xem trước Import Thời Khóa Biểu từ Excel
+  // POST /v1/api/thoikhoabieu/preview-import
+  // ================================================================
+  previewImport = async (req, res) => {
+    try {
+      let { maHocKy, maBoMon } = req.body;
+
+      if (req.user?.role === 'BOMON') {
+        maBoMon = req.user.username;
+      }
+
+      if (!maHocKy || !maHocKy.trim()) {
+        return res.status(400).json({
+          status: 'error', code: 400,
+          message: 'Vui lòng chọn Học kỳ trước khi upload.'
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          status: 'error', code: 400,
+          message: 'Không tìm thấy file Excel được upload.'
+        });
+      }
+
+      const result = await ThoiKhoaBieuService.previewImportThoiKhoaBieu({
+        fileBuffer: req.file.buffer,
+        maHocKy,
+        maBoMon
+      });
+
+      return res.status(200).json({
+        status: 'success', code: 200,
+        message: `Phân tích thành công ${result.tongSoLop} lớp học phần và ${result.tongSoKhungLich} khung thời khóa biểu.`,
+        metadata: result
+      });
+    } catch (error) {
+      return res.status(400).json({
+        status: 'error', code: 400,
+        message: error.message || 'Lỗi khi phân tích file Excel.'
+      });
+    }
+  };
+
+  // ================================================================
+  // 20. Lưu dữ liệu Thời khóa biểu đã import & kiểm duyệt vào CSDL
+  // POST /v1/api/thoikhoabieu/save-imported
+  // ================================================================
+  saveImported = async (req, res) => {
+    try {
+      const userId = req.user?.userId;
+      let { maHocKy, maBoMon, classes } = req.body;
+
+      if (req.user?.role === 'BOMON') {
+        maBoMon = req.user.username;
+      }
+
+      if (!maHocKy || !maHocKy.trim()) {
+        return res.status(400).json({
+          status: 'error', code: 400,
+          message: 'Vui lòng chọn Học kỳ.'
+        });
+      }
+
+      if (!Array.isArray(classes) || classes.length === 0) {
+        return res.status(400).json({
+          status: 'error', code: 400,
+          message: 'Không có dữ liệu lớp học phần để lưu.'
+        });
+      }
+
+      const result = await ThoiKhoaBieuService.saveImportedThoiKhoaBieu({
+        userId,
+        maHocKy,
+        maBoMon,
+        classes
+      });
+
+      return res.status(200).json({
+        status: 'success', code: 200,
+        message: result.message,
+        metadata: result
+      });
+    } catch (error) {
+      return res.status(400).json({
+        status: 'error', code: 400,
+        message: error.message || 'Lỗi khi lưu dữ liệu Thời khóa biểu.'
       });
     }
   };
