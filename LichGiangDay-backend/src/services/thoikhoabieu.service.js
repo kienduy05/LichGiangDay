@@ -1941,6 +1941,8 @@ class ThoiKhoaBieuService {
       );
 
       if (existingBh[0].count === 0) {
+        const buoiHocRows = [];
+        let seq = 1;
 
         for (const sc of schedules) {
           const rawStart = String(sc.NgayBatDau || lhp.NgayBatDau).slice(0, 10);
@@ -1975,24 +1977,35 @@ class ThoiKhoaBieuService {
             const dateCompact = `${y}${m}${d}`;
 
             const randHex = Math.random().toString(36).substring(2, 6).toUpperCase();
-            const maBuoiHoc = `BH_${dateCompact}_${randHex}`;
+            const maBuoiHoc = `BH_${dateCompact}_${randHex}_${seq++}`;
 
-            await conn.query(`
-            INSERT INTO BuoiHoc (
-              MaBuoiHoc, MaLopHocPhan, MaGiangVien, MaThoiKhoaBieu,
-              NgayHoc, MaTiet, MaPhong, LoaiBuoiHoc, TrangThai
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'Regular', 'Normal')
-          `, [
+            buoiHocRows.push([
               maBuoiHoc,
               lhp.MaLopHocPhan,
               lhp.MaGiangVien,
               sc.MaThoiKhoaBieu,
               ngayHocStr,
               sc.MaTiet,
-              sc.MaPhong
+              sc.MaPhong,
+              'Regular',
+              'Normal'
             ]);
 
             curr.setDate(curr.getDate() + 7);
+          }
+        }
+
+        // Tối ưu hóa: Bulk Insert tất cả các buổi học trong 1 query duy nhất thay vì lặp từng câu
+        if (buoiHocRows.length > 0) {
+          const CHUNK_SIZE = 500;
+          for (let i = 0; i < buoiHocRows.length; i += CHUNK_SIZE) {
+            const chunk = buoiHocRows.slice(i, i + CHUNK_SIZE);
+            await conn.query(`
+              INSERT INTO BuoiHoc (
+                MaBuoiHoc, MaLopHocPhan, MaGiangVien, MaThoiKhoaBieu,
+                NgayHoc, MaTiet, MaPhong, LoaiBuoiHoc, TrangThai
+              ) VALUES ?
+            `, [chunk]);
           }
         }
       }
@@ -2031,7 +2044,7 @@ class ThoiKhoaBieuService {
     }
 
     let sql = `
-      SELECT lhp.MaLopHocPhan
+      SELECT lhp.MaLopHocPhan, lhp.TenLopHocPhan, lhp.MaGiangVien, lhp.NgayBatDau, lhp.NgayKetThuc
       FROM LopHocPhan lhp
       LEFT JOIN BoMon bm ON lhp.MaBoMon = bm.MaBoMon
       WHERE lhp.MaHocKy = ?
@@ -2051,18 +2064,133 @@ class ThoiKhoaBieuService {
     }
 
     const [rows] = await db.query(sql, params);
-
-    let lockedCount = 0;
-    for (const row of rows) {
-      await this.lockScheduleForClass({ maLopHocPhan: row.MaLopHocPhan });
-      lockedCount++;
+    if (!rows || rows.length === 0) {
+      return {
+        success: true,
+        lockedCount: 0,
+        message: 'Hiện không có lớp học phần nào đã phân công cần khóa.'
+      };
     }
 
-    return {
-      success: true,
-      lockedCount,
-      message: `Đã chốt & khóa thành công ${lockedCount} lớp học phần đã được phân công trong học kỳ.`
-    };
+    const lhpIds = rows.map(r => r.MaLopHocPhan);
+    const conn = await db.getConnection();
+    try {
+      await conn.beginTransaction();
+
+      // 1. Cập nhật trạng thái Locked hàng loạt cho LopHocPhan
+      await conn.query(
+        `UPDATE LopHocPhan SET TrangThaiPhanCong = 'Locked' WHERE MaLopHocPhan IN (?)`,
+        [lhpIds]
+      );
+
+      // 2. Cập nhật trạng thái Locked hàng loạt cho ThoiKhoaBieu
+      await conn.query(
+        `UPDATE ThoiKhoaBieu SET TrangThai = 'Locked', ThoiGianBoMonXacNhan = NOW() WHERE MaLopHocPhan IN (?)`,
+        [lhpIds]
+      );
+
+      // 3. Lấy toàn bộ schedules của các lớp cần khóa
+      const [allSchedules] = await conn.query(`
+        SELECT MaThoiKhoaBieu, MaLopHocPhan, ThuTrongTuan, MaTiet, MaPhong, NgayBatDau, NgayKetThuc
+        FROM ThoiKhoaBieu
+        WHERE MaLopHocPhan IN (?)
+        ORDER BY MaLopHocPhan, ThuTrongTuan, MaTiet
+      `, [lhpIds]);
+
+      // 4. Kiểm tra những lớp nào đã có BuoiHoc trong DB
+      const [existingBh] = await conn.query(
+        `SELECT DISTINCT MaLopHocPhan FROM BuoiHoc WHERE MaLopHocPhan IN (?)`,
+        [lhpIds]
+      );
+      const existingLhpSet = new Set(existingBh.map(b => b.MaLopHocPhan));
+
+      const lhpMap = new Map();
+      rows.forEach(r => lhpMap.set(r.MaLopHocPhan, r));
+
+      const schedulesByLhp = new Map();
+      allSchedules.forEach(sc => {
+        if (!schedulesByLhp.has(sc.MaLopHocPhan)) {
+          schedulesByLhp.set(sc.MaLopHocPhan, []);
+        }
+        schedulesByLhp.get(sc.MaLopHocPhan).push(sc);
+      });
+
+      // 5. Sinh toàn bộ danh sách BuoiHoc trong bộ nhớ RAM
+      const allBuoiHocRows = [];
+      let seq = 1;
+
+      for (const [lhpId, scList] of schedulesByLhp.entries()) {
+        if (existingLhpSet.has(lhpId)) continue;
+        const lhp = lhpMap.get(lhpId);
+        if (!lhp || !lhp.MaGiangVien) continue;
+
+        for (const sc of scList) {
+          const rawStart = String(sc.NgayBatDau || lhp.NgayBatDau).slice(0, 10);
+          const rawEnd = String(sc.NgayKetThuc || lhp.NgayKetThuc).slice(0, 10);
+          const [sY, sM, sD] = rawStart.split('-').map(Number);
+          const [eY, eM, eD] = rawEnd.split('-').map(Number);
+
+          let curr = new Date(sY, sM - 1, sD, 12, 0, 0);
+          const endLimit = new Date(eY, eM - 1, eD, 23, 59, 59);
+          const targetDay = sc.ThuTrongTuan === 8 ? 0 : sc.ThuTrongTuan - 1;
+
+          while (curr.getDay() !== targetDay) {
+            curr.setDate(curr.getDate() + 1);
+          }
+
+          while (curr <= endLimit) {
+            const y = curr.getFullYear();
+            const m = String(curr.getMonth() + 1).padStart(2, '0');
+            const d = String(curr.getDate()).padStart(2, '0');
+            const ngayHocStr = `${y}-${m}-${d}`;
+            const dateCompact = `${y}${m}${d}`;
+
+            const randHex = Math.random().toString(36).substring(2, 6).toUpperCase();
+            const maBuoiHoc = `BH_${dateCompact}_${randHex}_${seq++}`;
+
+            allBuoiHocRows.push([
+              maBuoiHoc,
+              lhp.MaLopHocPhan,
+              lhp.MaGiangVien,
+              sc.MaThoiKhoaBieu,
+              ngayHocStr,
+              sc.MaTiet,
+              sc.MaPhong,
+              'Regular',
+              'Normal'
+            ]);
+
+            curr.setDate(curr.getDate() + 7);
+          }
+        }
+      }
+
+      // 6. Bulk insert toàn bộ BuoiHoc theo lô (chunks 500 rows) cực nhanh
+      const CHUNK_SIZE = 500;
+      for (let i = 0; i < allBuoiHocRows.length; i += CHUNK_SIZE) {
+        const chunk = allBuoiHocRows.slice(i, i + CHUNK_SIZE);
+        await conn.query(`
+          INSERT INTO BuoiHoc (
+            MaBuoiHoc, MaLopHocPhan, MaGiangVien, MaThoiKhoaBieu,
+            NgayHoc, MaTiet, MaPhong, LoaiBuoiHoc, TrangThai
+          ) VALUES ?
+        `, [chunk]);
+      }
+
+      await conn.commit();
+
+      return {
+        success: true,
+        lockedCount: rows.length,
+        buoiHocCount: allBuoiHocRows.length,
+        message: `Đã chốt & khóa thành công toàn bộ ${rows.length} lớp học phần đã được phân công!`
+      };
+    } catch (err) {
+      await conn.rollback();
+      throw err;
+    } finally {
+      conn.release();
+    }
   };
 
   // ================================================================
