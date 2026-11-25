@@ -2507,6 +2507,35 @@ class ThoiKhoaBieuService {
       const row = rows[r];
       if (!row || row.length === 0) continue;
 
+      // Kiểm tra các dòng chân trang / ghi chú cuối bảng (Footer/Note rows) để dừng đọc
+      const rowJoinedNorm = row.map(c => norm(c)).filter(Boolean).join(' ');
+      if (!rowJoinedNorm) continue;
+
+      const isFooterRow = (
+        rowJoinedNorm.startsWith('ghi chú') ||
+        rowJoinedNorm.startsWith('chú ý') ||
+        rowJoinedNorm.startsWith('lưu ý') ||
+        rowJoinedNorm.startsWith('chú thích') ||
+        rowJoinedNorm.startsWith('tổng cộng') ||
+        rowJoinedNorm.startsWith('tổng số') ||
+        rowJoinedNorm.includes('mọi thắc mắc') ||
+        rowJoinedNorm.includes('kế hoạch đào tạo') ||
+        rowJoinedNorm.includes('trưởng phòng đào tạo') ||
+        rowJoinedNorm.includes('p.trưởng phòng') ||
+        rowJoinedNorm.includes('phó trưởng phòng') ||
+        rowJoinedNorm.includes('hà nội, ngày') ||
+        rowJoinedNorm.includes('người lập biểu') ||
+        rowJoinedNorm.includes('ký tên')
+      );
+
+      if (isFooterRow) {
+        if (parsedClasses.length > 0) {
+          // Đã đọc xong bảng dữ liệu và chạm phần Ghi chú / Chữ ký cuối trang -> dừng đọc
+          break;
+        }
+        continue;
+      }
+
       const rawStt = colStt !== -1 ? String(row[colStt] || '').trim() : '';
       const rawMaHocPhan = colMaHocPhan !== -1 ? String(row[colMaHocPhan] || '').replace(/[\r\n\s]+/g, '').trim() : '';
       const rawLopMon = colLopMon !== -1 ? String(row[colLopMon] || '').trim() : '';
@@ -2825,55 +2854,27 @@ class ThoiKhoaBieuService {
         }
       }
 
+      const validClasses = classes.filter(cls => cls.maLopHocPhan && cls.maMonHoc);
       let createdClassesCount = 0;
       let createdSchedulesCount = 0;
 
-      for (const cls of classes) {
-        if (!cls.maLopHocPhan || !cls.maMonHoc) continue;
+      if (validClasses.length > 0) {
+        const allLhpCodes = validClasses.map(c => c.maLopHocPhan);
 
-        const maBoMonVal = cls.maBoMon || maBoMon || 'MHT';
-
-        // 1. Lưu hoặc Cập nhật Lớp học phần
-        const [existing] = await conn.query(
-          `SELECT MaLopHocPhan FROM LopHocPhan WHERE MaLopHocPhan = ? LIMIT 1`,
-          [cls.maLopHocPhan]
+        // 1. Kiểm tra hàng loạt lớp nào đã tồn tại (1 query duy nhất)
+        const [existingRows] = await conn.query(
+          `SELECT MaLopHocPhan FROM LopHocPhan WHERE MaLopHocPhan IN (?)`,
+          [allLhpCodes]
         );
+        const existingSet = new Set(existingRows.map(r => r.MaLopHocPhan));
 
-        if (existing.length > 0) {
-          await conn.query(`
-            UPDATE LopHocPhan SET
-              TenLopHocPhan = ?,
-              MaMonHoc = ?,
-              LoaiHoc = ?,
-              SiSoDuKien = ?,
-              SiSoDangKy = ?,
-              KhoaHoc = ?,
-              NgayBatDau = ?,
-              NgayKetThuc = ?,
-              SoTuan = ?,
-              MaBoMon = ?
-            WHERE MaLopHocPhan = ?
-          `, [
-            cls.tenLopHocPhan,
-            cls.maMonHoc,
-            cls.loaiHoc || 'LT',
-            cls.siSoDuKien || 100,
-            cls.siSoDangKy || 100,
-            cls.khoaHoc || null,
-            cls.ngayBatDau,
-            cls.ngayKetThuc,
-            cls.soTuan || 15,
-            maBoMonVal,
-            cls.maLopHocPhan
-          ]);
-        } else {
-          await conn.query(`
-            INSERT INTO LopHocPhan (
-              MaLopHocPhan, TenLopHocPhan, MaMonHoc, MaHocKy, LoaiHoc,
-              SiSoDuKien, SiSoDangKy, NgayBatDau, NgayKetThuc, SoTuan,
-              MaBoMon, KhoaHoc, TrangThaiPhanCong
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Unassigned')
-          `, [
+        // 2. Chuẩn bị dữ liệu Bulk Upsert LopHocPhan
+        const lhpValues = validClasses.map(cls => {
+          const maBoMonVal = cls.maBoMon || maBoMon || 'MHT';
+          if (!existingSet.has(cls.maLopHocPhan)) {
+            createdClassesCount++;
+          }
+          return [
             cls.maLopHocPhan,
             cls.tenLopHocPhan,
             cls.maMonHoc,
@@ -2885,39 +2886,79 @@ class ThoiKhoaBieuService {
             cls.ngayKetThuc,
             cls.soTuan || 15,
             maBoMonVal,
-            cls.khoaHoc || null
-          ]);
-          createdClassesCount++;
+            cls.khoaHoc || null,
+            'Unassigned'
+          ];
+        });
+
+        const CHUNK_SIZE = 500;
+        for (let i = 0; i < lhpValues.length; i += CHUNK_SIZE) {
+          const chunk = lhpValues.slice(i, i + CHUNK_SIZE);
+          await conn.query(`
+            INSERT INTO LopHocPhan (
+              MaLopHocPhan, TenLopHocPhan, MaMonHoc, MaHocKy, LoaiHoc,
+              SiSoDuKien, SiSoDangKy, NgayBatDau, NgayKetThuc, SoTuan,
+              MaBoMon, KhoaHoc, TrangThaiPhanCong
+            ) VALUES ?
+            ON DUPLICATE KEY UPDATE
+              TenLopHocPhan = VALUES(TenLopHocPhan),
+              MaMonHoc = VALUES(MaMonHoc),
+              LoaiHoc = VALUES(LoaiHoc),
+              SiSoDuKien = VALUES(SiSoDuKien),
+              SiSoDangKy = VALUES(SiSoDangKy),
+              KhoaHoc = VALUES(KhoaHoc),
+              NgayBatDau = VALUES(NgayBatDau),
+              NgayKetThuc = VALUES(NgayKetThuc),
+              SoTuan = VALUES(SoTuan),
+              MaBoMon = VALUES(MaBoMon)
+          `, [chunk]);
         }
 
-        // 2. Xóa các khung TKB cũ của lớp này để ghi đè khung mới
-        await conn.query(`DELETE FROM ThoiKhoaBieu WHERE MaLopHocPhan = ?`, [cls.maLopHocPhan]);
+        // 3. Xóa các khung TKB cũ của toàn bộ danh sách lớp này (1 query duy nhất)
+        await conn.query(
+          `DELETE FROM ThoiKhoaBieu WHERE MaLopHocPhan IN (?)`,
+          [allLhpCodes]
+        );
 
-        // 3. Lưu từng khung Thời khóa biểu
-        if (Array.isArray(cls.schedules)) {
+        // 4. Chuẩn bị dữ liệu Bulk Insert ThoiKhoaBieu
+        const tkbValues = [];
+        const usedTkbIds = new Set();
+
+        for (const cls of validClasses) {
+          if (!Array.isArray(cls.schedules)) continue;
           for (const sc of cls.schedules) {
             if (!sc.thuTrongTuan || !sc.maTiet || !sc.maPhong) continue;
 
-            const randHex = Math.random().toString(36).substring(2, 6).toUpperCase();
             const cleanCode = cls.maLopHocPhan.replace(/[^a-zA-Z0-9]/g, '_');
-            const maTkb = `TKB_${cleanCode}_T${sc.thuTrongTuan}_C${sc.maTiet}_${randHex}`;
+            let maTkb;
+            do {
+              const randHex = Math.random().toString(36).substring(2, 6).toUpperCase();
+              maTkb = `TKB_${cleanCode}_T${sc.thuTrongTuan}_C${sc.maTiet}_${randHex}`;
+            } while (usedTkbIds.has(maTkb));
+            usedTkbIds.add(maTkb);
 
-            await conn.query(`
-              INSERT INTO ThoiKhoaBieu (
-                MaThoiKhoaBieu, MaLopHocPhan, ThuTrongTuan, MaTiet,
-                MaPhong, NgayBatDau, NgayKetThuc, TrangThai
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, 'Scheduled')
-            `, [
+            tkbValues.push([
               maTkb,
               cls.maLopHocPhan,
               sc.thuTrongTuan,
               sc.maTiet,
               sc.maPhong,
               sc.ngayBatDau || cls.ngayBatDau,
-              sc.ngayKetThuc || cls.ngayKetThuc
+              sc.ngayKetThuc || cls.ngayKetThuc,
+              'Scheduled'
             ]);
             createdSchedulesCount++;
           }
+        }
+
+        for (let i = 0; i < tkbValues.length; i += CHUNK_SIZE) {
+          const chunk = tkbValues.slice(i, i + CHUNK_SIZE);
+          await conn.query(`
+            INSERT INTO ThoiKhoaBieu (
+              MaThoiKhoaBieu, MaLopHocPhan, ThuTrongTuan, MaTiet,
+              MaPhong, NgayBatDau, NgayKetThuc, TrangThai
+            ) VALUES ?
+          `, [chunk]);
         }
       }
 
@@ -3382,27 +3423,53 @@ class ThoiKhoaBieuService {
     await conn.beginTransaction();
 
     try {
+      const assignMap = new Map();
+      for (const item of assignments) {
+        if (item.maLopHocPhan && item.maGiangVien) {
+          assignMap.set(item.maLopHocPhan.trim(), item.maGiangVien.trim());
+        }
+      }
+
+      const targetIds = Array.from(assignMap.keys());
       let updatedCount = 0;
 
-      for (const item of assignments) {
-        if (!item.maLopHocPhan || !item.maGiangVien) continue;
-
-        // Cập nhật LopHocPhan (chỉ cập nhật nếu lớp thuộc bộ môn, KHÔNG bị Locked và ĐÃ CÓ TKB)
-        const [resultLhp] = await conn.query(`
-          UPDATE LopHocPhan
-          SET MaGiangVien = ?, TrangThaiPhanCong = 'Assigned'
-          WHERE MaLopHocPhan = ? AND MaBoMon = ? AND MaHocKy = ? AND TrangThaiPhanCong != 'Locked'
+      if (targetIds.length > 0) {
+        // 1. Lọc trong 1 query duy nhất các lớp đủ điều kiện (đúng bộ môn, học kỳ, chưa khóa, đã có TKB)
+        const [eligibleRows] = await conn.query(`
+          SELECT MaLopHocPhan
+          FROM LopHocPhan
+          WHERE MaLopHocPhan IN (?)
+            AND MaBoMon = ?
+            AND MaHocKy = ?
+            AND (TrangThaiPhanCong IS NULL OR TrangThaiPhanCong != 'Locked')
             AND EXISTS (SELECT 1 FROM ThoiKhoaBieu tkb WHERE tkb.MaLopHocPhan = LopHocPhan.MaLopHocPhan)
-        `, [item.maGiangVien.trim(), item.maLopHocPhan.trim(), cleanMaBoMon, cleanMaHocKy]);
+        `, [targetIds, cleanMaBoMon, cleanMaHocKy]);
 
-        if (resultLhp.affectedRows > 0) {
-          updatedCount++;
-          // Cập nhật đồng bộ BuoiHoc
-          await conn.query(`
-            UPDATE BuoiHoc
-            SET MaGiangVien = ?
-            WHERE MaLopHocPhan = ?
-          `, [item.maGiangVien.trim(), item.maLopHocPhan.trim()]);
+        const idsToUpdate = eligibleRows.map(r => r.MaLopHocPhan);
+        updatedCount = idsToUpdate.length;
+
+        if (idsToUpdate.length > 0) {
+          const caseClauses = [];
+          const caseParams = [];
+
+          for (const maLhp of idsToUpdate) {
+            caseClauses.push('WHEN ? THEN ?');
+            caseParams.push(maLhp, assignMap.get(maLhp));
+          }
+
+          const caseSql = `CASE MaLopHocPhan ${caseClauses.join(' ')} END`;
+
+          // 2. Bulk update LopHocPhan trong 1 query duy nhất
+          await conn.query(
+            `UPDATE LopHocPhan SET MaGiangVien = ${caseSql}, TrangThaiPhanCong = 'Assigned' WHERE MaLopHocPhan IN (?)`,
+            [...caseParams, idsToUpdate]
+          );
+
+          // 3. Bulk update đồng bộ BuoiHoc trong 1 query duy nhất
+          await conn.query(
+            `UPDATE BuoiHoc SET MaGiangVien = ${caseSql} WHERE MaLopHocPhan IN (?)`,
+            [...caseParams, idsToUpdate]
+          );
         }
       }
 

@@ -71,7 +71,7 @@ export default function ThoiKhoaBieuTable({
             <th style={{ width: '100px' }}>Sĩ Số</th>
             <th style={{ width: '170px' }}>Giảng Viên</th>
             <th>Khung Thời Khóa Biểu (Lịch Học)</th>
-            <th style={{ width: '130px', textAlign: 'center' }}>Thao Tác</th>
+            <th style={{ width: '105px', textAlign: 'center' }}>Thao Tác</th>
           </tr>
         </thead>
         <tbody>
