@@ -524,7 +524,7 @@ export default function LichBienDongMonitor() {
               <option value="ALL">-- Tất cả loại --</option>
               <option value="ABSENCE">Báo nghỉ dạy</option>
               <option value="SUBSTITUTE">Nhờ dạy thay</option>
-              <option value="SWAP">Xin đổi ca học</option>
+              {/* <option value="SWAP">Xin đổi ca học</option> */}
               <option value="MAKEUP">Đăng ký dạy bù</option>
             </select>
           </div>

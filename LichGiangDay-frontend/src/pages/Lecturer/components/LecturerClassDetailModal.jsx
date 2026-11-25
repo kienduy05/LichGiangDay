@@ -192,8 +192,8 @@ export default function LecturerClassDetailModal({
               </button>
             ) : item.TrangThai === 'Normal' ? (
               canPerformAction ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.65rem' }}>
-                  {/* 1. Đổi ca */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.65rem' }}>
+                  {/* 1. Đổi ca (Tạm ẩn theo yêu cầu nghiệp vụ)
                   <button
                     type="button"
                     onClick={() => onRequestDoiCa && onRequestDoiCa(item)}
@@ -216,6 +216,7 @@ export default function LecturerClassDetailModal({
                     <RefreshCw size={15} />
                     <span>Xin Đổi Ca</span>
                   </button>
+                  */}
 
                   {/* 2. Báo nghỉ */}
                   <button
@@ -289,7 +290,8 @@ export default function LecturerClassDetailModal({
                       </div>
                     </div>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.65rem', opacity: 0.45 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.65rem', opacity: 0.45 }}>
+                    {/* Tạm ẩn nút Xin Đổi Ca
                     <button
                       type="button"
                       disabled
@@ -312,6 +314,7 @@ export default function LecturerClassDetailModal({
                       <RefreshCw size={15} />
                       <span>Xin Đổi Ca</span>
                     </button>
+                    */}
                     <button
                       type="button"
                       disabled
