@@ -385,7 +385,7 @@
    RESPONSIVE MEDIA QUERIES (THỜI KHÓA BIỂU)
    ========================================================================== */
 
-@media (max-width: 1024px) {
+@media (max-width: 1360px) {
   .tkb-split-layout {
     flex-direction: column;
     gap: 16px;

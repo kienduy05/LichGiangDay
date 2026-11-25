@@ -512,6 +512,34 @@ export default function ImportThoiKhoaBieuManagement({ onNavigateTab }) {
             </div>
           </div>
 
+          {/* Top Action Bar (Nút Hủy & Lưu đặt ngay phía trên) */}
+          <div className="import-top-action-bar">
+            <button
+              className="btn-secondary-cancel"
+              onClick={() => {
+                setClassesList([]);
+                setFile(null);
+                setPreviewData(null);
+              }}
+              disabled={saving}
+            >
+              Hủy / Chọn file khác
+            </button>
+
+            <button
+              className="btn-primary-save-import"
+              onClick={handleSaveToDatabase}
+              disabled={saving || kpiStats.totalClasses === 0}
+            >
+              {saving ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
+              <span>
+                {saving
+                  ? 'Đang lưu vào CSDL...'
+                  : `Lưu ${kpiStats.totalClasses} Lớp & ${kpiStats.totalSchedules} Khung TKB vào hệ thống`}
+              </span>
+            </button>
+          </div>
+
           {/* Filter Pills & Search */}
           <div className="import-filter-toolbar">
             <div className="import-filter-pills">
@@ -803,34 +831,6 @@ export default function ImportThoiKhoaBieuManagement({ onNavigateTab }) {
                 )}
               </div>
             ))}
-          </div>
-
-          {/* Sticky Bottom Action Bar */}
-          <div className="import-sticky-footer">
-            <button
-              className="btn-secondary-cancel"
-              onClick={() => {
-                setClassesList([]);
-                setFile(null);
-                setPreviewData(null);
-              }}
-              disabled={saving}
-            >
-              Hủy / Chọn file khác
-            </button>
-
-            <button
-              className="btn-primary-save-import"
-              onClick={handleSaveToDatabase}
-              disabled={saving || kpiStats.totalClasses === 0}
-            >
-              {saving ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
-              <span>
-                {saving
-                  ? 'Đang lưu vào CSDL...'
-                  : `Lưu ${kpiStats.totalClasses} Lớp & ${kpiStats.totalSchedules} Khung TKB vào hệ thống`}
-              </span>
-            </button>
           </div>
         </>
       )}
