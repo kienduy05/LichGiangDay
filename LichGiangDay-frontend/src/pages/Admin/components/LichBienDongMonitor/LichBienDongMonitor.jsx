@@ -510,7 +510,7 @@ export default function LichBienDongMonitor() {
               <option value="ALL">-- Tất cả Bộ môn --</option>
               <option value="MHT">Mạng & Hệ thống thông tin</option>
               <option value="CNPM1">Công nghệ phần mềm</option>
-              <option value="KHMT">Khoa học máy tính</option>
+              <option value="KHM">Khoa học máy tính</option>
             </select>
           </div>
 
