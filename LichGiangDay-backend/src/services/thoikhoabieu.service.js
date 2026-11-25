@@ -2302,6 +2302,67 @@ class ThoiKhoaBieuService {
   }
 
   /**
+   * Trích xuất tên môn học gốc từ cột Lớp môn tín chỉ
+   * VD: "An ninh mạng-1-1-25(N01.BT1)" -> "An ninh mạng"
+   */
+  static extractTenMonHoc(lopMonTinChi) {
+    if (!lopMonTinChi) return '';
+    const safe = String(lopMonTinChi).replace(/[\r\n\s]+/g, ' ').trim();
+    const stripped = safe.replace(/-\s*\d+.*$/, '').trim();
+    return stripped || safe;
+  }
+
+  /**
+   * Suy luận thông tin Phòng học và Tòa nhà theo đúng quy tắc CSDL (như màn hình Quản lý Phòng học)
+   * VD: "401-A1" -> MaPhong: "401-A1", TenPhong: "P401-A1", MaToaNha: "UTC_A1", TenToaNha: "Tòa A1"
+   *     "101A5 NCT" -> MaPhong: "101A5 NCT", TenPhong: "P101A5 NCT", MaToaNha: "UTC_A5_NCT", TenToaNha: "Tòa A5 NCT"
+   */
+  static parseRoomBuildingInfo(maPhong) {
+    if (!maPhong || maPhong === 'ONLINE') return null;
+    const cleanMaPhong = String(maPhong).trim().toUpperCase();
+    const tenPhong = cleanMaPhong.startsWith('P') ? cleanMaPhong : `P${cleanMaPhong}`;
+
+    let maToaNha = 'UTC_KHAC';
+    let tenToaNha = 'Tòa khác';
+    const coSo = 'UTC';
+    let diaChi = 'Số 3 Cầu Giấy';
+
+    if (/NCT/i.test(cleanMaPhong)) {
+      maToaNha = 'UTC_A5_NCT';
+      tenToaNha = 'Tòa A5 NCT';
+      diaChi = 'Số 3 Nguyễn Chí Thanh';
+    } else if (cleanMaPhong.includes('-')) {
+      const parts = cleanMaPhong.split('-');
+      const building = parts[parts.length - 1].replace(/[^A-Z0-9]/g, '').trim();
+      if (building) {
+        maToaNha = `UTC_${building}`.slice(0, 10);
+        tenToaNha = `Tòa ${building}`;
+      }
+    } else {
+      const m = cleanMaPhong.match(/([A-Z]\d+[A-Z]?)$/);
+      if (m) {
+        const building = m[1];
+        maToaNha = `UTC_${building}`.slice(0, 10);
+        tenToaNha = `Tòa ${building}`;
+      }
+    }
+
+    const loaiPhong = maToaNha === 'UTC_A4' ? 'Phòng thí nghiệm' : 'Phòng lý thuyết';
+
+    return {
+      maPhong: cleanMaPhong.slice(0, 30),
+      tenPhong: tenPhong.slice(0, 50),
+      maToaNha,
+      tenToaNha,
+      coSo,
+      diaChi,
+      sucChua: 100,
+      loaiPhong,
+      trangThai: 'Ready'
+    };
+  }
+
+  /**
    * Đọc và phân tích file Excel Thời khóa biểu, đối soát CSDL và trả về danh sách xem trước
    */
   static previewImportThoiKhoaBieu = async ({ fileBuffer, maHocKy, maBoMon = '' }) => {
@@ -2335,14 +2396,21 @@ class ThoiKhoaBieuService {
       // Bỏ qua nếu đã tồn tại
     }
 
-    // 3. Tải danh mục Môn học, Phòng học, Bộ môn từ CSDL
+    // 3. Tải danh mục Môn học, Phòng học, Tòa nhà, Khóa SV, Bộ môn từ CSDL
     const [monHocRows] = await db.query(`SELECT MaMonHoc, TenMonHoc, SoTinChi, MaBoMon FROM MonHoc`);
     const monHocMap = new Map();
     monHocRows.forEach(m => monHocMap.set(m.MaMonHoc, m));
 
-    const [phongHocRows] = await db.query(`SELECT MaPhong, TenPhong, SucChua, LoaiPhong, TrangThai FROM PhongHoc`);
+    const [phongHocRows] = await db.query(`SELECT MaPhong, TenPhong, MaToaNha, SucChua, LoaiPhong, TrangThai FROM PhongHoc`);
     const phongHocMap = new Map();
     phongHocRows.forEach(p => phongHocMap.set(p.MaPhong, p));
+
+    const [toaNhaRows] = await db.query(`SELECT MaToaNha, TenToaNha FROM ToaNha`);
+    const toaNhaMap = new Map();
+    toaNhaRows.forEach(t => toaNhaMap.set(t.MaToaNha, t));
+
+    const [khoaSvRows] = await db.query(`SELECT MaKhoaSinhVien, TenKhoaSinhVien FROM KhoaSinhVien`);
+    const khoaSvSet = new Set(khoaSvRows.map(k => k.MaKhoaSinhVien));
 
     const [boMonRows] = await db.query(`SELECT MaBoMon, TenBoMon FROM BoMon`);
     const boMonList = boMonRows;
@@ -2499,6 +2567,7 @@ class ThoiKhoaBieuService {
     const parsedClasses = [];
     let currentClass = null;
     let lastSeenMaMonHoc = '';
+    let lastSeenSoTinChi = null;
     let lastSeenKhoaHoc = '';
     let currentClassThoiGian = '';
     let currentClassSoTuan = null;
@@ -2539,9 +2608,13 @@ class ThoiKhoaBieuService {
       const rawStt = colStt !== -1 ? String(row[colStt] || '').trim() : '';
       const rawMaHocPhan = colMaHocPhan !== -1 ? String(row[colMaHocPhan] || '').replace(/[\r\n\s]+/g, '').trim() : '';
       const rawLopMon = colLopMon !== -1 ? String(row[colLopMon] || '').trim() : '';
+      const parsedSoTC = colSoTC !== -1 ? parseInt(row[colSoTC], 10) : NaN;
 
       if (rawMaHocPhan) {
         lastSeenMaMonHoc = rawMaHocPhan;
+      }
+      if (!isNaN(parsedSoTC) && parsedSoTC > 0) {
+        lastSeenSoTinChi = parsedSoTC;
       }
 
       const rawThoiGian = colThoiGian !== -1 ? String(row[colThoiGian] || '').trim() : '';
@@ -2555,6 +2628,8 @@ class ThoiKhoaBieuService {
 
         const maMonToUse = rawMaHocPhan || lastSeenMaMonHoc;
         const generatedMaLop = this.generateMaLopHocPhan(maMonToUse, rawLopMon);
+        const soTinChiToUse = !isNaN(parsedSoTC) && parsedSoTC > 0 ? parsedSoTC : (lastSeenSoTinChi || 3);
+        const parsedTenMonHoc = this.extractTenMonHoc(rawLopMon);
 
         const kieuHocRaw = colKieuHoc !== -1 ? String(row[colKieuHoc] || '').trim().toUpperCase() : 'LT';
         let loaiHoc = 'LT';
@@ -2577,6 +2652,8 @@ class ThoiKhoaBieuService {
           maLopHocPhan: generatedMaLop,
           tenLopHocPhan: rawLopMon,
           maMonHoc: maMonToUse,
+          parsedTenMonHoc,
+          soTinChi: soTinChiToUse,
           loaiHoc: loaiHoc,
           siSoDuKien: !isNaN(svDkNum) ? svDkNum : 100,
           siSoDangKy: !isNaN(svDangKyNum) ? svDangKyNum : (!isNaN(svDkNum) ? svDkNum : 100),
@@ -2631,10 +2708,26 @@ class ThoiKhoaBieuService {
       throw new Error('Không trích xuất được lớp học phần nào từ file Excel. Vui lòng kiểm tra lại cấu trúc tiêu đề các cột.');
     }
 
-    // 8. Hậu xử lý & Đối soát CSDL (Validation)
+    // 8. Hậu xử lý & Đối soát CSDL (Validation + Tự động nhận diện dữ liệu nền còn thiếu)
     let soLopHopLe = 0;
     let soLopLoi = 0;
     const seenMaLop = new Set();
+
+    // Gom nhóm LoaiHoc theo MaMonHoc để suy ra LoaiMonHoc (VD: LT,BT,TH)
+    const subjectTypesMap = new Map();
+    parsedClasses.forEach(c => {
+      if (!c.maMonHoc) return;
+      if (!subjectTypesMap.has(c.maMonHoc)) subjectTypesMap.set(c.maMonHoc, new Set());
+      subjectTypesMap.get(c.maMonHoc).add(c.loaiHoc || 'LT');
+    });
+
+    const autoCreateMonHocMap = new Map();
+    const autoCreateToaNhaMap = new Map();
+    const autoCreatePhongHocMap = new Map();
+    const autoCreateKhoaMap = new Map();
+
+    const previewMonHocRows = [...monHocRows];
+    const previewPhongHocRows = [...phongHocRows];
 
     // Thu thập danh sách phẳng tất cả khung lịch trong file Excel để đối soát trùng phòng nội bộ
     const allFileSchedules = [];
@@ -2689,16 +2782,48 @@ class ThoiKhoaBieuService {
         warnings.push('Lớp này không có lịch học (Thứ, Tiết, Phòng) nào trong file Excel.');
       }
 
-      // Kiểm tra môn học trong DB
+      // Kiểm tra môn học trong DB -> Nếu chưa có thì tự động thêm vào danh mục Môn học khi lưu
       const monHoc = monHocMap.get(cls.maMonHoc);
       if (monHoc) {
         cls.tenMonHoc = monHoc.TenMonHoc;
         cls.soTinChi = monHoc.SoTinChi;
+        cls.isNewMonHoc = false;
         if (monHoc.MaBoMon) cls.maBoMon = monHoc.MaBoMon;
+      } else if (!cls.maMonHoc) {
+        errors.push('Thiếu Mã học phần trong file Excel.');
+        cls.tenMonHoc = cls.parsedTenMonHoc || 'Chưa xác định';
       } else {
-        errors.push(`Mã học phần '${cls.maMonHoc}' chưa tồn tại trong danh mục Môn học.`);
-        cls.tenMonHoc = 'Chưa xác định';
-        cls.soTinChi = 3;
+        cls.tenMonHoc = cls.parsedTenMonHoc || cls.maMonHoc;
+        cls.soTinChi = cls.soTinChi || 3;
+        cls.isNewMonHoc = true;
+
+        if (!autoCreateMonHocMap.has(cls.maMonHoc)) {
+          const typeSet = subjectTypesMap.get(cls.maMonHoc) || new Set(['LT']);
+          const orderedTypes = ['LT', 'BT', 'TH', 'BTL'].filter(t => typeSet.has(t));
+          const loaiMonHoc = (orderedTypes.length === 1 && orderedTypes[0] === 'LT')
+            ? 'Regular'
+            : (orderedTypes.join(',') || 'Regular').slice(0, 20);
+
+          const newMonObj = {
+            MaMonHoc: cls.maMonHoc.slice(0, 10),
+            TenMonHoc: cls.tenMonHoc.slice(0, 150),
+            SoTinChi: cls.soTinChi,
+            MaBoMon: cls.maBoMon || detectedBoMon,
+            LoaiMonHoc: loaiMonHoc
+          };
+          autoCreateMonHocMap.set(cls.maMonHoc, newMonObj);
+          previewMonHocRows.push(newMonObj);
+        }
+        warnings.push(`Môn học mới '${cls.maMonHoc} - ${cls.tenMonHoc}' (${cls.soTinChi} TC) chưa có trong CSDL: sẽ tự động thêm mới khi lưu.`);
+      }
+
+      // Kiểm tra Khóa sinh viên -> Nếu chưa có thì tự động bổ sung
+      if (cls.khoaHoc && !khoaSvSet.has(cls.khoaHoc) && !autoCreateKhoaMap.has(cls.khoaHoc)) {
+        const numMatch = cls.khoaHoc.match(/^K(\d+)$/i);
+        autoCreateKhoaMap.set(cls.khoaHoc, {
+          MaKhoaSinhVien: cls.khoaHoc.slice(0, 10),
+          TenKhoaSinhVien: numMatch ? `Khóa ${numMatch[1]}` : cls.khoaHoc
+        });
       }
 
       // Kiểm tra trùng mã lớp trong file
@@ -2720,7 +2845,32 @@ class ThoiKhoaBieuService {
         if (!sc.maPhong) {
           errors.push(`Chưa có phòng học cho Thứ ${sc.thuTrongTuan}.`);
         } else if (sc.maPhong !== 'ONLINE' && !phongHocMap.has(sc.maPhong)) {
-          errors.push(`Phòng học '${sc.maPhong}' chưa tồn tại trong danh mục Phòng học.`);
+          // Phòng học chưa có -> Tự động tạo theo quy tắc Mã: 401-A1, Tên: P401-A1, Tòa: UTC_A1
+          const roomInfo = this.parseRoomBuildingInfo(sc.maPhong);
+          sc.isNewPhongHoc = true;
+          if (roomInfo) {
+            if (!toaNhaMap.has(roomInfo.maToaNha) && !autoCreateToaNhaMap.has(roomInfo.maToaNha)) {
+              autoCreateToaNhaMap.set(roomInfo.maToaNha, {
+                MaToaNha: roomInfo.maToaNha,
+                TenToaNha: roomInfo.tenToaNha,
+                CoSo: roomInfo.coSo,
+                DiaChi: roomInfo.diaChi
+              });
+            }
+            if (!autoCreatePhongHocMap.has(roomInfo.maPhong)) {
+              const newRoomObj = {
+                MaPhong: roomInfo.maPhong,
+                TenPhong: roomInfo.tenPhong,
+                MaToaNha: roomInfo.maToaNha,
+                SucChua: roomInfo.sucChua,
+                LoaiPhong: roomInfo.loaiPhong,
+                TrangThai: roomInfo.trangThai
+              };
+              autoCreatePhongHocMap.set(roomInfo.maPhong, newRoomObj);
+              previewPhongHocRows.push(newRoomObj);
+            }
+            warnings.push(`Phòng học mới '${roomInfo.tenPhong}' (${roomInfo.maPhong} • ${roomInfo.tenToaNha}) chưa có trong CSDL: sẽ tự động thêm mới khi lưu.`);
+          }
         }
 
         // KIỂM TRA TRÙNG LỊCH PHÒNG HỌC (Room Conflict - Miễn trừ phòng ONLINE)
@@ -2778,8 +2928,14 @@ class ThoiKhoaBieuService {
       soLopHopLe,
       soLopLoi,
       classes: validatedClasses,
-      danhSachMonHoc: monHocRows,
-      danhSachPhongHoc: phongHocRows
+      danhSachMonHoc: previewMonHocRows,
+      danhSachPhongHoc: previewPhongHocRows,
+      autoCreateSummary: {
+        monHoc: Array.from(autoCreateMonHocMap.values()),
+        toaNha: Array.from(autoCreateToaNhaMap.values()),
+        phongHoc: Array.from(autoCreatePhongHocMap.values()),
+        khoaSinhVien: Array.from(autoCreateKhoaMap.values())
+      }
     };
   };
 
@@ -2857,8 +3013,132 @@ class ThoiKhoaBieuService {
       const validClasses = classes.filter(cls => cls.maLopHocPhan && cls.maMonHoc);
       let createdClassesCount = 0;
       let createdSchedulesCount = 0;
+      let createdMonHocCount = 0;
+      let createdToaNhaCount = 0;
+      let createdPhongHocCount = 0;
+      let createdKhoaCount = 0;
 
       if (validClasses.length > 0) {
+        const CHUNK_SIZE = 500;
+
+        // ============================================================
+        // 0. TỰ ĐỘNG BỔ SUNG DỮ LIỆU NỀN CÒN THIẾU (Môn học, Tòa nhà, Phòng học, Khóa SV)
+        // ============================================================
+        const [[existingMonRows], [existingToaNhaRows], [existingPhongRows], [existingKhoaRows]] = await Promise.all([
+          conn.query(`SELECT MaMonHoc FROM MonHoc`),
+          conn.query(`SELECT MaToaNha FROM ToaNha`),
+          conn.query(`SELECT MaPhong FROM PhongHoc`),
+          conn.query(`SELECT MaKhoaSinhVien FROM KhoaSinhVien`)
+        ]);
+
+        const existingMonSet = new Set(existingMonRows.map(r => r.MaMonHoc));
+        const existingToaNhaSet = new Set(existingToaNhaRows.map(r => r.MaToaNha));
+        const existingPhongSet = new Set(existingPhongRows.map(r => r.MaPhong));
+        const existingKhoaSet = new Set(existingKhoaRows.map(r => r.MaKhoaSinhVien));
+
+        // 0a. Tự động thêm Môn học mới (nếu chưa có trong bảng MonHoc)
+        const subjectTypesMap = new Map();
+        validClasses.forEach(c => {
+          const code = String(c.maMonHoc).trim();
+          if (!subjectTypesMap.has(code)) subjectTypesMap.set(code, new Set());
+          subjectTypesMap.get(code).add(c.loaiHoc || 'LT');
+        });
+
+        const newMonHocMap = new Map();
+        for (const cls of validClasses) {
+          const maMon = String(cls.maMonHoc).trim().slice(0, 10);
+          if (!maMon || existingMonSet.has(maMon) || newMonHocMap.has(maMon)) continue;
+
+          const tenMon = (cls.tenMonHoc && cls.tenMonHoc !== 'Chưa xác định')
+            ? String(cls.tenMonHoc).trim()
+            : (this.extractTenMonHoc(cls.tenLopHocPhan) || maMon);
+          const soTinChi = parseInt(cls.soTinChi, 10) || 3;
+          const maBoMonVal = (cls.maBoMon || maBoMon || 'MHT').slice(0, 10);
+          const typeSet = subjectTypesMap.get(maMon) || new Set(['LT']);
+          const orderedTypes = ['LT', 'BT', 'TH', 'BTL'].filter(t => typeSet.has(t));
+          const loaiMonHoc = (orderedTypes.length === 1 && orderedTypes[0] === 'LT')
+            ? 'Regular'
+            : (orderedTypes.join(',') || 'Regular').slice(0, 20);
+
+          newMonHocMap.set(maMon, [maMon, tenMon.slice(0, 150), soTinChi, maBoMonVal, loaiMonHoc]);
+        }
+
+        const newMonHocValues = Array.from(newMonHocMap.values());
+        if (newMonHocValues.length > 0) {
+          for (let i = 0; i < newMonHocValues.length; i += CHUNK_SIZE) {
+            await conn.query(
+              `INSERT IGNORE INTO MonHoc (MaMonHoc, TenMonHoc, SoTinChi, MaBoMon, LoaiMonHoc) VALUES ?`,
+              [newMonHocValues.slice(i, i + CHUNK_SIZE)]
+            );
+          }
+          createdMonHocCount = newMonHocValues.length;
+        }
+
+        // 0b. Tự động thêm Tòa nhà & Phòng học mới (quy tắc Mã: 401-A1, Tên: P401-A1, Sức chứa: 100, Ready)
+        const newToaNhaMap = new Map();
+        const newPhongMap = new Map();
+        for (const cls of validClasses) {
+          if (!Array.isArray(cls.schedules)) continue;
+          for (const sc of cls.schedules) {
+            const mp = String(sc.maPhong || '').trim().toUpperCase();
+            if (!mp || mp === 'ONLINE' || existingPhongSet.has(mp) || newPhongMap.has(mp)) continue;
+
+            const info = this.parseRoomBuildingInfo(mp);
+            if (!info) continue;
+
+            if (!existingToaNhaSet.has(info.maToaNha) && !newToaNhaMap.has(info.maToaNha)) {
+              newToaNhaMap.set(info.maToaNha, [info.maToaNha, info.tenToaNha, info.coSo, info.diaChi]);
+            }
+            newPhongMap.set(info.maPhong, [
+              info.maPhong,
+              info.tenPhong,
+              info.maToaNha,
+              info.sucChua,
+              info.loaiPhong,
+              info.trangThai
+            ]);
+          }
+        }
+
+        const newToaNhaValues = Array.from(newToaNhaMap.values());
+        if (newToaNhaValues.length > 0) {
+          await conn.query(
+            `INSERT IGNORE INTO ToaNha (MaToaNha, TenToaNha, CoSo, DiaChi) VALUES ?`,
+            [newToaNhaValues]
+          );
+          createdToaNhaCount = newToaNhaValues.length;
+        }
+
+        const newPhongValues = Array.from(newPhongMap.values());
+        if (newPhongValues.length > 0) {
+          for (let i = 0; i < newPhongValues.length; i += CHUNK_SIZE) {
+            await conn.query(
+              `INSERT IGNORE INTO PhongHoc (MaPhong, TenPhong, MaToaNha, SucChua, LoaiPhong, TrangThai) VALUES ?`,
+              [newPhongValues.slice(i, i + CHUNK_SIZE)]
+            );
+          }
+          createdPhongHocCount = newPhongValues.length;
+        }
+
+        // 0c. Tự động thêm Khóa sinh viên mới nếu chưa có (tránh lỗi khóa ngoại KhoaHoc -> KhoaSinhVien)
+        const newKhoaMap = new Map();
+        for (const cls of validClasses) {
+          const kh = String(cls.khoaHoc || '').trim().slice(0, 10);
+          if (!kh || existingKhoaSet.has(kh) || newKhoaMap.has(kh)) continue;
+          const numMatch = kh.match(/^K(\d+)$/i);
+          const tenKh = numMatch ? `Khóa ${numMatch[1]}` : kh;
+          newKhoaMap.set(kh, [kh, tenKh.slice(0, 50)]);
+        }
+
+        const newKhoaValues = Array.from(newKhoaMap.values());
+        if (newKhoaValues.length > 0) {
+          await conn.query(
+            `INSERT IGNORE INTO KhoaSinhVien (MaKhoaSinhVien, TenKhoaSinhVien) VALUES ?`,
+            [newKhoaValues]
+          );
+          createdKhoaCount = newKhoaValues.length;
+        }
+
         const allLhpCodes = validClasses.map(c => c.maLopHocPhan);
 
         // 1. Kiểm tra hàng loạt lớp nào đã tồn tại (1 query duy nhất)
@@ -2891,7 +3171,6 @@ class ThoiKhoaBieuService {
           ];
         });
 
-        const CHUNK_SIZE = 500;
         for (let i = 0; i < lhpValues.length; i += CHUNK_SIZE) {
           const chunk = lhpValues.slice(i, i + CHUNK_SIZE);
           await conn.query(`
@@ -2964,12 +3243,23 @@ class ThoiKhoaBieuService {
 
       await conn.commit();
 
+      const autoParts = [];
+      if (createdMonHocCount > 0) autoParts.push(`${createdMonHocCount} Môn học mới`);
+      if (createdToaNhaCount > 0) autoParts.push(`${createdToaNhaCount} Tòa nhà mới`);
+      if (createdPhongHocCount > 0) autoParts.push(`${createdPhongHocCount} Phòng học mới`);
+      if (createdKhoaCount > 0) autoParts.push(`${createdKhoaCount} Khóa SV mới`);
+      const autoMsg = autoParts.length > 0 ? ` (Đã tự động bổ sung: ${autoParts.join(', ')})` : '';
+
       return {
         success: true,
-        soLopDaLuu: classes.length,
+        soLopDaLuu: validClasses.length,
         soLopMoi: createdClassesCount,
         soKhungLichDaLuu: createdSchedulesCount,
-        message: `Đã import và lưu thành công ${classes.length} Lớp học phần và ${createdSchedulesCount} khung Thời khóa biểu vào CSDL!`
+        soMonHocMoi: createdMonHocCount,
+        soToaNhaMoi: createdToaNhaCount,
+        soPhongHocMoi: createdPhongHocCount,
+        soKhoaMoi: createdKhoaCount,
+        message: `Đã import và lưu thành công ${validClasses.length} Lớp học phần và ${createdSchedulesCount} khung Thời khóa biểu vào CSDL!${autoMsg}`
       };
     } catch (err) {
       await conn.rollback();

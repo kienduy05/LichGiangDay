@@ -278,7 +278,11 @@ export default function ImportThoiKhoaBieuManagement({ onNavigateTab }) {
         message: res.message,
         soLopDaLuu: res.soLopDaLuu || classesList.length,
         soLopMoi: res.soLopMoi || 0,
-        soKhungLichDaLuu: res.soKhungLichDaLuu || 0
+        soKhungLichDaLuu: res.soKhungLichDaLuu || 0,
+        soMonHocMoi: res.soMonHocMoi || 0,
+        soToaNhaMoi: res.soToaNhaMoi || 0,
+        soPhongHocMoi: res.soPhongHocMoi || 0,
+        soKhoaMoi: res.soKhoaMoi || 0
       });
       setSaveSuccess(res);
 
@@ -512,6 +516,51 @@ export default function ImportThoiKhoaBieuManagement({ onNavigateTab }) {
             </div>
           </div>
 
+          {/* Auto-create Master Data Banner */}
+          {previewData?.autoCreateSummary && (
+            (previewData.autoCreateSummary.monHoc?.length > 0 ||
+              previewData.autoCreateSummary.phongHoc?.length > 0 ||
+              previewData.autoCreateSummary.toaNha?.length > 0 ||
+              previewData.autoCreateSummary.khoaSinhVien?.length > 0) && (
+              <div style={{
+                background: '#f0fdf4',
+                border: '1px solid #86efac',
+                borderRadius: '12px',
+                padding: '12px 16px',
+                marginBottom: '16px',
+                fontSize: '0.84rem',
+                color: '#166534'
+              }}>
+                <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <CheckCircle2 size={16} color="#16a34a" />
+                  <span>Hệ thống sẽ tự động thêm mới dữ liệu nền chưa có trong CSDL khi bạn bấm Lưu:</span>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', paddingLeft: '24px' }}>
+                  {previewData.autoCreateSummary.monHoc?.map(m => (
+                    <span key={m.MaMonHoc} style={{ background: '#dcfce7', border: '1px solid #bbf7d0', padding: '2px 8px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600 }}>
+                      + Môn: {m.MaMonHoc} - {m.TenMonHoc} ({m.SoTinChi} TC)
+                    </span>
+                  ))}
+                  {previewData.autoCreateSummary.toaNha?.map(t => (
+                    <span key={t.MaToaNha} style={{ background: '#e0f2fe', border: '1px solid #bae6fd', color: '#0369a1', padding: '2px 8px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600 }}>
+                      + Tòa: {t.TenToaNha} ({t.MaToaNha})
+                    </span>
+                  ))}
+                  {previewData.autoCreateSummary.phongHoc?.map(p => (
+                    <span key={p.MaPhong} style={{ background: '#ede9fe', border: '1px solid #ddd6fe', color: '#6d28d9', padding: '2px 8px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600 }}>
+                      + Phòng: {p.TenPhong} ({p.MaPhong})
+                    </span>
+                  ))}
+                  {previewData.autoCreateSummary.khoaSinhVien?.map(k => (
+                    <span key={k.MaKhoaSinhVien} style={{ background: '#fef3c7', border: '1px solid #fde68a', color: '#b45309', padding: '2px 8px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600 }}>
+                      + Khóa: {k.MaKhoaSinhVien}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )
+          )}
+
           {/* Top Action Bar (Nút Hủy & Lưu đặt ngay phía trên) */}
           <div className="import-top-action-bar">
             <button
@@ -647,8 +696,15 @@ export default function ImportThoiKhoaBieuManagement({ onNavigateTab }) {
                       onChange={(e) => handleUpdateClassField(cls.tempId, 'maMonHoc', e.target.value)}
                       title={`Tên môn: ${cls.tenMonHoc} (${cls.soTinChi || 3} TC)`}
                     />
-                    <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {cls.tenMonHoc}
+                    <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {cls.tenMonHoc} ({cls.soTinChi || 3} TC)
+                      </span>
+                      {cls.isNewMonHoc && (
+                        <span style={{ background: '#dcfce7', color: '#15803d', fontSize: '0.65rem', fontWeight: 700, padding: '1px 5px', borderRadius: '4px', flexShrink: 0 }}>
+                          + Mới
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -863,6 +919,25 @@ export default function ImportThoiKhoaBieuManagement({ onNavigateTab }) {
                 <span className="stat-box-label">Khung TKB đã xếp</span>
               </div>
             </div>
+
+            {(savedStats.soMonHocMoi > 0 || savedStats.soPhongHocMoi > 0 || savedStats.soToaNhaMoi > 0 || savedStats.soKhoaMoi > 0) && (
+              <div style={{
+                background: '#f0fdf4',
+                border: '1px solid #bbf7d0',
+                borderRadius: '8px',
+                padding: '8px 12px',
+                marginBottom: '12px',
+                fontSize: '0.8rem',
+                color: '#15803d',
+                fontWeight: 600
+              }}>
+                Tự động thêm mới dữ liệu nền:
+                {savedStats.soMonHocMoi > 0 && ` ${savedStats.soMonHocMoi} Môn học`}
+                {savedStats.soToaNhaMoi > 0 && ` • ${savedStats.soToaNhaMoi} Tòa nhà`}
+                {savedStats.soPhongHocMoi > 0 && ` • ${savedStats.soPhongHocMoi} Phòng học`}
+                {savedStats.soKhoaMoi > 0 && ` • ${savedStats.soKhoaMoi} Khóa SV`}
+              </div>
+            )}
 
             <div className="import-modal-countdown">
               <Clock size={15} />
