@@ -340,6 +340,7 @@ export default function LecturerScheduleView({ onBackHome }) {
           <div className="lec-card-action-chips" onClick={e => e.stopPropagation()}>
             {canActionNormal && (
               <>
+                {/* Tạm ẩn nút Đổi ca trên thẻ lịch
                 <button
                   type="button"
                   className="lec-chip-btn btn-doi-ca"
@@ -350,6 +351,7 @@ export default function LecturerScheduleView({ onBackHome }) {
                   <RefreshCw size={12} />
                   <span className="btn-text">Đổi ca</span>
                 </button>
+                */}
                 <button
                   type="button"
                   className="lec-chip-btn btn-bao-nghi"

@@ -400,6 +400,7 @@ export default function DuyetYeuCauManagement() {
             <span>Dạy thay</span>
             <span className="dyc-tab-badge">{tabCounts.SUBSTITUTE}</span>
           </button>
+          {/* Tạm ẩn tab Đổi ca
           <button
             type="button"
             className={`dyc-tab-btn ${activeTab === 'SWAP' ? 'active' : ''}`}
@@ -408,6 +409,7 @@ export default function DuyetYeuCauManagement() {
             <span>Đổi ca</span>
             <span className="dyc-tab-badge">{tabCounts.SWAP}</span>
           </button>
+          */}
           <button
             type="button"
             className={`dyc-tab-btn ${activeTab === 'MAKEUP' ? 'active' : ''}`}

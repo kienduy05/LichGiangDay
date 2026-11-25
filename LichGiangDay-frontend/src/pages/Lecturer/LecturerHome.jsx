@@ -328,7 +328,7 @@ export default function LecturerHome({ onOpenSchedule }) {
                 <select value={filterLoai} onChange={e => setFilterLoai(e.target.value)}>
                   <option value="ALL">Tất cả loại</option>
                   <option value="ABSENCE">Báo nghỉ</option>
-                  <option value="SWAP">Đổi ca</option>
+                  {/* <option value="SWAP">Đổi ca</option> */}
                   <option value="SUBSTITUTE">Nhờ dạy thay</option>
                 </select>
               </div>
