@@ -3,18 +3,20 @@ import { useAuth } from '../../context/AuthContext';
 import {
   Calendar, Clock, BookOpen, AlertCircle, CalendarPlus,
   Bell, LogOut, CheckCircle2, ChevronRight, User, School,
-  ArrowRight, ShieldAlert, Sparkles, Filter, X, RefreshCw
+  ArrowRight, ShieldAlert, Sparkles, Filter, X, RefreshCw, FlaskConical
 } from 'lucide-react';
 import {
   apiGetLichGiangVien,
   apiGetYeuCauCuaToi,
   apiHuyYeuCau,
   apiGetCaNghiChuaDayBu,
+  apiGetLopThucHanhCanDangKy,
   apiGetThongBao,
   apiCountThongBaoChuaDoc,
   apiMarkThongBaoDaDoc
 } from '../../utils/apiBienDongLich';
 import TaoLichDayBuModal from './components/TaoLichDayBuModal';
+import DangKyLichThucHanhModal from './components/DangKyLichThucHanhModal';
 import './LecturerHome.css';
 
 export default function LecturerHome({ onOpenSchedule }) {
@@ -33,6 +35,8 @@ export default function LecturerHome({ onOpenSchedule }) {
   const [myRequestsModalOpen, setMyRequestsModalOpen] = useState(false);
   const [notificationsModalOpen, setNotificationsModalOpen] = useState(false);
   const [dayBuModalOpen, setDayBuModalOpen] = useState(false);
+  const [thucHanhModalOpen, setThucHanhModalOpen] = useState(false);
+  const [thStats, setThStats] = useState({ totalPendingSessions: 0, totalPendingClasses: 0 });
   const [selectedCaNghi, setSelectedCaNghi] = useState(null);
 
   // Filter in My Requests modal
@@ -63,6 +67,13 @@ export default function LecturerHome({ onOpenSchedule }) {
       // 3. Lấy ca nghỉ chưa bù
       const caChuaBu = await apiGetCaNghiChuaDayBu({}).catch(() => []);
       setCaChuaBuList(caChuaBu || []);
+
+      // 3b. Lấy danh sách lớp Thực hành (TH) cần đăng ký lịch (5 buổi/lớp)
+      const thData = await apiGetLopThucHanhCanDangKy().catch(() => null);
+      setThStats({
+        totalPendingSessions: thData?.totalPendingSessions || 0,
+        totalPendingClasses: thData?.totalPendingClasses || 0
+      });
 
       // 4. Lấy thông báo
       const unread = await apiCountThongBaoChuaDoc().catch(() => ({ unreadCount: 0 }));
@@ -265,6 +276,28 @@ export default function LecturerHome({ onOpenSchedule }) {
               <p>Tra cứu phòng học trống trong 7 ngày theo sức chứa, tự động xác nhận lịch dạy bù theo quy định.</p>
               <div className="card-cta">
                 <span>Đăng ký ca bù</span>
+                <ChevronRight size={16} />
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3b: Đăng Ký Lịch Thực Hành (Lớp TH đã khóa) */}
+          <div className="lec-action-card card-thuchanh" onClick={() => setThucHanhModalOpen(true)}>
+            <div className="card-icon-wrap icon-teal">
+              <FlaskConical size={28} />
+            </div>
+            <div className="card-content">
+              <div className="card-title-row">
+                <h3>Đăng Ký Lịch Thực Hành</h3>
+                {thStats.totalPendingSessions > 0 && (
+                  <span className="badge-count-makeup" style={{ background: '#ccfbf1', color: '#0f766e' }}>
+                    {thStats.totalPendingSessions} buổi cần xếp ({thStats.totalPendingClasses} lớp)
+                  </span>
+                )}
+              </div>
+              <p>Đăng ký lịch từng buổi thực hành (5 buổi/lớp, 3 tiết/ca) và chọn phòng trống cho các lớp TH đã khóa.</p>
+              <div className="card-cta" style={{ color: '#0d9488' }}>
+                <span>Đăng ký lịch thực hành</span>
                 <ChevronRight size={16} />
               </div>
             </div>
@@ -489,6 +522,13 @@ export default function LecturerHome({ onOpenSchedule }) {
         isOpen={dayBuModalOpen}
         onClose={() => { setDayBuModalOpen(false); loadDashboardData(); }}
         defaultClass={selectedCaNghi}
+      />
+
+      {/* MODAL: ĐĂNG KÝ LỊCH THỰC HÀNH (5 BUỔI / LỚP TH) */}
+      <DangKyLichThucHanhModal
+        isOpen={thucHanhModalOpen}
+        onClose={() => { setThucHanhModalOpen(false); loadDashboardData(); }}
+        onSuccess={loadDashboardData}
       />
     </div>
   );

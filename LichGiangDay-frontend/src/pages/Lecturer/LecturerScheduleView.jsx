@@ -4,17 +4,18 @@ import {
   GraduationCap, Calendar, Clock, Building, Users, BookOpen,
   ChevronLeft, ChevronRight, LogOut, RefreshCw, PlusCircle,
   AlertTriangle, Printer, Layers, Loader2, Sparkles, School,
-  User, CheckCircle2, CalendarPlus, UserCheck
+  User, CheckCircle2, CalendarPlus, UserCheck, FlaskConical
 } from 'lucide-react';
 import { apiGetHocKyList } from '../../utils/api';
 import { apiGetLecturerWeeklySchedule } from '../../utils/apiPhanCongGiangVien';
-import { apiGetLichGiangVien, apiGetCaNghiChuaDayBu } from '../../utils/apiBienDongLich';
+import { apiGetLichGiangVien, apiGetCaNghiChuaDayBu, apiGetLopThucHanhCanDangKy } from '../../utils/apiBienDongLich';
 
 import LecturerClassDetailModal from './components/LecturerClassDetailModal';
 import RequestDoiCaModal from './components/RequestDoiCaModal';
 import RequestBaoNghiModal from './components/RequestBaoNghiModal';
 import RequestDayThayModal from './components/RequestDayThayModal';
 import TaoLichDayBuModal from './components/TaoLichDayBuModal';
+import DangKyLichThucHanhModal from './components/DangKyLichThucHanhModal';
 
 import './LecturerScheduleView.css';
 
@@ -65,6 +66,7 @@ export default function LecturerScheduleView({ onBackHome }) {
   const [loading, setLoading] = useState(false);
   const [scheduleData, setScheduleData] = useState({ matrix: {}, schedule: [], giangVien: null });
   const [caNghiCount, setCaNghiCount] = useState(0);
+  const [thPendingSessions, setThPendingSessions] = useState(0);
 
   // Modals state
   const [selectedClass, setSelectedClass] = useState(null);
@@ -73,6 +75,7 @@ export default function LecturerScheduleView({ onBackHome }) {
   const [dayThayModalOpen, setDayThayModalOpen] = useState(false);
   const [baoNghiModalOpen, setBaoNghiModalOpen] = useState(false);
   const [taoLichDayBuModalOpen, setTaoLichDayBuModalOpen] = useState(false);
+  const [thucHanhModalOpen, setThucHanhModalOpen] = useState(false);
 
 
   // Compute 7 days of the active week
@@ -190,10 +193,15 @@ export default function LecturerScheduleView({ onBackHome }) {
 
   const fetchCaNghiCount = useCallback(async () => {
     try {
-      const list = await apiGetCaNghiChuaDayBu({});
+      const [list, thRes] = await Promise.all([
+        apiGetCaNghiChuaDayBu({}).catch(() => []),
+        apiGetLopThucHanhCanDangKy().catch(() => null)
+      ]);
       setCaNghiCount(Array.isArray(list) ? list.length : 0);
+      setThPendingSessions(thRes?.totalPendingSessions || 0);
     } catch (err) {
       setCaNghiCount(0);
+      setThPendingSessions(0);
     }
   }, []);
 
@@ -488,6 +496,31 @@ export default function LecturerScheduleView({ onBackHome }) {
           <div className="lec-banner-actions">
             <button
               type="button"
+              className="lec-action-btn btn-taolichth"
+              onClick={() => setThucHanhModalOpen(true)}
+              title={thPendingSessions > 0 ? `Bạn còn ${thPendingSessions} buổi Thực hành cần đăng ký` : 'Đăng ký lịch cho các lớp Thực hành (5 buổi/lớp)'}
+              style={{
+                position: 'relative',
+                background: 'linear-gradient(135deg, #2563eb 0%, #0d9488 100%)',
+                border: 'none',
+                color: '#ffffff',
+                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)'
+              }}
+            >
+              <FlaskConical size={16} />
+              <span>Đăng Ký Thực Hành</span>
+              <span className={`lec-badge-ca-nghi ${thPendingSessions > 0 ? 'has-pending' : ''}`}>
+                {thPendingSessions > 0 ? `${thPendingSessions} buổi cần xếp` : '0 buổi'}
+              </span>
+              {thPendingSessions > 0 && (
+                <span className="lec-notif-count-dot" aria-label={`${thPendingSessions} buổi thực hành cần xếp`}>
+                  {thPendingSessions}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
               className="lec-action-btn btn-taodaybu"
               onClick={() => handleOpenTaoDayBu(null)}
               title={caNghiCount > 0 ? `Bạn có ${caNghiCount} ca đã báo nghỉ cần tạo lịch dạy bù` : 'Tạo lịch dạy bù cho các ca đã báo nghỉ'}
@@ -754,6 +787,13 @@ export default function LecturerScheduleView({ onBackHome }) {
       <TaoLichDayBuModal
         isOpen={taoLichDayBuModalOpen}
         onClose={() => setTaoLichDayBuModalOpen(false)}
+        onSuccess={() => { fetchSchedule(); fetchCaNghiCount(); }}
+      />
+
+      {/* 6. Đăng Ký Lịch Thực Hành (5 Buổi / Lớp TH) */}
+      <DangKyLichThucHanhModal
+        isOpen={thucHanhModalOpen}
+        onClose={() => setThucHanhModalOpen(false)}
         onSuccess={() => { fetchSchedule(); fetchCaNghiCount(); }}
       />
     </div>

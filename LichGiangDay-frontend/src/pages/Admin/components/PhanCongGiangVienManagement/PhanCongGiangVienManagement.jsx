@@ -108,9 +108,9 @@ export default function PhanCongGiangVienManagement() {
     fetchClasses();
   }, [fetchClasses]);
 
-  // 3. Khi chọn 1 lớp học phần -> Tải dữ liệu quét trùng lịch & khả dụng của GV
+  // 3. Khi chọn 1 lớp học phần -> Tải dữ liệu quét trùng lịch & khả dụng của GV (lớp TH phân công được kể cả chưa có TKB)
   const fetchAvailability = useCallback(async (cls) => {
-    if (!cls || !cls.hasSchedule) {
+    if (!cls || (!cls.hasSchedule && cls.LoaiHoc !== 'TH')) {
       setAvailabilityData(null);
       return;
     }

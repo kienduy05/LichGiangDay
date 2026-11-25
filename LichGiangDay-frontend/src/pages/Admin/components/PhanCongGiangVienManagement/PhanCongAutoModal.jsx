@@ -142,7 +142,7 @@ export default function PhanCongAutoModal({
             {/* KPI Hiện tại */}
             <div className="pcgv-auto-stat-row">
               <div className="pcgv-auto-stat-item">
-                <span className="stat-label">Tổng lớp có TKB</span>
+                <span className="stat-label">Lớp đủ ĐK phân công (TKB + TH)</span>
                 <span className="stat-value">{currentStats?.scheduledCount || 0} <span style={{ fontSize: '0.8rem', color: '#64748b' }}>/ {currentStats?.totalClasses || 0}</span></span>
               </div>
               <div className="pcgv-auto-stat-item">

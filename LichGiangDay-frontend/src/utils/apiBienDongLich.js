@@ -110,6 +110,53 @@ export const apiGetCaNghiChuaDayBu = async ({ maGiangVien, maHocKy }) => {
 };
 
 /**
+ * 5b. GIẢNG VIÊN: Lấy danh sách lớp Thực hành (TH) đã khóa để đăng ký 5 buổi thực hành
+ */
+export const apiGetLopThucHanhCanDangKy = async () => {
+  const url = `${API_BASE_URL}/dangkydaybu/thuc-hanh/lop-can-dang-ky`;
+  const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Lấy danh sách lớp thực hành thất bại.');
+  return data.metadata;
+};
+
+/**
+ * 5c. GIẢNG VIÊN: Tìm phòng trống để đăng ký buổi Thực hành
+ */
+export const apiGetPhongTrongThucHanh = async ({ maLopHocPhan, tuNgay, maTiet }) => {
+  const params = new URLSearchParams();
+  if (maLopHocPhan) params.append('maLopHocPhan', maLopHocPhan);
+  if (tuNgay) params.append('tuNgay', tuNgay);
+  if (maTiet) params.append('maTiet', maTiet);
+
+  const url = `${API_BASE_URL}/dangkydaybu/thuc-hanh/phong-trong?${params.toString()}`;
+  const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Tra cứu phòng trống thực hành thất bại.');
+  return data.metadata;
+};
+
+/**
+ * 5d. GIẢNG VIÊN: Đăng ký 1 buổi Thực hành (tự sinh BuoiHoc, tối đa 5 buổi/lớp)
+ */
+export const apiSubmitDangKyThucHanh = async (payload) => {
+  const url = `${API_BASE_URL}/dangkydaybu/thuc-hanh`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload)
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    const err = new Error(data.message || 'Đăng ký lịch thực hành thất bại.');
+    err.status = response.status;
+    err.metadata = data.metadata;
+    throw err;
+  }
+  return data.metadata;
+};
+
+/**
  * 6. GIẢNG VIÊN: Gửi yêu cầu Báo nghỉ / Dạy thay / Đổi ca
  */
 export const apiSubmitYeuCauNghi = async (payload) => {

@@ -344,6 +344,11 @@
   color: #4f46e5;
 }
 
+.icon-teal {
+  background: #f0fdfa;
+  color: #0d9488;
+}
+
 .card-content {
   flex: 1;
   display: flex;

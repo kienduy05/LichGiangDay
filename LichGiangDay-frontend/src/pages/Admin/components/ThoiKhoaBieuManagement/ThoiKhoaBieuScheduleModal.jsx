@@ -10,7 +10,7 @@ import RoomGridPicker from './RoomGridPicker';
 import {
   X, Calendar, Clock, Plus, Trash2, CheckCircle2,
   AlertTriangle, AlertCircle, RefreshCw, Copy, Layers,
-  BookOpen, Building2, User, Users
+  BookOpen, Building2, User, Users, Lock, Sparkles
 } from 'lucide-react';
 import './ThoiKhoaBieuComponents.css';
 
@@ -59,6 +59,9 @@ export default function ThoiKhoaBieuScheduleModal({
   const [tietHocList, setTietHocList] = useState([]);
   const [schedules, setSchedules] = useState([]);
   const [activeSessionIndex, setActiveSessionIndex] = useState(0);
+  const [lhpDetail, setLhpDetail] = useState(null);
+
+  const isLocked = (lhpDetail?.TrangThaiPhanCong || lopHocPhan?.TrangThaiPhanCong) === 'Locked';
 
   // Load danh sách Tiết học và Dữ liệu lịch của lớp học phần
   useEffect(() => {
@@ -66,6 +69,7 @@ export default function ThoiKhoaBieuScheduleModal({
       loadInitialData();
     } else {
       setSchedules([]);
+      setLhpDetail(null);
       setConflictResult(null);
       setError('');
     }
@@ -82,7 +86,9 @@ export default function ThoiKhoaBieuScheduleModal({
 
       // 2. Tải lịch hiện có của LHP
       const detailData = await apiGetThoiKhoaBieuByLopHocPhan(lopHocPhan.MaLopHocPhan);
+      setLhpDetail(detailData || null);
       const existingSchedules = detailData?.schedules || [];
+      const lockedStatus = (detailData?.TrangThaiPhanCong || lopHocPhan?.TrangThaiPhanCong) === 'Locked';
 
       if (existingSchedules.length > 0) {
         setSchedules(existingSchedules.map(s => ({
@@ -91,9 +97,12 @@ export default function ThoiKhoaBieuScheduleModal({
           maTiet: s.MaTiet,
           maPhong: s.MaPhong,
           tenPhong: s.TenPhong,
+          tenToaNha: s.MaToaNha,
           ngayBatDau: s.NgayBatDau ? s.NgayBatDau.substring(0, 10) : lopHocPhan.NgayBatDau?.substring(0, 10),
           ngayKetThuc: s.NgayKetThuc ? s.NgayKetThuc.substring(0, 10) : lopHocPhan.NgayKetThuc?.substring(0, 10)
         })));
+      } else if (lockedStatus) {
+        setSchedules([]);
       } else {
         // Mặc định tạo 1 buổi đầu tiên
         setSchedules([{
@@ -115,6 +124,7 @@ export default function ThoiKhoaBieuScheduleModal({
 
   // Thêm 1 buổi học mới trong tuần
   const handleAddSession = () => {
+    if (isLocked) return;
     const defaultTiet = tietHocList?.[0]?.MaTiet || 1;
     // Gợi ý thứ tiếp theo chưa dùng
     const usedDays = schedules.map(s => s.thuTrongTuan);
@@ -138,6 +148,7 @@ export default function ThoiKhoaBieuScheduleModal({
   // Xóa 1 buổi học
   const handleRemoveSession = (index, e) => {
     e.stopPropagation();
+    if (isLocked) return;
     if (schedules.length === 1) {
       alert('Lớp học phần cần có ít nhất 1 buổi học, hoặc bạn có thể dùng nút "Xóa toàn bộ lịch" bên dưới.');
       return;
@@ -150,6 +161,7 @@ export default function ThoiKhoaBieuScheduleModal({
 
   // Cập nhật thông tin cho buổi đang chọn
   const handleUpdateCurrentSession = (field, value) => {
+    if (isLocked) return;
     const updated = [...schedules];
     updated[activeSessionIndex] = {
       ...updated[activeSessionIndex],
@@ -161,6 +173,7 @@ export default function ThoiKhoaBieuScheduleModal({
 
   // Chọn phòng từ RoomGridPicker
   const handleSelectRoom = (maPhong, roomObj) => {
+    if (isLocked) return;
     const updated = [...schedules];
     updated[activeSessionIndex] = {
       ...updated[activeSessionIndex],
@@ -173,6 +186,7 @@ export default function ThoiKhoaBieuScheduleModal({
 
   // Nút tiện ích: Áp dụng nhanh cấu hình Tiết & Phòng sang các Thứ khác (VD: 2, 4, 6 hoặc 3, 5)
   const handleQuickApplyDays = (daysArray) => {
+    if (isLocked) return;
     const current = schedules[activeSessionIndex];
     if (!current) return;
 
@@ -209,6 +223,7 @@ export default function ThoiKhoaBieuScheduleModal({
 
   // Lưu Thời khóa biểu
   const handleSave = async () => {
+    if (isLocked) return;
     // Validate trước khi submit
     for (let i = 0; i < schedules.length; i++) {
       const s = schedules[i];
@@ -240,6 +255,7 @@ export default function ThoiKhoaBieuScheduleModal({
 
   // Xóa toàn bộ lịch
   const handleDeleteAll = async () => {
+    if (isLocked) return;
     if (!window.confirm(`Bạn có chắc chắn muốn xóa toàn bộ lịch thời khóa biểu của lớp '${lopHocPhan.MaLopHocPhan}'?`)) {
       return;
     }
@@ -270,11 +286,29 @@ export default function ThoiKhoaBieuScheduleModal({
         {/* MODAL HEADER */}
         <div className="tkb-modal-header">
           <div className="tkb-modal-title-group">
-            <div className="tkb-modal-icon-badge">
-              <Calendar size={20} />
+            <div className="tkb-modal-icon-badge" style={isLocked ? { background: '#f5f3ff', color: '#7c3aed' } : {}}>
+              {isLocked ? <Lock size={20} /> : <Calendar size={20} />}
             </div>
             <div>
-              <h3 className="tkb-modal-title">Xếp Thời Khóa Biểu Lớp Học Phần</h3>
+              <h3 className="tkb-modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <span>{isLocked ? 'Xem Thời Khóa Biểu Lớp Học Phần' : 'Xếp Thời Khóa Biểu Lớp Học Phần'}</span>
+                {isLocked && (
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '2px 10px',
+                    background: '#f5f3ff',
+                    color: '#6d28d9',
+                    border: '1px solid #ddd6fe',
+                    borderRadius: '999px',
+                    fontSize: '0.75rem',
+                    fontWeight: 700
+                  }}>
+                    <Lock size={11} /> Đã khóa lịch (Chỉ xem)
+                  </span>
+                )}
+              </h3>
               <span className="tkb-modal-subtitle">
                 {lopHocPhan.TenLopHocPhan || lopHocPhan.TenMonHoc} • <code>{lopHocPhan.MaLopHocPhan}</code>
               </span>
@@ -312,6 +346,28 @@ export default function ThoiKhoaBieuScheduleModal({
             </div>
           </div>
 
+          {/* LOCKED NOTICE BANNER */}
+          {isLocked && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '10px 14px',
+              marginBottom: '12px',
+              borderRadius: '10px',
+              background: '#f5f3ff',
+              border: '1px solid #ddd6fe',
+              color: '#5b21b6',
+              fontSize: '0.85rem',
+              fontWeight: 600
+            }}>
+              <Lock size={16} style={{ flexShrink: 0 }} />
+              <span>
+                Lớp học phần này đã được <strong>KHÓA LỊCH CHÍNH THỨC</strong>. Hệ thống chỉ cho phép xem chi tiết thời khóa biểu, không thể chỉnh sửa hoặc xóa.
+              </span>
+            </div>
+          )}
+
           {/* ERROR ALERT */}
           {error && (
             <div className="tkb-alert-box error">
@@ -337,6 +393,90 @@ export default function ThoiKhoaBieuScheduleModal({
             <div className="tkb-loading-spinner">
               <RefreshCw size={28} className="spinning" />
               <span>Đang tải thông tin thời khóa biểu...</span>
+            </div>
+          ) : isLocked ? (
+            <div className="schedule-builder-layout">
+              {schedules.length === 0 ? (
+                <div style={{
+                  padding: '24px',
+                  borderRadius: '12px',
+                  background: lopHocPhan.LoaiHoc === 'TH' ? '#f0fdfa' : '#f8fafc',
+                  border: `1px solid ${lopHocPhan.LoaiHoc === 'TH' ? '#99f6e4' : '#e2e8f0'}`,
+                  color: lopHocPhan.LoaiHoc === 'TH' ? '#0f766e' : '#475569',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  fontWeight: 600
+                }}>
+                  {lopHocPhan.LoaiHoc === 'TH' ? <Sparkles size={18} /> : <AlertCircle size={18} />}
+                  <span>
+                    {lopHocPhan.LoaiHoc === 'TH'
+                      ? 'Lớp Thực hành không xếp khung TKB cố định; Giảng viên tự đăng ký 5 buổi trực tiếp trên Cổng Giảng viên.'
+                      : 'Lớp học phần chưa có khung thời khóa biểu cố định.'}
+                  </span>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155', marginBottom: '2px' }}>
+                    Danh sách khung thời khóa biểu đã chốt ({schedules.length} buổi/tuần):
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: '12px' }}>
+                    {schedules.map((s, idx) => {
+                      const thuLabel = THU_OPTIONS.find(t => t.value === s.thuTrongTuan)?.label || `Thứ ${s.thuTrongTuan}`;
+                      const tietObj = tietHocList.find(t => t.MaTiet === s.maTiet);
+                      const tietLabel = tietObj
+                        ? `${tietObj.TenTiet} (${tietObj.GioBatDau?.substring(0, 5)} - ${tietObj.GioKetThuc?.substring(0, 5)})`
+                        : `Tiết ${s.maTiet}`;
+                      const dateRange = formatScheduleDateRange(s.ngayBatDau || lopHocPhan?.NgayBatDau, s.ngayKetThuc || lopHocPhan?.NgayKetThuc);
+
+                      return (
+                        <div
+                          key={s.maThoiKhoaBieu || idx}
+                          style={{
+                            padding: '14px 16px',
+                            borderRadius: '12px',
+                            border: '1px solid #e2e8f0',
+                            background: '#ffffff',
+                            boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '8px'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                            <span style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.92rem' }}>
+                              Buổi {idx + 1}: {thuLabel}
+                            </span>
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              padding: '2px 8px',
+                              borderRadius: '6px',
+                              background: '#eff6ff',
+                              color: '#1d4ed8',
+                              fontWeight: 700,
+                              fontSize: '0.78rem'
+                            }}>
+                              <Building2 size={12} /> {s.tenPhong || s.maPhong}
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#475569', fontSize: '0.84rem' }}>
+                            <Clock size={14} color="#64748b" />
+                            <span>{tietLabel}</span>
+                          </div>
+                          {dateRange && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', fontSize: '0.8rem' }}>
+                              <Calendar size={13} />
+                              <span>Thời gian học: <strong>{dateRange}</strong></span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="schedule-builder-layout">
@@ -513,49 +653,69 @@ export default function ThoiKhoaBieuScheduleModal({
 
         {/* MODAL FOOTER */}
         <div className="tkb-modal-footer">
-          <div className="footer-left-actions">
-            {schedules.some(s => s.maThoiKhoaBieu) && (
-              <button
-                type="button"
-                className="btn-delete-all-schedules"
-                onClick={handleDeleteAll}
-                disabled={saving || deleting}
-              >
-                <Trash2 size={15} />
-                <span>{deleting ? 'Đang xóa...' : 'Xóa toàn bộ lịch'}</span>
-              </button>
-            )}
+          {isLocked ? (
+            <>
+              <div className="footer-left-actions" style={{ color: '#64748b', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Lock size={14} color="#7c3aed" />
+                <span>Chế độ chỉ xem (Đã khóa vĩnh viễn)</span>
+              </div>
+              <div className="footer-right-actions">
+                <button
+                  type="button"
+                  className="btn-cancel-modal"
+                  onClick={onClose}
+                >
+                  Đóng
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="footer-left-actions">
+                {schedules.some(s => s.maThoiKhoaBieu) && (
+                  <button
+                    type="button"
+                    className="btn-delete-all-schedules"
+                    onClick={handleDeleteAll}
+                    disabled={saving || deleting}
+                  >
+                    <Trash2 size={15} />
+                    <span>{deleting ? 'Đang xóa...' : 'Xóa toàn bộ lịch'}</span>
+                  </button>
+                )}
 
-            <button
-              type="button"
-              className="btn-check-conflict"
-              onClick={handleCheckConflict}
-              disabled={checkingConflict || saving || schedules.length === 0}
-            >
-              <RefreshCw size={14} className={checkingConflict ? 'spinning' : ''} />
-              <span>Kiểm tra xung đột</span>
-            </button>
-          </div>
+                <button
+                  type="button"
+                  className="btn-check-conflict"
+                  onClick={handleCheckConflict}
+                  disabled={checkingConflict || saving || schedules.length === 0}
+                >
+                  <RefreshCw size={14} className={checkingConflict ? 'spinning' : ''} />
+                  <span>Kiểm tra xung đột</span>
+                </button>
+              </div>
 
-          <div className="footer-right-actions">
-            <button
-              type="button"
-              className="btn-cancel-modal"
-              onClick={onClose}
-              disabled={saving || deleting}
-            >
-              Hủy bỏ
-            </button>
-            <button
-              type="button"
-              className="btn-save-schedules"
-              onClick={handleSave}
-              disabled={saving || deleting || schedules.length === 0}
-            >
-              <CheckCircle2 size={16} />
-              <span>{saving ? 'Đang lưu thời khóa biểu...' : 'Lưu Thời Khóa Biểu'}</span>
-            </button>
-          </div>
+              <div className="footer-right-actions">
+                <button
+                  type="button"
+                  className="btn-cancel-modal"
+                  onClick={onClose}
+                  disabled={saving || deleting}
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="button"
+                  className="btn-save-schedules"
+                  onClick={handleSave}
+                  disabled={saving || deleting || schedules.length === 0}
+                >
+                  <CheckCircle2 size={16} />
+                  <span>{saving ? 'Đang lưu thời khóa biểu...' : 'Lưu Thời Khóa Biểu'}</span>
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
       </div>

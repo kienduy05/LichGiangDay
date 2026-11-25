@@ -61,6 +61,67 @@ class DangKyDayBuController {
       });
     }
   };
+
+  // GET /v1/api/dangkydaybu/thuc-hanh/lop-can-dang-ky
+  getLopThucHanhCanDangKy = async (req, res) => {
+    try {
+      const data = await DangKyDayBuService.getLopThucHanhCanDangKy(req.user);
+      return res.status(200).json({
+        status: 'success',
+        code: 200,
+        message: 'Lấy danh sách lớp thực hành thành công',
+        metadata: data
+      });
+    } catch (error) {
+      return res.status(error.status || 500).json({
+        status: 'error',
+        code: error.status || 500,
+        message: error.message || 'Lỗi khi lấy danh sách lớp thực hành',
+        metadata: null
+      });
+    }
+  };
+
+  // GET /v1/api/dangkydaybu/thuc-hanh/phong-trong
+  getPhongTrongThucHanh = async (req, res) => {
+    try {
+      const { maLopHocPhan, tuNgay, maTiet } = req.query;
+      const data = await DangKyDayBuService.getPhongTrongThucHanh(req.user, { maLopHocPhan, tuNgay, maTiet });
+      return res.status(200).json({
+        status: 'success',
+        code: 200,
+        message: 'Tìm phòng trống thực hành thành công',
+        metadata: data
+      });
+    } catch (error) {
+      return res.status(error.status || 500).json({
+        status: 'error',
+        code: error.status || 500,
+        message: error.message || 'Lỗi khi tìm phòng trống thực hành',
+        metadata: null
+      });
+    }
+  };
+
+  // POST /v1/api/dangkydaybu/thuc-hanh
+  createDangKyThucHanh = async (req, res) => {
+    try {
+      const result = await DangKyDayBuService.createDangKyThucHanh(req.user, req.body);
+      return res.status(201).json({
+        status: 'success',
+        code: 201,
+        message: `Đăng ký buổi thực hành ${result.daDangKy}/${result.tongCanDangKy} thành công`,
+        metadata: result
+      });
+    } catch (error) {
+      return res.status(error.status || 500).json({
+        status: 'error',
+        code: error.status || 500,
+        message: error.message || 'Lỗi khi đăng ký lịch thực hành',
+        metadata: error.metadata || null
+      });
+    }
+  };
 }
 
 module.exports = new DangKyDayBuController();

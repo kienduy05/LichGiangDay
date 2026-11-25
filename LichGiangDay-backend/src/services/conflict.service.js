@@ -115,17 +115,7 @@ class ConflictService {
           });
         }
 
-        // 3.3. Loại phòng phù hợp loại học
-        if (lhpInfo && phongInfo.LoaiPhong && lhpInfo.LoaiHoc) {
-          const lhpType = lhpInfo.LoaiHoc.toLowerCase();
-          const roomType = phongInfo.LoaiPhong.toLowerCase();
-          if ((lhpType === 'th' || lhpType === 'thuchanh') && !roomType.includes('thuc') && !roomType.includes('lab')) {
-            conflicts.push({
-              type: 'ROOM_TYPE',
-              message: `Lớp thực hành cần phòng thực hành/LAB, nhưng phòng '${phongInfo.TenPhong}' là phòng '${phongInfo.LoaiPhong}'.`
-            });
-          }
-        }
+        // 3.3. Cho phép chọn tất cả các loại phòng đang Ready và đủ sức chứa (theo quy định thực hành & dạy bù)
 
         // 3.4. Trùng lịch phòng (so theo giao khoảng tiết học trên cùng ngày)
         // Bỏ qua các buổi có TrangThai IN ('Absent', 'Swapped', 'Cancelled')

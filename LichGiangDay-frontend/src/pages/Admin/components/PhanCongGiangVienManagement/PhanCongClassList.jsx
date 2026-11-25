@@ -151,6 +151,11 @@ export default function PhanCongClassList({
                     );
                   })}
                 </div>
+              ) : item.LoaiHoc === 'TH' ? (
+                <div style={{ fontSize: '0.71875rem', color: '#0f766e', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  <Calendar size={12} />
+                  Thực hành • GV tự đăng ký sau khóa
+                </div>
               ) : (
                 <div style={{ fontSize: '0.71875rem', color: '#94a3b8', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                   <AlertCircle size={12} />
@@ -169,7 +174,7 @@ export default function PhanCongClassList({
                     <CheckCircle2 size={12} />
                     {item.TenGiangVien}
                   </span>
-                ) : item.hasSchedule ? (
+                ) : (item.hasSchedule || item.LoaiHoc === 'TH') ? (
                   <span className="pcgv-status-pill status-unassigned">
                     <AlertTriangle size={12} />
                     Chưa phân công
