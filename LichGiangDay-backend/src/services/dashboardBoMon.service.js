@@ -43,20 +43,26 @@ class DashboardBoMonService {
       if (hkRows.length > 0) effectiveHocKy = hkRows[0].MaHocKy;
     }
 
-    // 2. Tính toán ngày Thứ 2 & Chủ nhật của tuần hiện tại
-    const now = new Date();
-    const dayOfWeek = now.getDay();
-    const diffToMonday = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-    const monday = new Date(now.setDate(diffToMonday));
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
+    // 2. Tính toán ngày Thứ 2 & Chủ nhật của tuần hiện tại theo giờ địa phương
+    const formatLocalDate = (d) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
 
-    const mondayStr = monday.toISOString().slice(0, 10);
-    const sundayStr = sunday.toISOString().slice(0, 10);
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const diffToMonday = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+    const monday = new Date(today.getFullYear(), today.getMonth(), diffToMonday);
+    const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
+
+    const mondayStr = formatLocalDate(monday);
+    const sundayStr = formatLocalDate(sunday);
+    const todayStr = formatLocalDate(today);
 
     // ========================================================
-    // 3. KPI CHÍNH CỦA BỘ MÔN
+    // 3. KPI CHÍNH CỦA BỘ MÔN (Đều lọc đúng theo effectiveHocKy)
     // ========================================================
     const [
       [gvCount],
@@ -71,35 +77,52 @@ class DashboardBoMonService {
         "SELECT COUNT(*) AS total FROM GiangVien WHERE MaBoMon = ? AND TrangThai = 'Active'",
         [maBoMon]
       ),
-      // 2. Số giảng viên đang có lịch dạy trong học kỳ
+      // 2. Số giảng viên đang có lịch/lớp dạy trong học kỳ
       db.query(`
-        SELECT COUNT(DISTINCT bh.MaGiangVien) AS total
-        FROM BuoiHoc bh
-        JOIN LopHocPhan lhp ON bh.MaLopHocPhan = lhp.MaLopHocPhan
-        WHERE lhp.MaBoMon = ? AND (? IS NULL OR lhp.MaHocKy = ?)
-      `, [maBoMon, effectiveHocKy, effectiveHocKy]),
-      // 3. Tổng số lớp học phần do bộ môn phụ trách
+        SELECT COUNT(DISTINCT maGV) AS total
+        FROM (
+          SELECT bh.MaGiangVien AS maGV
+          FROM BuoiHoc bh
+          JOIN LopHocPhan lhp ON bh.MaLopHocPhan = lhp.MaLopHocPhan
+          WHERE lhp.MaBoMon = ?
+            AND (? IS NULL OR lhp.MaHocKy = ?)
+            AND (bh.TrangThai IS NULL OR bh.TrangThai != 'Cancelled')
+            AND bh.MaGiangVien IS NOT NULL
+          UNION
+          SELECT lhp.MaGiangVien AS maGV
+          FROM LopHocPhan lhp
+          WHERE lhp.MaBoMon = ?
+            AND (? IS NULL OR lhp.MaHocKy = ?)
+            AND lhp.MaGiangVien IS NOT NULL
+        ) t
+      `, [maBoMon, effectiveHocKy, effectiveHocKy, maBoMon, effectiveHocKy, effectiveHocKy]),
+      // 3. Tổng số lớp học phần do bộ môn phụ trách trong học kỳ
       db.query(`
         SELECT COUNT(*) AS total 
         FROM LopHocPhan 
         WHERE MaBoMon = ? AND (? IS NULL OR MaHocKy = ?)
       `, [maBoMon, effectiveHocKy, effectiveHocKy]),
-      // 4. Tổng số buổi học / ca dạy trong tuần này
+      // 4. Tổng số buổi học / ca dạy trong tuần này thuộc học kỳ đang chọn
       db.query(`
         SELECT COUNT(*) AS total
         FROM BuoiHoc bh
         JOIN LopHocPhan lhp ON bh.MaLopHocPhan = lhp.MaLopHocPhan
-        WHERE lhp.MaBoMon = ? AND bh.NgayHoc BETWEEN ? AND ?
-      `, [maBoMon, mondayStr, sundayStr]),
-      // 5. Yêu cầu đang chờ Bộ môn duyệt (Nghỉ, Đổi ca, Dạy thay)
+        WHERE lhp.MaBoMon = ?
+          AND (? IS NULL OR lhp.MaHocKy = ?)
+          AND bh.NgayHoc BETWEEN ? AND ?
+          AND (bh.TrangThai IS NULL OR bh.TrangThai != 'Cancelled')
+      `, [maBoMon, effectiveHocKy, effectiveHocKy, mondayStr, sundayStr]),
+      // 5. Yêu cầu đang chờ Bộ môn duyệt thuộc học kỳ đang chọn
       db.query(`
         SELECT COUNT(*) AS total
         FROM YeuCauNghi ycn
         JOIN BuoiHoc bh ON ycn.MaBuoiHoc = bh.MaBuoiHoc
         JOIN LopHocPhan lhp ON bh.MaLopHocPhan = lhp.MaLopHocPhan
-        WHERE lhp.MaBoMon = ? AND ycn.TrangThai = 'Pending'
-      `, [maBoMon]),
-      // 6. Số buổi học đã báo nghỉ nhưng chưa dạy bù
+        WHERE lhp.MaBoMon = ?
+          AND (? IS NULL OR lhp.MaHocKy = ?)
+          AND ycn.TrangThai = 'Pending'
+      `, [maBoMon, effectiveHocKy, effectiveHocKy]),
+      // 6. Số buổi học đã báo nghỉ nhưng chưa dạy bù thuộc học kỳ đang chọn
       db.query(`
         SELECT COUNT(*) AS total
         FROM BuoiHoc bh
@@ -121,7 +144,7 @@ class DashboardBoMonService {
     };
 
     // ========================================================
-    // 4. LỊCH HÔM NAY CỦA BỘ MÔN (TODAY'S CLASSES)
+    // 4. LỊCH HÔM NAY CỦA BỘ MÔN (Lọc đúng học kỳ đang chọn)
     // ========================================================
     const [todayClasses] = await db.query(`
       SELECT bh.MaBuoiHoc, bh.MaThoiKhoaBieu, bh.MaLopHocPhan, 
@@ -143,12 +166,15 @@ class DashboardBoMonService {
       JOIN TietHoc th ON bh.MaTiet = th.MaTiet
       LEFT JOIN GiangVien gv ON bh.MaGiangVien = gv.MaGiangVien
       LEFT JOIN GiangVien gvGoc ON bh.MaGiangVienGoc = gvGoc.MaGiangVien
-      WHERE lhp.MaBoMon = ? AND DATE(bh.NgayHoc) = ?
+      WHERE lhp.MaBoMon = ?
+        AND (? IS NULL OR lhp.MaHocKy = ?)
+        AND DATE(bh.NgayHoc) = ?
+        AND (bh.TrangThai IS NULL OR bh.TrangThai != 'Cancelled')
       ORDER BY th.GioBatDau ASC
-    `, [maBoMon, todayStr]);
+    `, [maBoMon, effectiveHocKy, effectiveHocKy, todayStr]);
 
     // ========================================================
-    // 5. VIỆC CẦN XỬ LÝ GẤP (PENDING APPROVALS)
+    // 5. VIỆC CẦN XỬ LÝ GẤP (Lọc đúng học kỳ đang chọn)
     // ========================================================
     const [actionItems] = await db.query(`
       SELECT ycn.MaYeuCauNghi, ycn.LoaiYeuCau, ycn.LyDo, 
@@ -167,27 +193,40 @@ class DashboardBoMonService {
       JOIN TietHoc th ON bh.MaTiet = th.MaTiet
       LEFT JOIN GiangVien gv ON ycn.MaGiangVien = gv.MaGiangVien
       LEFT JOIN GiangVien gvThay ON ycn.MaGiangVienDeXuat = gvThay.MaGiangVien
-      WHERE lhp.MaBoMon = ? AND ycn.TrangThai = 'Pending'
+      WHERE lhp.MaBoMon = ?
+        AND (? IS NULL OR lhp.MaHocKy = ?)
+        AND ycn.TrangThai = 'Pending'
       ORDER BY ycn.ThoiGianGui DESC
       LIMIT 8
-    `, [maBoMon]);
+    `, [maBoMon, effectiveHocKy, effectiveHocKy]);
 
     // ========================================================
-    // 6. THỐNG KÊ TẢI GIẢNG DẠY CỦA GIẢNG VIÊN TRONG BỘ MÔN (WORKLOAD)
+    // 6. THỐNG KÊ TẢI GIẢNG DẠY CỦA GIẢNG VIÊN TRONG BỘ MÔN (Đúng học kỳ đang chọn)
     // ========================================================
     const [workloadData] = await db.query(`
       SELECT gv.MaGiangVien, gv.HoTen, gv.DinhMucGioChuan,
-             COUNT(DISTINCT lhp.MaLopHocPhan) AS SoLopHocPhan,
-             COUNT(bh.MaBuoiHoc) AS TongSoBuoiDay
+             COALESCE(lhpAgg.SoLopHocPhan, COALESCE(bhAgg.SoLopCoBuoi, 0)) AS SoLopHocPhan,
+             COALESCE(bhAgg.TongSoBuoiDay, 0) AS TongSoBuoiDay
       FROM GiangVien gv
-      LEFT JOIN BuoiHoc bh ON gv.MaGiangVien = bh.MaGiangVien 
-           AND bh.TrangThai != 'Absent'
-      LEFT JOIN LopHocPhan lhp ON bh.MaLopHocPhan = lhp.MaLopHocPhan 
-           AND (? IS NULL OR lhp.MaHocKy = ?)
+      LEFT JOIN (
+        SELECT lhp.MaGiangVien, COUNT(DISTINCT lhp.MaLopHocPhan) AS SoLopHocPhan
+        FROM LopHocPhan lhp
+        WHERE lhp.MaBoMon = ? AND (? IS NULL OR lhp.MaHocKy = ?) AND lhp.MaGiangVien IS NOT NULL
+        GROUP BY lhp.MaGiangVien
+      ) lhpAgg ON gv.MaGiangVien = lhpAgg.MaGiangVien
+      LEFT JOIN (
+        SELECT bh.MaGiangVien,
+               COUNT(DISTINCT bh.MaLopHocPhan) AS SoLopCoBuoi,
+               COUNT(bh.MaBuoiHoc) AS TongSoBuoiDay
+        FROM BuoiHoc bh
+        JOIN LopHocPhan lhp ON bh.MaLopHocPhan = lhp.MaLopHocPhan
+        WHERE (? IS NULL OR lhp.MaHocKy = ?)
+          AND (bh.TrangThai IS NULL OR bh.TrangThai NOT IN ('Absent', 'Cancelled'))
+        GROUP BY bh.MaGiangVien
+      ) bhAgg ON gv.MaGiangVien = bhAgg.MaGiangVien
       WHERE gv.MaBoMon = ? AND gv.TrangThai = 'Active'
-      GROUP BY gv.MaGiangVien, gv.HoTen, gv.DinhMucGioChuan
-      ORDER BY TongSoBuoiDay DESC, gv.HoTen ASC
-    `, [effectiveHocKy, effectiveHocKy, maBoMon]);
+      ORDER BY TongSoBuoiDay DESC, SoLopHocPhan DESC, gv.HoTen ASC
+    `, [maBoMon, effectiveHocKy, effectiveHocKy, effectiveHocKy, effectiveHocKy, maBoMon]);
 
     // ========================================================
     // 7. BIẾN ĐỘNG LỊCH CỦA BỘ MÔN TRONG HỌC KỲ
@@ -202,7 +241,9 @@ class DashboardBoMonService {
         SUM(CASE WHEN bh.LoaiBuoiHoc = 'Makeup' THEN 1 ELSE 0 END) AS SoBuoiDayBu
       FROM BuoiHoc bh
       JOIN LopHocPhan lhp ON bh.MaLopHocPhan = lhp.MaLopHocPhan
-      WHERE lhp.MaBoMon = ? AND (? IS NULL OR lhp.MaHocKy = ?)
+      WHERE lhp.MaBoMon = ?
+        AND (? IS NULL OR lhp.MaHocKy = ?)
+        AND (bh.TrangThai IS NULL OR bh.TrangThai != 'Cancelled')
     `, [maBoMon, effectiveHocKy, effectiveHocKy]);
 
     return {

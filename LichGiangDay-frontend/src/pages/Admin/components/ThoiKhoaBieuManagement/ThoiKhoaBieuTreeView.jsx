@@ -8,7 +8,7 @@ import './ThoiKhoaBieuComponents.css';
 
 export default function ThoiKhoaBieuTreeView({
   treeData = [],
-  stats = { total: 0, scheduled: 0, unscheduled: 0 },
+  stats = { total: 0, scheduled: 0, unscheduled: 0, practice: 0 },
   selectedKhoaId,
   onSelectKhoa,
   selectedBoMonId,
@@ -111,7 +111,7 @@ export default function ThoiKhoaBieuTreeView({
         </div>
       </div>
 
-      {/* 2. Filter Status Tabs (Tất cả / Đã xếp / Chưa xếp) */}
+      {/* 2. Filter Status Tabs (Tất cả / Đã xếp / Chưa xếp / Thực hành) */}
       <div className="tree-filter-pills">
         <button
           type="button"
@@ -139,6 +139,18 @@ export default function ThoiKhoaBieuTreeView({
           <span>Chưa xếp</span>
           <span className="pill-count">{stats.unscheduled || 0}</span>
         </button>
+        {(stats.practice > 0 || filterStatus === 'TH') && (
+          <button
+            type="button"
+            className={`filter-pill practice ${filterStatus === 'TH' ? 'active' : ''}`}
+            onClick={() => onFilterStatusChange('TH')}
+            title="Lớp Thực hành: Bộ môn phân công GV, PĐT khóa lịch, GV tự đăng ký 5 buổi"
+          >
+            <span className="dot teal"></span>
+            <span>Thực hành</span>
+            <span className="pill-count">{stats.practice || 0}</span>
+          </button>
+        )}
       </div>
 
       {/* 3. Search Box in Tree */}
@@ -249,16 +261,21 @@ export default function ThoiKhoaBieuTreeView({
                                 bm.lopHocPhans.map(lhp => {
                                   const isLhpSelected = selectedLhpId === lhp.MaLopHocPhan;
                                   const hasSchedule = lhp.hasSchedule;
+                                  const isPractice = lhp.LoaiHoc === 'TH' && !hasSchedule;
+                                  const statusClass = hasSchedule ? 'scheduled' : isPractice ? 'practice' : 'unscheduled';
+                                  const dotClass = hasSchedule ? 'green' : isPractice ? 'teal' : 'orange';
 
                                   // Format tóm tắt lịch
                                   const scheduleSummary = lhp.schedules && lhp.schedules.length > 0
                                     ? lhp.schedules.map(s => `T${s.ThuTrongTuan}(${s.TenPhong || s.MaPhong})`).join(', ')
-                                    : 'Chưa xếp lịch';
+                                    : isPractice
+                                      ? `GV tự ĐK (${lhp.thRegisteredSessions || 0}/5 buổi)`
+                                      : 'Chưa xếp lịch';
 
                                   return (
                                     <div
                                       key={lhp.MaLopHocPhan}
-                                      className={`tree-node-lhp-item ${isLhpSelected ? 'active' : ''} ${hasSchedule ? 'scheduled' : 'unscheduled'}`}
+                                      className={`tree-node-lhp-item ${isLhpSelected ? 'active' : ''} ${statusClass}`}
                                       onClick={() => {
                                         onSelectKhoa(khoa.MaKhoa);
                                         onSelectBoMon(bm.MaBoMon);
@@ -266,7 +283,7 @@ export default function ThoiKhoaBieuTreeView({
                                       }}
                                     >
                                       <div className="lhp-item-status-dot">
-                                        <span className={`dot ${hasSchedule ? 'green' : 'orange'}`}></span>
+                                        <span className={`dot ${dotClass}`}></span>
                                       </div>
 
                                       <div className="lhp-item-info">
@@ -296,7 +313,7 @@ export default function ThoiKhoaBieuTreeView({
                                           </div>
                                         )}
                                         <div className="lhp-item-sub-row">
-                                          <span className={`lhp-schedule-pill ${hasSchedule ? 'scheduled' : 'unscheduled'}`}>
+                                          <span className={`lhp-schedule-pill ${statusClass}`}>
                                             {scheduleSummary}
                                           </span>
                                         </div>

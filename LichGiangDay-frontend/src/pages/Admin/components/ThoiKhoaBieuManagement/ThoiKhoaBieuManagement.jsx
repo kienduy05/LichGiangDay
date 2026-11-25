@@ -38,7 +38,7 @@ export default function ThoiKhoaBieuManagement() {
   // 3. TreeView Navigation states & collapse toggle
   const [isTreeCollapsed, setIsTreeCollapsed] = useState(false);
   const [treeData, setTreeData] = useState([]);
-  const [treeStats, setTreeStats] = useState({ total: 0, scheduled: 0, unscheduled: 0 });
+  const [treeStats, setTreeStats] = useState({ total: 0, scheduled: 0, unscheduled: 0, practice: 0 });
   const [selectedKhoaId, setSelectedKhoaId] = useState('ALL');
   const [selectedBoMonId, setSelectedBoMonId] = useState(isBoMonRole ? scopedBoMonId : 'ALL');
   const [selectedLhpId, setSelectedLhpId] = useState(null);
@@ -102,7 +102,7 @@ export default function ThoiKhoaBieuManagement() {
         filterStatus
       });
       setTreeData(data?.tree || []);
-      setTreeStats(data?.stats || { total: 0, scheduled: 0, unscheduled: 0 });
+      setTreeStats(data?.stats || { total: 0, scheduled: 0, unscheduled: 0, practice: 0 });
     } catch (err) {
       console.error('Lỗi tải TreeView:', err);
     } finally {
@@ -215,7 +215,7 @@ export default function ThoiKhoaBieuManagement() {
 
   // --- Khóa đồng loạt tất cả các lớp đã được phân công ---
   const handleLockAllSemester = async () => {
-    const assignedUnconfirmed = lopHocPhans.filter(l => l.MaGiangVien && l.TrangThaiPhanCong !== 'Locked');
+    const assignedUnconfirmed = lopHocPhans.filter(l => l.MaGiangVien && l.TrangThaiPhanCong !== 'Locked' && (l.hasSchedule || l.LoaiHoc === 'TH'));
     if (assignedUnconfirmed.length === 0) {
       showToast('Hiện không có lớp học phần nào đã phân công giảng viên cần khóa.', 'info');
       return;
@@ -435,7 +435,7 @@ export default function ThoiKhoaBieuManagement() {
               )}
 
               {/* Nút Khóa lịch đồng loạt cho Admin / Phòng Đào Tạo */}
-              {lopHocPhans.some(l => l.MaGiangVien && l.TrangThaiPhanCong !== 'Locked') && (
+              {lopHocPhans.some(l => l.MaGiangVien && l.TrangThaiPhanCong !== 'Locked' && (l.hasSchedule || l.LoaiHoc === 'TH')) && (
                 <button
                   type="button"
                   className="tkb-btn-refresh-content"

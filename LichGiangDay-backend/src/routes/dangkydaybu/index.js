@@ -15,4 +15,11 @@ router.get('/phong-trong', checkPermission('DangKyDayBu', 'CanRead'), DangKyDayB
 // 3. Đăng ký dạy bù (tự động xác nhận)
 router.post('/', checkPermission('DangKyDayBu', 'CanCreate'), DangKyDayBuController.createDangKyDayBu);
 
+// ========================================================================
+// GIẢNG VIÊN ĐĂNG KÝ LỊCH THỰC HÀNH CHO LỚP TH ĐÃ KHÓA (5 buổi/lớp)
+// ========================================================================
+router.get('/thuc-hanh/lop-can-dang-ky', checkPermission('DangKyDayBu', 'CanRead'), DangKyDayBuController.getLopThucHanhCanDangKy);
+router.get('/thuc-hanh/phong-trong', checkPermission('DangKyDayBu', 'CanRead'), DangKyDayBuController.getPhongTrongThucHanh);
+router.post('/thuc-hanh', checkPermission('DangKyDayBu', 'CanCreate'), DangKyDayBuController.createDangKyThucHanh);
+
 module.exports = router;

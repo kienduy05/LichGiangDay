@@ -78,9 +78,10 @@ export default function ThoiKhoaBieuTable({
           {lopHocPhans.map((lhp, index) => {
             const hasSchedule = lhp.hasSchedule && lhp.schedules && lhp.schedules.length > 0;
             const isLocked = lhp.TrangThaiPhanCong === 'Locked';
+            const isPractice = lhp.LoaiHoc === 'TH' && !hasSchedule;
 
             return (
-              <tr key={lhp.MaLopHocPhan} className={`tkb-row ${hasSchedule ? 'row-scheduled' : 'row-unscheduled'}`}>
+              <tr key={lhp.MaLopHocPhan} className={`tkb-row ${hasSchedule ? 'row-scheduled' : isPractice ? 'row-practice' : 'row-unscheduled'}`}>
 
                 {/* 1. STT */}
                 <td className="text-center text-muted font-mono">{index + 1}</td>
@@ -181,6 +182,22 @@ export default function ThoiKhoaBieuTable({
                           );
                         })}
                       </div>
+                    ) : lhp.LoaiHoc === 'TH' ? (
+                      <div style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '4px 10px',
+                        borderRadius: '8px',
+                        background: '#f0fdfa',
+                        border: '1px solid #99f6e4',
+                        color: '#0f766e',
+                        fontSize: '0.78rem',
+                        fontWeight: 600
+                      }}>
+                        <Sparkles size={13} color="#0d9488" />
+                        <span>Thực hành • GV tự đăng ký ({lhp.thRegisteredSessions || 0}/5 buổi)</span>
+                      </div>
                     ) : (
                       <div className="unscheduled-warning-chip">
                         <AlertCircle size={13} />
@@ -193,34 +210,36 @@ export default function ThoiKhoaBieuTable({
                 {/* 7. Thao tác */}
                 <td className="text-center">
                   <div className="action-buttons-group">
-                    {/* Nút Sửa / Xem lịch */}
-                    <button
-                      type="button"
-                      className={`btn-action-schedule ${hasSchedule ? (isLocked ? 'locked' : 'edit') : 'add'}`}
-                      onClick={() => onScheduleClick(lhp)}
-                      title={isLocked ? 'Xem chi tiết TKB (Đã khóa)' : (hasSchedule ? 'Chỉnh sửa thời khóa biểu' : 'Xếp thời khóa biểu')}
-                      style={isLocked ? { background: '#f8fafc', borderColor: '#cbd5e1', color: '#475569' } : {}}
-                    >
-                      {isLocked ? (
-                        <>
-                          <Eye size={13} color="#64748b" />
-                          <span>Xem lịch</span>
-                        </>
-                      ) : hasSchedule ? (
-                        <>
-                          <Edit3 size={13} />
-                          <span>Sửa lịch</span>
-                        </>
-                      ) : (
-                        <>
-                          <Plus size={13} />
-                          <span>Xếp lịch</span>
-                        </>
-                      )}
-                    </button>
+                    {/* Nút Sửa / Xem lịch: Riêng lớp Thực hành (LoaiHoc = 'TH') chưa có TKB thì ẩn nút Xếp/Xem lịch */}
+                    {(hasSchedule || lhp.LoaiHoc !== 'TH') && (
+                      <button
+                        type="button"
+                        className={`btn-action-schedule ${hasSchedule ? (isLocked ? 'locked' : 'edit') : 'add'}`}
+                        onClick={() => onScheduleClick(lhp)}
+                        title={isLocked ? 'Xem chi tiết TKB (Đã khóa)' : (hasSchedule ? 'Chỉnh sửa thời khóa biểu' : 'Xếp thời khóa biểu')}
+                        style={isLocked ? { background: '#f8fafc', borderColor: '#cbd5e1', color: '#475569' } : {}}
+                      >
+                        {isLocked ? (
+                          <>
+                            <Eye size={13} color="#64748b" />
+                            <span>Xem lịch</span>
+                          </>
+                        ) : hasSchedule ? (
+                          <>
+                            <Edit3 size={13} />
+                            <span>Sửa lịch</span>
+                          </>
+                        ) : (
+                          <>
+                            <Plus size={13} />
+                            <span>Xếp lịch</span>
+                          </>
+                        )}
+                      </button>
+                    )}
 
-                    {/* Nút Khóa lịch (Phía Admin/Phòng Đào Tạo) - Khóa là khóa luôn, không có mở khóa */}
-                    {hasSchedule && !isLocked && lhp.MaGiangVien && (
+                    {/* Nút Khóa lịch (Phía Admin/Phòng Đào Tạo) - Lớp TH đã có GV được phép Khóa ngay dù chưa xếp lịch */}
+                    {(hasSchedule || lhp.LoaiHoc === 'TH') && !isLocked && lhp.MaGiangVien && (
                       <button
                         type="button"
                         className="btn-action-schedule"

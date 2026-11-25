@@ -108,26 +108,51 @@ class ThoiKhoaBieuService {
       tkbMap[tkb.MaLopHocPhan].push(tkb);
     }
 
-    // Gắn schedules vào từng LHP và lọc theo filterStatus
-    const processedLhp = lhpRows.map(lhp => {
+    // 4b. Lấy số buổi Thực hành (BuoiHoc) đã đăng ký cho các lớp TH trong học kỳ
+    const [thBuoiRows] = await db.query(`
+      SELECT bh.MaLopHocPhan, COUNT(DISTINCT bh.MaBuoiHoc) AS RegisteredCount
+      FROM BuoiHoc bh
+      JOIN LopHocPhan lhp ON bh.MaLopHocPhan = lhp.MaLopHocPhan
+      WHERE lhp.MaHocKy = ? AND lhp.LoaiHoc = 'TH' AND (bh.TrangThai IS NULL OR bh.TrangThai != 'Cancelled')
+      GROUP BY bh.MaLopHocPhan
+    `, [maHocKy.trim()]);
+
+    const thBuoiMap = {};
+    for (const r of thBuoiRows) {
+      thBuoiMap[r.MaLopHocPhan] = Number(r.RegisteredCount || 0);
+    }
+
+    // Gắn schedules vào từng LHP (lớp TH không xếp khung TKB ban đầu nên không tính vào Chưa xếp)
+    const allProcessedLhp = lhpRows.map(lhp => {
       const schedules = tkbMap[lhp.MaLopHocPhan] || [];
       const hasSchedule = schedules.length > 0;
+      const isPracticeOnly = lhp.LoaiHoc === 'TH' && !hasSchedule;
+      const isUnscheduled = !hasSchedule && lhp.LoaiHoc !== 'TH';
+      const thRegisteredSessions = lhp.LoaiHoc === 'TH' ? (thBuoiMap[lhp.MaLopHocPhan] || 0) : 0;
       return {
         ...lhp,
         hasSchedule,
+        isPracticeOnly,
+        isUnscheduled,
+        thRegisteredSessions,
         schedules
       };
-    }).filter(lhp => {
+    });
+
+    const totalClassesCount = allProcessedLhp.length;
+    const scheduledClassesCount = allProcessedLhp.filter(l => l.hasSchedule).length;
+    const practiceClassesCount = allProcessedLhp.filter(l => l.isPracticeOnly).length;
+    const unscheduledClassesCount = allProcessedLhp.filter(l => l.isUnscheduled).length;
+
+    const processedLhp = allProcessedLhp.filter(lhp => {
       if (filterStatus === 'SCHEDULED') return lhp.hasSchedule;
-      if (filterStatus === 'UNSCHEDULED') return !lhp.hasSchedule;
+      if (filterStatus === 'UNSCHEDULED') return lhp.isUnscheduled;
+      if (filterStatus === 'TH' || filterStatus === 'PRACTICE') return lhp.isPracticeOnly;
       return true;
     });
 
     // 5. Xây dựng cây phân cấp Khoa -> BoMon -> LopHocPhan
     const tree = [];
-    let totalClassesCount = 0;
-    let scheduledClassesCount = 0;
-    let unscheduledClassesCount = 0;
 
     for (const k of khoaRows) {
       const boMonsOfKhoa = boMonRows.filter(bm => bm.MaKhoa === k.MaKhoa);
@@ -141,7 +166,7 @@ class ThoiKhoaBieuService {
         const lhpsOfBm = processedLhp.filter(lhp => lhp.MaBoMon === bm.MaBoMon);
         const bmTotal = lhpsOfBm.length;
         const bmScheduled = lhpsOfBm.filter(l => l.hasSchedule).length;
-        const bmUnscheduled = bmTotal - bmScheduled;
+        const bmUnscheduled = lhpsOfBm.filter(l => l.isUnscheduled).length;
 
         khoaTotal += bmTotal;
         khoaScheduled += bmScheduled;
@@ -159,10 +184,6 @@ class ThoiKhoaBieuService {
         });
       }
 
-      totalClassesCount += khoaTotal;
-      scheduledClassesCount += khoaScheduled;
-      unscheduledClassesCount += khoaUnscheduled;
-
       tree.push({
         MaKhoa: k.MaKhoa,
         TenKhoa: k.TenKhoa,
@@ -177,7 +198,8 @@ class ThoiKhoaBieuService {
       stats: {
         total: totalClassesCount,
         scheduled: scheduledClassesCount,
-        unscheduled: unscheduledClassesCount
+        unscheduled: unscheduledClassesCount,
+        practice: practiceClassesCount
       },
       tree
     };
@@ -309,17 +331,37 @@ class ThoiKhoaBieuService {
       tkbMap[tkb.MaLopHocPhan].push(tkb);
     }
 
+    const [thBuoiRows] = await db.query(`
+      SELECT bh.MaLopHocPhan, COUNT(DISTINCT bh.MaBuoiHoc) AS RegisteredCount
+      FROM BuoiHoc bh
+      JOIN LopHocPhan lhp ON bh.MaLopHocPhan = lhp.MaLopHocPhan
+      WHERE lhp.MaHocKy = ? AND lhp.LoaiHoc = 'TH' AND (bh.TrangThai IS NULL OR bh.TrangThai != 'Cancelled')
+      GROUP BY bh.MaLopHocPhan
+    `, [maHocKy.trim()]);
+
+    const thBuoiMap = {};
+    for (const r of thBuoiRows) {
+      thBuoiMap[r.MaLopHocPhan] = Number(r.RegisteredCount || 0);
+    }
+
     return rows.map(lhp => {
       const schedules = tkbMap[lhp.MaLopHocPhan] || [];
       const hasSchedule = schedules.length > 0;
+      const isPracticeOnly = lhp.LoaiHoc === 'TH' && !hasSchedule;
+      const isUnscheduled = !hasSchedule && lhp.LoaiHoc !== 'TH';
+      const thRegisteredSessions = lhp.LoaiHoc === 'TH' ? (thBuoiMap[lhp.MaLopHocPhan] || 0) : 0;
       return {
         ...lhp,
         hasSchedule,
+        isPracticeOnly,
+        isUnscheduled,
+        thRegisteredSessions,
         schedules
       };
     }).filter(lhp => {
       if (filterStatus === 'SCHEDULED') return lhp.hasSchedule;
-      if (filterStatus === 'UNSCHEDULED') return !lhp.hasSchedule;
+      if (filterStatus === 'UNSCHEDULED') return lhp.isUnscheduled;
+      if (filterStatus === 'TH' || filterStatus === 'PRACTICE') return lhp.isPracticeOnly;
       return true;
     });
   };
@@ -1280,23 +1322,27 @@ class ThoiKhoaBieuService {
     const enhancedClasses = classRows.map(c => {
       const schedules = schedulesByClass[c.MaLopHocPhan] || [];
       const hasSchedule = schedules.length > 0;
+      const isPractical = c.LoaiHoc === 'TH';
+      const canAssign = hasSchedule || isPractical;
       const isAssigned = !!c.MaGiangVien;
       const isLocked = c.TrangThaiPhanCong === 'Locked';
       return {
         ...c,
         schedules,
         hasSchedule,
+        isPractical,
+        canAssign,
         isAssigned,
         isLocked,
-        statusGroup: !hasSchedule ? 'UNSCHEDULED' : (isLocked ? 'LOCKED' : (isAssigned ? 'ASSIGNED' : 'UNASSIGNED'))
+        statusGroup: !canAssign ? 'UNSCHEDULED' : (isLocked ? 'LOCKED' : (isAssigned ? 'ASSIGNED' : 'UNASSIGNED'))
       };
     });
 
     // Lọc theo filterStatus nếu có
     let filteredList = enhancedClasses;
     if (filterStatus === 'UNASSIGNED') {
-      // Các lớp ĐÃ CÓ LỊCH nhưng CHƯA PHÂN CÔNG (Cần xử lý gấp)
-      filteredList = enhancedClasses.filter(c => c.hasSchedule && !c.isAssigned);
+      // Các lớp đủ điều kiện phân công (đã có TKB hoặc lớp TH) nhưng CHƯA PHÂN CÔNG
+      filteredList = enhancedClasses.filter(c => c.canAssign && !c.isAssigned);
     } else if (filterStatus === 'ASSIGNED') {
       // Các lớp đã phân công (chưa khóa hoặc đã khóa)
       filteredList = enhancedClasses.filter(c => c.isAssigned);
@@ -1307,22 +1353,22 @@ class ThoiKhoaBieuService {
       // Tất cả lớp đã có lịch
       filteredList = enhancedClasses.filter(c => c.hasSchedule);
     } else if (filterStatus === 'UNSCHEDULED') {
-      // Các lớp chưa có lịch TKB
-      filteredList = enhancedClasses.filter(c => !c.hasSchedule);
+      // Các lớp chưa có lịch TKB (trừ lớp TH vì TH phân công trước)
+      filteredList = enhancedClasses.filter(c => !c.canAssign);
     }
 
-    // Thống kê KPIs cho Bộ môn (Chỉ tính phân công cho các lớp đã có TKB)
+    // Thống kê KPIs cho Bộ môn (Tính các lớp đã có TKB + các lớp Thực hành TH)
     const totalClasses = enhancedClasses.length;
-    const scheduledCount = enhancedClasses.filter(c => c.hasSchedule).length;
-    const assignedCount = enhancedClasses.filter(c => c.hasSchedule && c.isAssigned).length;
-    const lockedCount = enhancedClasses.filter(c => c.hasSchedule && c.isLocked).length;
-    const unassignedScheduledCount = enhancedClasses.filter(c => c.hasSchedule && !c.isAssigned).length;
-    const unscheduledCount = enhancedClasses.filter(c => !c.hasSchedule).length;
+    const scheduledCount = enhancedClasses.filter(c => c.canAssign).length;
+    const assignedCount = enhancedClasses.filter(c => c.canAssign && c.isAssigned).length;
+    const lockedCount = enhancedClasses.filter(c => c.canAssign && c.isLocked).length;
+    const unassignedScheduledCount = enhancedClasses.filter(c => c.canAssign && !c.isAssigned).length;
+    const unscheduledCount = enhancedClasses.filter(c => !c.canAssign).length;
 
-    // Đếm số giảng viên trong bộ môn đã nhận ít nhất 1 lớp có lịch TKB
+    // Đếm số giảng viên trong bộ môn đã nhận ít nhất 1 lớp
     const assignedLecturerSet = new Set();
     enhancedClasses.forEach(c => {
-      if (c.hasSchedule && c.MaGiangVien) assignedLecturerSet.add(c.MaGiangVien);
+      if (c.canAssign && c.MaGiangVien) assignedLecturerSet.add(c.MaGiangVien);
     });
 
     const [totalGvRows] = await db.query(
@@ -1413,7 +1459,7 @@ class ThoiKhoaBieuService {
       ORDER BY tkb.ThuTrongTuan ASC, tkb.MaTiet ASC
     `, [maLopHocPhan.trim()]);
 
-    if (targetSchedules.length === 0) {
+    if (targetSchedules.length === 0 && targetClass.LoaiHoc !== 'TH') {
       return {
         targetClass,
         hasSchedule: false,
@@ -1540,7 +1586,8 @@ class ThoiKhoaBieuService {
     return {
       targetClass,
       targetSchedules,
-      hasSchedule: true,
+      hasSchedule: targetSchedules.length > 0,
+      isPracticalFlexible: targetSchedules.length === 0 && targetClass.LoaiHoc === 'TH',
       availableCount: availableLecturers.length,
       conflictedCount: conflictedLecturers.length,
       availableLecturers,
@@ -1888,7 +1935,7 @@ class ThoiKhoaBieuService {
 
     // 1. Kiểm tra Lớp học phần
     const [lhpRows] = await db.query(`
-      SELECT lhp.MaLopHocPhan, lhp.TenLopHocPhan, lhp.MaGiangVien, lhp.MaBoMon,
+      SELECT lhp.MaLopHocPhan, lhp.TenLopHocPhan, lhp.LoaiHoc, lhp.MaGiangVien, lhp.MaBoMon,
              lhp.NgayBatDau, lhp.NgayKetThuc, lhp.TrangThaiPhanCong,
              gv.HoTen AS TenGiangVien
       FROM LopHocPhan lhp
@@ -1913,7 +1960,7 @@ class ThoiKhoaBieuService {
       ORDER BY ThuTrongTuan ASC, MaTiet ASC
     `, [lhp.MaLopHocPhan]);
 
-    if (schedules.length === 0) {
+    if (schedules.length === 0 && lhp.LoaiHoc !== 'TH') {
       throw new Error(`Lớp học phần '${lhp.TenLopHocPhan || lhp.MaLopHocPhan}' chưa có lịch học thời khóa biểu. Không thể khóa lịch.`);
     }
 
@@ -1934,78 +1981,69 @@ class ThoiKhoaBieuService {
         WHERE MaLopHocPhan = ?
       `, [lhp.MaLopHocPhan]);
 
-      // 4. Phát sinh danh sách BuoiHoc chính thức cho toàn bộ học kỳ nếu chưa có
-      const [existingBh] = await conn.query(
-        `SELECT COUNT(*) as count FROM BuoiHoc WHERE MaLopHocPhan = ?`,
-        [lhp.MaLopHocPhan]
-      );
+      // 4. Phát sinh danh sách BuoiHoc chính thức cho toàn bộ học kỳ nếu có TKB và chưa có buổi nào
+      if (schedules.length > 0) {
+        const [existingBh] = await conn.query(
+          `SELECT COUNT(*) as count FROM BuoiHoc WHERE MaLopHocPhan = ?`,
+          [lhp.MaLopHocPhan]
+        );
 
-      if (existingBh[0].count === 0) {
-        const buoiHocRows = [];
-        let seq = 1;
+        if (existingBh[0].count === 0) {
+          const buoiHocRows = [];
+          let seq = 1;
 
-        for (const sc of schedules) {
-          const rawStart = String(sc.NgayBatDau || lhp.NgayBatDau).slice(0, 10);
-          const rawEnd = String(sc.NgayKetThuc || lhp.NgayKetThuc).slice(0, 10);
+          for (const sc of schedules) {
+            const rawStart = String(sc.NgayBatDau || lhp.NgayBatDau).slice(0, 10);
+            const rawEnd = String(sc.NgayKetThuc || lhp.NgayKetThuc).slice(0, 10);
 
-          const [sY, sM, sD] = rawStart.split('-').map(Number);
-          const [eY, eM, eD] = rawEnd.split('-').map(Number);
+            const [sY, sM, sD] = rawStart.split('-').map(Number);
+            const [eY, eM, eD] = rawEnd.split('-').map(Number);
 
-          // Khởi tạo tại 12h trưa để tránh hoàn toàn mọi vấn đề lệch múi giờ
-          let curr = new Date(sY, sM - 1, sD, 12, 0, 0);
-          const endLimit = new Date(eY, eM - 1, eD, 23, 59, 59);
+            let curr = new Date(sY, sM - 1, sD, 12, 0, 0);
+            const endLimit = new Date(eY, eM - 1, eD, 23, 59, 59);
+            const targetDay = sc.ThuTrongTuan === 8 ? 0 : sc.ThuTrongTuan - 1;
 
-          // Quy đổi Thứ trong tuần sang getDay() của JavaScript:
-          // Thứ 2 (2) -> 1 (Monday)
-          // Thứ 3 (3) -> 2 (Tuesday)
-          // Thứ 4 (4) -> 3 (Wednesday)
-          // Thứ 5 (5) -> 4 (Thursday)
-          // Thứ 6 (6) -> 5 (Friday)
-          // Thứ 7 (7) -> 6 (Saturday)
-          // Chủ nhật (8) -> 0 (Sunday)
-          const targetDay = sc.ThuTrongTuan === 8 ? 0 : sc.ThuTrongTuan - 1;
+            while (curr.getDay() !== targetDay) {
+              curr.setDate(curr.getDate() + 1);
+            }
 
-          while (curr.getDay() !== targetDay) {
-            curr.setDate(curr.getDate() + 1);
+            while (curr <= endLimit) {
+              const y = curr.getFullYear();
+              const m = String(curr.getMonth() + 1).padStart(2, '0');
+              const d = String(curr.getDate()).padStart(2, '0');
+              const ngayHocStr = `${y}-${m}-${d}`;
+              const dateCompact = `${y}${m}${d}`;
+
+              const randHex = Math.random().toString(36).substring(2, 6).toUpperCase();
+              const maBuoiHoc = `BH_${dateCompact}_${randHex}_${seq++}`;
+
+              buoiHocRows.push([
+                maBuoiHoc,
+                lhp.MaLopHocPhan,
+                lhp.MaGiangVien,
+                sc.MaThoiKhoaBieu,
+                ngayHocStr,
+                sc.MaTiet,
+                sc.MaPhong,
+                'Regular',
+                'Normal'
+              ]);
+
+              curr.setDate(curr.getDate() + 7);
+            }
           }
 
-          while (curr <= endLimit) {
-            const y = curr.getFullYear();
-            const m = String(curr.getMonth() + 1).padStart(2, '0');
-            const d = String(curr.getDate()).padStart(2, '0');
-            const ngayHocStr = `${y}-${m}-${d}`;
-            const dateCompact = `${y}${m}${d}`;
-
-            const randHex = Math.random().toString(36).substring(2, 6).toUpperCase();
-            const maBuoiHoc = `BH_${dateCompact}_${randHex}_${seq++}`;
-
-            buoiHocRows.push([
-              maBuoiHoc,
-              lhp.MaLopHocPhan,
-              lhp.MaGiangVien,
-              sc.MaThoiKhoaBieu,
-              ngayHocStr,
-              sc.MaTiet,
-              sc.MaPhong,
-              'Regular',
-              'Normal'
-            ]);
-
-            curr.setDate(curr.getDate() + 7);
-          }
-        }
-
-        // Tối ưu hóa: Bulk Insert tất cả các buổi học trong 1 query duy nhất thay vì lặp từng câu
-        if (buoiHocRows.length > 0) {
-          const CHUNK_SIZE = 500;
-          for (let i = 0; i < buoiHocRows.length; i += CHUNK_SIZE) {
-            const chunk = buoiHocRows.slice(i, i + CHUNK_SIZE);
-            await conn.query(`
-              INSERT INTO BuoiHoc (
-                MaBuoiHoc, MaLopHocPhan, MaGiangVien, MaThoiKhoaBieu,
-                NgayHoc, MaTiet, MaPhong, LoaiBuoiHoc, TrangThai
-              ) VALUES ?
-            `, [chunk]);
+          if (buoiHocRows.length > 0) {
+            const CHUNK_SIZE = 500;
+            for (let i = 0; i < buoiHocRows.length; i += CHUNK_SIZE) {
+              const chunk = buoiHocRows.slice(i, i + CHUNK_SIZE);
+              await conn.query(`
+                INSERT INTO BuoiHoc (
+                  MaBuoiHoc, MaLopHocPhan, MaGiangVien, MaThoiKhoaBieu,
+                  NgayHoc, MaTiet, MaPhong, LoaiBuoiHoc, TrangThai
+                ) VALUES ?
+              `, [chunk]);
+            }
           }
         }
       }
@@ -2018,7 +2056,9 @@ class ThoiKhoaBieuService {
         tenLopHocPhan: lhp.TenLopHocPhan,
         tenGiangVien: lhp.TenGiangVien,
         trangThai: 'Locked',
-        message: `Đã khóa thời khóa biểu lớp '${lhp.TenLopHocPhan || lhp.MaLopHocPhan}' thành công. Toàn bộ lịch dạy chính thức đã được chốt!`
+        message: schedules.length === 0 && lhp.LoaiHoc === 'TH'
+          ? `Đã chốt & khóa lớp Thực hành '${lhp.TenLopHocPhan || lhp.MaLopHocPhan}' thành công! Giảng viên đã có thể đăng ký lịch thực hành.`
+          : `Đã khóa thời khóa biểu lớp '${lhp.TenLopHocPhan || lhp.MaLopHocPhan}' thành công. Toàn bộ lịch dạy chính thức đã được chốt!`
       };
     } catch (err) {
       await conn.rollback();
@@ -2044,13 +2084,13 @@ class ThoiKhoaBieuService {
     }
 
     let sql = `
-      SELECT lhp.MaLopHocPhan, lhp.TenLopHocPhan, lhp.MaGiangVien, lhp.NgayBatDau, lhp.NgayKetThuc
+      SELECT lhp.MaLopHocPhan, lhp.TenLopHocPhan, lhp.LoaiHoc, lhp.MaGiangVien, lhp.NgayBatDau, lhp.NgayKetThuc
       FROM LopHocPhan lhp
       LEFT JOIN BoMon bm ON lhp.MaBoMon = bm.MaBoMon
       WHERE lhp.MaHocKy = ?
         AND lhp.MaGiangVien IS NOT NULL
         AND (lhp.TrangThaiPhanCong IS NULL OR lhp.TrangThaiPhanCong != 'Locked')
-        AND EXISTS (SELECT 1 FROM ThoiKhoaBieu tkb WHERE tkb.MaLopHocPhan = lhp.MaLopHocPhan)
+        AND (EXISTS (SELECT 1 FROM ThoiKhoaBieu tkb WHERE tkb.MaLopHocPhan = lhp.MaLopHocPhan) OR lhp.LoaiHoc = 'TH')
     `;
     const params = [maHocKy.trim()];
 
@@ -3395,11 +3435,18 @@ class ThoiKhoaBieuService {
       }
 
       const fam = familiesMap[fKey];
+      const hasSched = clsSchedules.length > 0;
+      const isPractical = c.LoaiHoc === 'TH';
       fam.classes.push({
         ...c,
         schedules: clsSchedules,
-        hasSchedule: clsSchedules.length > 0
+        hasSchedule: hasSched,
+        isEligibleForAssign: hasSched || isPractical
       });
+
+      if (hasSched || isPractical) {
+        fam.hasEligibleClass = true;
+      }
 
       if (c.TrangThaiPhanCong === 'Locked') {
         fam.isLocked = true;
@@ -3465,8 +3512,8 @@ class ThoiKhoaBieuService {
     for (const fam of families) {
       const famPeriods = fam.schedules.length * 3;
 
-      // TH1: Cụm lớp không có lịch TKB nào -> Không thể phân công
-      if (fam.schedules.length === 0) {
+      // TH1: Cụm lớp không có lịch TKB và cũng không có lớp Thực hành (TH) nào -> Không thể phân công
+      if (fam.schedules.length === 0 && !fam.hasEligibleClass) {
         unassignedDetails.push({
           familyKey: fam.familyKey,
           maMonHoc: fam.maMonHoc,
@@ -3485,7 +3532,7 @@ class ThoiKhoaBieuService {
           gv.assignedFamilies.push(fam.familyKey);
           gv.busySlots.push(...fam.schedules);
           for (const c of fam.classes) {
-            if (!c.hasSchedule) continue; // Chỉ gán cho các lớp ĐÃ CÓ TKB
+            if (!c.isEligibleForAssign) continue; // Chỉ gán lớp có TKB hoặc lớp TH
             gv.assignedClasses.push(c.MaLopHocPhan);
             assignments.push({
               maLopHocPhan: c.MaLopHocPhan,
@@ -3518,7 +3565,7 @@ class ThoiKhoaBieuService {
         gv.assignedFamilies.push(fam.familyKey);
         gv.busySlots.push(...fam.schedules);
         for (const c of fam.classes) {
-          if (!c.hasSchedule) continue; // Chỉ gán cho các lớp ĐÃ CÓ TKB
+          if (!c.isEligibleForAssign) continue; // Chỉ gán lớp có TKB hoặc lớp TH
           gv.assignedClasses.push(c.MaLopHocPhan);
           assignments.push({
             maLopHocPhan: c.MaLopHocPhan,
@@ -3624,10 +3671,9 @@ class ThoiKhoaBieuService {
       chosenGv.assignedFamilies.push(fam.familyKey);
       chosenGv.busySlots.push(...fam.schedules);
 
-      // Gán các lớp con trong gia đình lớp ĐÃ CÓ LỊCH TKB cho Giảng viên này
-      // (Loại bỏ các lớp con chưa có TKB, tuân thủ đúng trình tự phải có lịch mới phân công)
+      // Gán các lớp con trong gia đình lớp (có TKB hoặc là lớp TH) cho Giảng viên này
       for (const c of fam.classes) {
-        if (!c.hasSchedule) continue; // Bỏ qua lớp chưa có TKB
+        if (!c.isEligibleForAssign) continue; // Bỏ qua lớp LT/BT/BTL chưa có TKB
         chosenGv.assignedClasses.push(c.MaLopHocPhan);
         assignments.push({
           maLopHocPhan: c.MaLopHocPhan,
@@ -3666,7 +3712,7 @@ class ThoiKhoaBieuService {
     lecturerStats.sort((a, b) => b.totalPeriodsPerWeek - a.totalPeriodsPerWeek);
 
     const totalClasses = classes.length;
-    const scheduledClassesCount = classes.filter(c => schedulesByClass[c.MaLopHocPhan]?.length > 0).length;
+    const scheduledClassesCount = classes.filter(c => (schedulesByClass[c.MaLopHocPhan]?.length > 0) || c.LoaiHoc === 'TH').length;
     const unscheduledClassesCount = totalClasses - scheduledClassesCount;
     const assignedClassesCount = assignments.length;
     const unassignedScheduledClassesCount = scheduledClassesCount - assignedClassesCount;
@@ -3724,7 +3770,7 @@ class ThoiKhoaBieuService {
       let updatedCount = 0;
 
       if (targetIds.length > 0) {
-        // 1. Lọc trong 1 query duy nhất các lớp đủ điều kiện (đúng bộ môn, học kỳ, chưa khóa, đã có TKB)
+        // 1. Lọc trong 1 query duy nhất các lớp đủ điều kiện (đúng bộ môn, học kỳ, chưa khóa, đã có TKB hoặc là lớp TH)
         const [eligibleRows] = await conn.query(`
           SELECT MaLopHocPhan
           FROM LopHocPhan
@@ -3732,7 +3778,7 @@ class ThoiKhoaBieuService {
             AND MaBoMon = ?
             AND MaHocKy = ?
             AND (TrangThaiPhanCong IS NULL OR TrangThaiPhanCong != 'Locked')
-            AND EXISTS (SELECT 1 FROM ThoiKhoaBieu tkb WHERE tkb.MaLopHocPhan = LopHocPhan.MaLopHocPhan)
+            AND (EXISTS (SELECT 1 FROM ThoiKhoaBieu tkb WHERE tkb.MaLopHocPhan = LopHocPhan.MaLopHocPhan) OR LoaiHoc = 'TH')
         `, [targetIds, cleanMaBoMon, cleanMaHocKy]);
 
         const idsToUpdate = eligibleRows.map(r => r.MaLopHocPhan);

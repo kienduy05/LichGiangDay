@@ -212,8 +212,8 @@ export default function PhanCongInspector({
         </div>
       )}
 
-      {/* If Class has NO schedule */}
-      {!loadingAvailability && (!selectedClass.schedules || selectedClass.schedules.length === 0) && (
+      {/* If Class has NO schedule & is NOT Practical (TH) */}
+      {!loadingAvailability && (!selectedClass.schedules || selectedClass.schedules.length === 0) && selectedClass.LoaiHoc !== 'TH' && (
         <div style={{ padding: '2rem', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', textAlign: 'center', color: '#92400e' }}>
           <AlertTriangle size={36} color="#d97706" style={{ margin: '0 auto 0.6rem auto' }} />
           <h4 style={{ margin: 0, color: '#78350f' }}>Lớp học phần này chưa được xếp lịch TKB</h4>
@@ -223,8 +223,32 @@ export default function PhanCongInspector({
         </div>
       )}
 
+      {/* Banner thông báo riêng cho lớp Thực hành (TH) chưa có lịch TKB cố định */}
+      {!loadingAvailability && (!selectedClass.schedules || selectedClass.schedules.length === 0) && selectedClass.LoaiHoc === 'TH' && (
+        <div style={{
+          padding: '0.85rem 1.15rem',
+          background: '#f0fdfa',
+          border: '1px solid #99f6e4',
+          borderRadius: '10px',
+          color: '#0f766e',
+          fontSize: '0.84rem',
+          lineHeight: 1.5,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.65rem'
+        }}>
+          <Info size={20} color="#0d9488" style={{ flexShrink: 0 }} />
+          <div>
+            <strong>Lớp Thực Hành (TH) — Phân công trước khi có lịch:</strong>
+            <div style={{ fontSize: '0.78rem', color: '#115e59', marginTop: '2px' }}>
+              Bộ môn có thể phân công tay hoặc tự động ngay cho lớp này. Sau khi PĐT khóa lịch, Giảng viên phụ trách sẽ tự đăng ký đủ <strong>5 buổi thực hành</strong> trên hệ thống.
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Availability Groups */}
-      {!loadingAvailability && availabilityData && availabilityData.hasSchedule && (
+      {!loadingAvailability && availabilityData && (availabilityData.hasSchedule || availabilityData.isPracticalFlexible) && (
         <div className="pcgv-gv-groups-container">
           {/* 1. Available Lecturers (GREEN) */}
           <div>

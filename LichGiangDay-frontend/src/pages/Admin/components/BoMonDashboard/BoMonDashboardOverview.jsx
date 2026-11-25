@@ -36,21 +36,25 @@ export default function BoMonDashboardOverview({ setActiveTab }) {
         setHocKyList(list || []);
         if (list && list.length > 0 && !selectedHocKy) {
           setSelectedHocKy(list[0].MaHocKy);
+        } else if (!list || list.length === 0) {
+          setLoading(false);
         }
       } catch (err) {
         console.error('Lỗi tải danh mục học kỳ:', err);
+        setLoading(false);
       }
     };
     fetchHocKy();
   }, []);
 
-  // 2. Tải dữ liệu Dashboard Bộ môn
+  // 2. Tải dữ liệu Dashboard Bộ môn (chờ selectedHocKy sẵn sàng)
   const fetchDashboardData = useCallback(async () => {
+    if (!selectedHocKy) return;
     setLoading(true);
     setError('');
     try {
       const result = await apiGetDashboardBoMon({
-        maHocKy: selectedHocKy || undefined
+        maHocKy: selectedHocKy
       });
       setData(result);
     } catch (err) {
@@ -62,8 +66,14 @@ export default function BoMonDashboardOverview({ setActiveTab }) {
   }, [selectedHocKy]);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+    if (selectedHocKy) {
+      fetchDashboardData();
+    }
+  }, [selectedHocKy, fetchDashboardData]);
+
+  const currentHocKyObj = useMemo(() => {
+    return hocKyList.find(hk => hk.MaHocKy === selectedHocKy) || null;
+  }, [hocKyList, selectedHocKy]);
 
   // Cấu hình Biểu đồ Cột: Tải giảng dạy của Giảng viên (Workload)
   const workloadChartData = useMemo(() => {
@@ -220,7 +230,7 @@ export default function BoMonDashboardOverview({ setActiveTab }) {
               <div className="bm-kpi-content">
                 <div className="bm-kpi-val">{kpi.tongLopHocPhan || 0}</div>
                 <div className="bm-kpi-lbl">Lớp học phần phụ trách</div>
-                <div className="bm-kpi-sub">Học kỳ hiện tại</div>
+                <div className="bm-kpi-sub">{currentHocKyObj?.TenHocKy || 'Học kỳ đang chọn'}</div>
               </div>
               <ChevronRight size={16} className="bm-card-arrow" />
             </div>
